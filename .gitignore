@@ -1,0 +1,78 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.output/
+
+# Quasar
+.quasar/
+*.temporary.compiled*
+
+# Capacitor
+src-capacitor/www/
+src-capacitor/node_modules/
+src-capacitor/android/app/build/
+src-capacitor/android/.gradle/
+src-capacitor/android/local.properties
+src-capacitor/ios/App/Pods/
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+
+# Testing
+coverage/
+.nyc_output/
+
+# Misc
+*.local
+*.tgz
+.cache/
+.temp/
+.tmp/
+
+# Android specific
+*.apk
+*.aab
+*.keystore
+*.jks
+google-services.json
+
+# iOS specific
+*.ipa
+*.xcworkspace
+*.xcuserdata
+Podfile.lock
+
+android/*

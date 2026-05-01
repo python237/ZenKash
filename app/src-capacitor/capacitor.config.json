@@ -1,0 +1,8 @@
+{
+    "appId": "com.zenkash.app",
+    "appName": "Zenkash",
+    "webDir": "www",
+    "server": {
+        "androidScheme": "https"
+    }
+}

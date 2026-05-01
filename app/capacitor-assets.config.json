@@ -1,0 +1,18 @@
+{
+    "$schema": "https://unpkg.com/@capacitor/assets/assets-config.schema.json",
+    "appName": "Zenkash",
+    "appIcon": {
+        "backgroundColor": "#0d9488"
+    },
+    "splash": {
+        "backgroundColor": "#0d9488",
+        "resizeMode": "contain",
+        "androidScaleType": "CENTER_CROP"
+    },
+    "ios": {
+        "path": "src-capacitor/ios"
+    },
+    "android": {
+        "path": "src-capacitor/android"
+    }
+}

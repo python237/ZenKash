@@ -1,0 +1,63 @@
+.DS_Store
+.thumbs.db
+node_modules
+
+# Quasar core related directories
+.quasar
+/dist
+/quasar.config.*.temporary.compiled*
+
+# Auto-imports (generated)
+src/auto-imports.d.ts
+.eslintrc-auto-import.json
+
+# Cordova related directories and files
+/src-cordova/node_modules
+/src-cordova/platforms
+/src-cordova/plugins
+/src-cordova/www
+
+# Capacitor related directories and files
+/src-capacitor/www
+/src-capacitor/node_modules
+/src-capacitor/assets
+/src-capacitor/android
+/src-capacitor/ios
+
+# Generated assets (icons, splash screens)
+/assets/*.png
+
+# Android build outputs
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor directories and files
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+*~
+
+# local .env files
+.env
+.env.local*
+.env.*.local
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Debug
+*.log
+logs/

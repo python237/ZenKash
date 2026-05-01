@@ -1,0 +1,60 @@
+// Quasar Sass (& SCSS) Variables
+// --------------------------------------------------
+// Zenkash - Finance App Color Palette
+// Inspired by modern fintech apps (Revolut, N26, Wise)
+
+// ============================================
+// BRAND COLORS
+// ============================================
+
+// Primary: Deep teal - trust, stability, finance
+$primary: #0d9488;
+$primary-dark: #0f766e;
+$primary-light: #14b8a6;
+
+// Secondary: Slate blue - professional, clean
+$secondary: #475569;
+
+// Accent: Amber - attention, highlights
+$accent: #f59e0b;
+
+// ============================================
+// SEMANTIC COLORS
+// ============================================
+
+// Positive: Green - gains, income, success
+$positive: #10b981;
+
+// Negative: Red - losses, expenses, errors
+$negative: #ef4444;
+
+// Info: Blue - information, neutral
+$info: #3b82f6;
+
+// Warning: Orange - alerts, attention
+$warning: #f97316;
+
+// ============================================
+// NEUTRAL COLORS
+// ============================================
+
+$dark: #1e293b;
+$dark-page: #0f172a;
+
+// ============================================
+// CUSTOM VARIABLES
+// ============================================
+
+// Text colors
+$text-primary: #1e293b;
+$text-secondary: #64748b;
+$text-muted: #94a3b8;
+
+// Background colors
+$bg-page: #f8fafc;
+$bg-card: #ffffff;
+$bg-subtle: #f1f5f9;
+
+// Border colors
+$border-color: #e2e8f0;
+$border-light: #f1f5f9;
