@@ -109,6 +109,19 @@ const emit = defineEmits<{
 const { t, locale } = useI18n();
 const settingsStore = useSettingsStore();
 
+/**
+ * Converts a Date to a local date string (YYYY-MM-DD) without timezone issues.
+ * Unlike toISOString() which uses UTC, this uses the local timezone.
+ * @param date - The date to convert
+ * @returns The date string in YYYY-MM-DD format
+ */
+function toLocalDateString(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // Delete state
 const showDeleteConfirm = ref(false);
 const transactionToDelete = ref<TransactionWithRelations | null>(null);
@@ -195,7 +208,7 @@ const groupedTransactions = computed(() => {
     const dateMap = new Map<string, TransactionWithRelations[]>();
 
     for (const tx of props.transactions) {
-        const dateKey = tx.date.toISOString().split('T')[0] ?? '';
+        const dateKey = toLocalDateString(tx.date);
         if (!dateMap.has(dateKey)) {
             dateMap.set(dateKey, []);
         }
@@ -222,15 +235,18 @@ const groupedTransactions = computed(() => {
  * @returns The formatted date header string
  */
 function formatDateHeader(dateStr: string): string {
-    const date = new Date(dateStr);
+    const date = new Date(dateStr + 'T00:00:00'); // Parse as local time
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    if (dateStr === today.toISOString().split('T')[0]) {
+    const todayStr = toLocalDateString(today);
+    const yesterdayStr = toLocalDateString(yesterday);
+
+    if (dateStr === todayStr) {
         return t('transactions.today');
     }
-    if (dateStr === yesterday.toISOString().split('T')[0]) {
+    if (dateStr === yesterdayStr) {
         return t('transactions.yesterday');
     }
 

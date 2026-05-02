@@ -76,6 +76,18 @@ const transactionStore = useTransactionStore();
 const walletStore = useWalletStore();
 const settingsStore = useSettingsStore();
 
+/**
+ * Gets today's date as a local date string (YYYY-MM-DD).
+ * @returns The date string in YYYY-MM-DD format
+ */
+function getLocalDateString(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // Schema
 const schema = z.object({
     amount: z.number().positive(t('validation.positiveNumber')),
@@ -87,7 +99,7 @@ const schema = z.object({
 const { form, errors, validate, reset } = useFormValidation(schema, {
     amount: 0,
     walletId: '',
-    date: new Date().toISOString().split('T')[0] ?? '',
+    date: getLocalDateString(),
     description: '',
 });
 

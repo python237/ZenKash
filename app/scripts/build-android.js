@@ -179,8 +179,12 @@ async function main() {
     logStep(4, 'Build Quasar app for Capacitor Android');
     runCommand('quasar build -m capacitor -T android');
 
-    // Step 5: Patch Gradle files for Java 17
-    logStep(5, 'Patch Gradle files for Java 17 compatibility');
+    // Step 5: Copy native plugins
+    logStep(5, 'Copy native plugins to Android project');
+    runCommand('node scripts/copy-native-plugins.js');
+
+    // Step 6: Patch Gradle files for Java 17
+    logStep(6, 'Patch Gradle files for Java 17 compatibility');
     runCommand('node scripts/patch-android-gradle.js');
 
     // Cleanup: Remove temporary assets folder in src-capacitor

@@ -266,6 +266,12 @@ export default {
         toCurrency: 'To Currency',
         rate: 'Rate',
         noExchangeRates: 'No exchange rates defined',
+        reminder: 'Daily Reminder',
+        reminderDescription: 'Reminder at 9:30 PM if no transaction recorded',
+        reminderEnabled: 'Reminder enabled',
+        reminderDisabled: 'Reminder disabled',
+        alarmPermissionRequired: 'Exact alarm permission required',
+        openAlarmSettings: 'Open settings',
     },
 
     // Onboarding

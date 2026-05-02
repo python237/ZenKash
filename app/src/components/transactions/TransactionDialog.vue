@@ -231,6 +231,19 @@ const walletStore = useWalletStore();
 const categoryStore = useCategoryStore();
 const masterCategoryStore = useMasterCategoryStore();
 
+/**
+ * Gets today's date as a local date string (YYYY-MM-DD).
+ * Uses local timezone instead of UTC to avoid midnight issues.
+ * @param date - Optional date to convert, defaults to now
+ * @returns The date string in YYYY-MM-DD format
+ */
+function getLocalDateString(date: Date = new Date()): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 // Form state
 const form = reactive<{
     type: TransactionType;
@@ -245,7 +258,7 @@ const form = reactive<{
 }>({
     type: 'expense',
     amount: 0,
-    date: new Date().toISOString().split('T')[0] ?? '',
+    date: getLocalDateString(),
     description: '',
     walletId: '',
     categoryId: '',
@@ -408,7 +421,7 @@ watch(
                 // Editing existing transaction
                 form.type = props.transaction.type;
                 form.amount = props.transaction.amount;
-                form.date = props.transaction.date.toISOString().split('T')[0] ?? '';
+                form.date = getLocalDateString(props.transaction.date);
                 form.description = props.transaction.description ?? '';
 
                 if (props.transaction.type === 'income' || props.transaction.type === 'expense') {
@@ -424,7 +437,7 @@ watch(
                 const source = props.duplicateFrom;
                 form.type = source.type;
                 form.amount = source.amount;
-                form.date = new Date().toISOString().split('T')[0] ?? ''; // Today's date
+                form.date = getLocalDateString(); // Today's date
                 form.description = source.description ?? '';
 
                 if (source.type === 'income' || source.type === 'expense') {
@@ -439,7 +452,7 @@ watch(
                 // Creating new transaction
                 form.type = props.initialType ?? 'expense';
                 form.amount = 0;
-                form.date = new Date().toISOString().split('T')[0] ?? '';
+                form.date = getLocalDateString();
                 form.description = '';
                 form.walletId = walletStore.wallets[0]?.id ?? '';
                 form.categoryId = '';

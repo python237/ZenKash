@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 export default defineConfig((ctx) => {
     return {
         // Boot files (plugins initialization)
-        boot: ['database', 'i18n', 'safe-area', 'back-button', 'menu-backdrop'],
+        boot: ['database', 'i18n', 'safe-area', 'back-button', 'menu-backdrop', 'reminder'],
 
         // Global CSS
         css: ['app.scss'],
