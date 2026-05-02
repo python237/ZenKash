@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { Capacitor } from '@capacitor/core';
 import type {
     Transaction,
     CreateTransaction,
@@ -9,6 +10,7 @@ import type {
     ProjectTransactionType,
 } from 'src/types/transaction';
 import { execute, query } from 'src/services/database';
+import { useReminder } from 'src/composables/useReminder';
 
 /**
  * Generates a unique identifier for a transaction
@@ -295,6 +297,12 @@ export const useTransactionStore = defineStore('transaction', () => {
             // Create transaction object
             const transaction = createTransactionObject(id, data, now);
             transactions.value.unshift(transaction);
+
+            // Record transaction for reminder system (native only)
+            if (Capacitor.isNativePlatform()) {
+                const { recordTransaction } = useReminder();
+                void recordTransaction();
+            }
 
             return transaction;
         } finally {

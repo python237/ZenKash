@@ -112,6 +112,11 @@
   dependencies:
     tslib "^2.1.0"
 
+"@capacitor/local-notifications@^8.0.2":
+  version "8.0.2"
+  resolved "https://registry.yarnpkg.com/@capacitor/local-notifications/-/local-notifications-8.0.2.tgz#3c78fed1357e02457cb2649d32fa24d942613bc6"
+  integrity sha512-X7KE/I4ZutMTGVHNUyTjIugYcQEcHJRLks+TsPnOriuS+lo0geSTuaRln6zAZlJSSXSoVMSSzHexdSbIjR/8iw==
+
 "@cspotcode/source-map-support@^0.8.0":
   version "0.8.1"
   resolved "https://registry.yarnpkg.com/@cspotcode/source-map-support/-/source-map-support-0.8.1.tgz#00629c35a688e05a88b1cda684fb9d5e73f000a1"

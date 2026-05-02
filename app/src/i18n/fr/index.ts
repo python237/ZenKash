@@ -267,6 +267,12 @@ export default {
         toCurrency: 'Devise cible',
         rate: 'Taux',
         noExchangeRates: 'Aucun taux de change défini',
+        reminder: 'Rappel quotidien',
+        reminderDescription: 'Rappel à 21h30 si aucune transaction enregistrée',
+        reminderEnabled: 'Rappel activé',
+        reminderDisabled: 'Rappel désactivé',
+        alarmPermissionRequired: 'Permission alarme exacte requise',
+        openAlarmSettings: 'Ouvrir les paramètres',
     },
 
     // Onboarding
