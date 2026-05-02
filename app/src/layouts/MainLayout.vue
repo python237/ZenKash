@@ -60,6 +60,9 @@
                 <q-route-tab name="more" icon="menu" :label="$t('nav.more')" to="/more" no-caps />
             </q-tabs>
         </q-footer>
+
+        <!-- Safe area fallback when bottom nav is hidden -->
+        <q-footer v-else class="safe-area-footer" />
     </q-layout>
 </template>
 
@@ -101,6 +104,16 @@ onMounted(async () => {
 // Safe area padding for footer
 .q-footer {
     padding-bottom: var(--safe-area-bottom);
+}
+
+// Transparent safe area footer when bottom nav is hidden
+.safe-area-footer {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    min-height: 0;
+    height: var(--safe-area-bottom);
+    padding: 0;
 }
 
 .q-tabs {
