@@ -18,13 +18,47 @@ const showBottomNav = ref(true);
 /** Router instance (set from boot file) */
 let routerInstance: Router | null = null;
 
+/** Navigation history stack for proper back navigation */
+const historyStack: string[] = [];
+
 /**
  * Initializes the navigation system with the Vue Router instance.
+ * Sets up route tracking for proper back navigation on mobile.
  * Must be called from the boot file before using navigation functions.
  * @param router - The Vue Router instance to use for navigation
  */
 export function initNavigation(router: Router) {
     routerInstance = router;
+
+    // Track navigation for proper back button handling
+    router.afterEach((to, from) => {
+        const toPath = to.path;
+        const fromPath = from.path;
+
+        // If navigating back (last item in history is current destination), pop it
+        if (historyStack.length > 0 && historyStack[historyStack.length - 1] === toPath) {
+            historyStack.pop();
+        } else if (fromPath && fromPath !== toPath) {
+            // Normal navigation forward, push the previous path
+            historyStack.push(fromPath);
+        }
+    });
+}
+
+/**
+ * Checks if there is navigation history to go back to.
+ * @returns True if there are previous pages in the history stack
+ */
+export function canGoBack(): boolean {
+    return historyStack.length > 0;
+}
+
+/**
+ * Clears the navigation history stack.
+ * Useful when resetting navigation state.
+ */
+export function clearHistory() {
+    historyStack.length = 0;
 }
 
 /**

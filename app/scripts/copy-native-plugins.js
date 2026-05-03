@@ -8,7 +8,15 @@
  * required permissions and component declarations.
  */
 
-import { existsSync, mkdirSync, copyFileSync, readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
+import {
+    existsSync,
+    mkdirSync,
+    copyFileSync,
+    readFileSync,
+    writeFileSync,
+    readdirSync,
+    statSync,
+} from 'fs';
 import { dirname, resolve, join, relative } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -88,16 +96,24 @@ function updateAndroidManifest() {
             // Find the last uses-permission tag or add after manifest opening
             const insertPoint = manifest.lastIndexOf('</manifest>');
             const permissionLine = `    <uses-permission android:name="${permission}" />\n`;
-            
+
             // Find where to insert (after other permissions or after <manifest> tag)
             const lastPermissionIndex = manifest.lastIndexOf('<uses-permission');
             if (lastPermissionIndex !== -1) {
                 const endOfLastPermission = manifest.indexOf('/>', lastPermissionIndex) + 2;
-                manifest = manifest.slice(0, endOfLastPermission) + '\n' + permissionLine.trim() + manifest.slice(endOfLastPermission);
+                manifest =
+                    manifest.slice(0, endOfLastPermission) +
+                    '\n' +
+                    permissionLine.trim() +
+                    manifest.slice(endOfLastPermission);
             } else {
                 // Insert after opening manifest tag
                 const manifestTagEnd = manifest.indexOf('>', manifest.indexOf('<manifest')) + 1;
-                manifest = manifest.slice(0, manifestTagEnd) + '\n' + permissionLine + manifest.slice(manifestTagEnd);
+                manifest =
+                    manifest.slice(0, manifestTagEnd) +
+                    '\n' +
+                    permissionLine +
+                    manifest.slice(manifestTagEnd);
             }
             log(`Added permission: ${permission}`, 'green');
         }
@@ -133,9 +149,13 @@ function updateAndroidManifest() {
         // Find the closing </application> tag and insert before it
         const appClosingTag = '</application>';
         const appClosingIndex = manifest.lastIndexOf(appClosingTag);
-        
+
         if (appClosingIndex !== -1) {
-            manifest = manifest.slice(0, appClosingIndex) + componentsToAdd + '\n        ' + manifest.slice(appClosingIndex);
+            manifest =
+                manifest.slice(0, appClosingIndex) +
+                componentsToAdd +
+                '\n        ' +
+                manifest.slice(appClosingIndex);
             log('Added reminder components to AndroidManifest.xml', 'green');
         } else {
             log('Could not find </application> tag in AndroidManifest.xml', 'red');
@@ -154,7 +174,7 @@ function updateAndroidManifest() {
  */
 function updateMainActivity() {
     const mainActivityPath = resolve(ANDROID_JAVA_DIR, 'com/zenkash/app/MainActivity.java');
-    
+
     if (!existsSync(mainActivityPath)) {
         log('MainActivity.java not found', 'red');
         return false;
@@ -168,7 +188,11 @@ function updateMainActivity() {
         // Add import after the last import statement
         const lastImportIndex = mainActivity.lastIndexOf('import ');
         const endOfLastImport = mainActivity.indexOf(';', lastImportIndex) + 1;
-        mainActivity = mainActivity.slice(0, endOfLastImport) + '\n' + importStatement + mainActivity.slice(endOfLastImport);
+        mainActivity =
+            mainActivity.slice(0, endOfLastImport) +
+            '\n' +
+            importStatement +
+            mainActivity.slice(endOfLastImport);
         log('Added ReminderPlugin import to MainActivity.java', 'green');
     }
 
@@ -180,11 +204,17 @@ function updateMainActivity() {
             // Add after the last registerPlugin call
             const lastRegisterIndex = mainActivity.lastIndexOf('registerPlugin(');
             const endOfLastRegister = mainActivity.indexOf(';', lastRegisterIndex) + 1;
-            mainActivity = mainActivity.slice(0, endOfLastRegister) + '\n        registerPlugin(ReminderPlugin.class);' + mainActivity.slice(endOfLastRegister);
+            mainActivity =
+                mainActivity.slice(0, endOfLastRegister) +
+                '\n        registerPlugin(ReminderPlugin.class);' +
+                mainActivity.slice(endOfLastRegister);
         } else {
             // Need to add onCreate method override
             // Find the class opening brace
-            const classStart = mainActivity.indexOf('{', mainActivity.indexOf('class MainActivity'));
+            const classStart = mainActivity.indexOf(
+                '{',
+                mainActivity.indexOf('class MainActivity'),
+            );
             const onCreateMethod = `
 
     @Override
@@ -193,12 +223,18 @@ function updateMainActivity() {
         super.onCreate(savedInstanceState);
     }
 `;
-            mainActivity = mainActivity.slice(0, classStart + 1) + onCreateMethod + mainActivity.slice(classStart + 1);
-            
+            mainActivity =
+                mainActivity.slice(0, classStart + 1) +
+                onCreateMethod +
+                mainActivity.slice(classStart + 1);
+
             // Also need to add Bundle import if not present
             if (!mainActivity.includes('import android.os.Bundle;')) {
                 const firstImportIndex = mainActivity.indexOf('import ');
-                mainActivity = mainActivity.slice(0, firstImportIndex) + 'import android.os.Bundle;\n' + mainActivity.slice(firstImportIndex);
+                mainActivity =
+                    mainActivity.slice(0, firstImportIndex) +
+                    'import android.os.Bundle;\n' +
+                    mainActivity.slice(firstImportIndex);
             }
         }
         log('Registered ReminderPlugin in MainActivity.java', 'green');

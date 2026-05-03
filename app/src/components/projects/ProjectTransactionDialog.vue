@@ -88,6 +88,20 @@ function getLocalDateString(): string {
     return `${year}-${month}-${day}`;
 }
 
+/**
+ * Parses a date string (YYYY-MM-DD) and combines it with the current time.
+ * @param dateString - The date string in YYYY-MM-DD format
+ * @returns A Date object with the parsed date and current time
+ */
+function parseDateWithTime(dateString: string): Date {
+    const parts = dateString.split('-').map(Number);
+    const year = parts[0] ?? new Date().getFullYear();
+    const month = parts[1] ?? 1;
+    const day = parts[2] ?? 1;
+    const now = new Date();
+    return new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
+}
+
 // Schema
 const schema = z.object({
     amount: z.number().positive(t('validation.positiveNumber')),
@@ -160,7 +174,7 @@ async function save() {
             walletId: form.walletId,
             projectId: props.project.id,
             projectTransactionType: props.transactionType,
-            date: new Date(form.date),
+            date: parseDateWithTime(form.date),
             description: form.description || undefined,
         });
 

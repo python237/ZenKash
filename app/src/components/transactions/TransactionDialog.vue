@@ -244,6 +244,33 @@ function getLocalDateString(date: Date = new Date()): string {
     return `${year}-${month}-${day}`;
 }
 
+/**
+ * Parses a date string (YYYY-MM-DD) and combines it with the current time.
+ * This ensures that transactions created today have the actual time preserved,
+ * while transactions with a different date get the current time.
+ * @param dateString - The date string in YYYY-MM-DD format
+ * @param originalDate - Optional original date to preserve time from (for editing)
+ * @returns A Date object with the parsed date and current/original time
+ */
+function parseDateWithTime(dateString: string, originalDate?: Date): Date {
+    const parts = dateString.split('-').map(Number);
+    const year = parts[0] ?? new Date().getFullYear();
+    const month = parts[1] ?? 1;
+    const day = parts[2] ?? 1;
+    const now = new Date();
+
+    // If editing and the date hasn't changed, preserve the original time
+    if (originalDate) {
+        const originalDateString = getLocalDateString(originalDate);
+        if (dateString === originalDateString) {
+            return new Date(originalDate);
+        }
+    }
+
+    // For new transactions or changed dates, use current time
+    return new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
+}
+
 // Form state
 const form = reactive<{
     type: TransactionType;
@@ -491,7 +518,7 @@ async function save(): Promise<void> {
 
     try {
         let transaction: Transaction;
-        const date = new Date(form.date);
+        const date = parseDateWithTime(form.date, props.transaction?.date);
 
         if (isEditing.value && props.transaction) {
             // Update existing
