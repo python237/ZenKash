@@ -64,6 +64,9 @@
                             >
                                 {{ t('transactions.fee') }}: {{ formatFee(tx) }}
                             </q-item-label>
+                            <q-item-label caption class="transaction-time">
+                                {{ formatTime(tx.date) }}
+                            </q-item-label>
                         </q-item-section>
                     </q-item>
                 </q-slide-item>
@@ -347,6 +350,19 @@ function getTransactionTitle(tx: TransactionWithRelations): string {
         default:
             return t('common.noData');
     }
+}
+
+/**
+ * Formats a transaction time as HH:MM string.
+ * @param date - The date to format
+ * @returns The formatted time string (e.g., "18:30")
+ */
+function formatTime(date: Date): string {
+    return new Intl.DateTimeFormat(locale.value, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+    }).format(date);
 }
 
 /**
