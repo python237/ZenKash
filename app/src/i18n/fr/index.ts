@@ -50,6 +50,7 @@ export default {
         categories: 'Catégories',
         masterCategories: 'Grandes Catégories',
         wallets: 'Portefeuilles',
+        games: 'Jeux',
         settings: 'Paramètres',
         management: 'Gestion',
         categorization: 'Catégorisation',
@@ -222,6 +223,47 @@ export default {
         noTransactions: 'Aucune transaction',
         transactionCount: 'Transactions',
         deleteConfirm: 'Voulez-vous vraiment supprimer ce projet ?',
+    },
+
+    // Games (betting platforms)
+    games: {
+        title: 'Jeux',
+        name: 'Nom du jeu',
+        icon: 'Icône',
+        addGame: 'Ajouter un jeu',
+        editGame: 'Modifier le jeu',
+        noGames: 'Aucun jeu',
+        walletCreatedHint: 'Un portefeuille dédié sera créé automatiquement pour ce jeu.',
+        excludedHint:
+            "Le solde des jeux n'est pas comptabilisé dans vos bilans : l'argent peut y être bloqué.",
+        balance: 'Solde disponible',
+        netResult: 'Résultat net',
+        totalStaked: 'Total misé',
+        totalWon: 'Total gagné',
+        pendingStake: 'Mises en cours',
+        pendingBets: 'paris en cours',
+        deposit: 'Déposer',
+        withdraw: 'Retirer',
+        withdrawAmount: 'Montant retiré',
+        netReceived: 'Montant reçu : {amount}',
+        withdrawFeeTooHigh: 'Les frais doivent être inférieurs au montant retiré',
+        deleteConfirm:
+            'Voulez-vous vraiment supprimer ce jeu ? Son portefeuille et ses paris seront supprimés.',
+    },
+
+    // Bets
+    bets: {
+        addBet: 'Enregistrer un pari',
+        editBet: 'Modifier le pari',
+        resolveBet: 'Régler le pari',
+        history: 'Historique des paris',
+        noBets: 'Aucun pari',
+        stake: 'Mise',
+        payout: 'Montant gagné',
+        pending: 'En cours',
+        won: 'Gagné',
+        lost: 'Perdu',
+        deleteConfirm: 'Voulez-vous vraiment supprimer ce pari ? Le solde du jeu sera ajusté.',
     },
 
     // Report / Dashboard

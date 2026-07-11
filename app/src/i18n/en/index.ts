@@ -50,6 +50,7 @@ export default {
         categories: 'Categories',
         masterCategories: 'Master Categories',
         wallets: 'Wallets',
+        games: 'Games',
         settings: 'Settings',
         management: 'Management',
         categorization: 'Categorization',
@@ -221,6 +222,48 @@ export default {
         noTransactions: 'No transactions yet',
         transactionCount: 'Transactions',
         deleteConfirm: 'Are you sure you want to delete this project?',
+    },
+
+    // Games (betting platforms)
+    games: {
+        title: 'Games',
+        name: 'Game name',
+        icon: 'Icon',
+        addGame: 'Add Game',
+        editGame: 'Edit Game',
+        noGames: 'No games yet',
+        walletCreatedHint: 'A dedicated wallet will be created automatically for this game.',
+        excludedHint:
+            'Game balances are excluded from your reports: the money may be locked on the platform.',
+        balance: 'Available Balance',
+        netResult: 'Net Result',
+        totalStaked: 'Total Staked',
+        totalWon: 'Total Won',
+        pendingStake: 'Pending Stakes',
+        pendingBets: 'pending bets',
+        deposit: 'Deposit',
+        withdraw: 'Withdraw',
+        withdrawAmount: 'Withdrawn amount',
+        netReceived: 'Amount received: {amount}',
+        withdrawFeeTooHigh: 'Fee must be lower than the withdrawn amount',
+        deleteConfirm:
+            'Are you sure you want to delete this game? Its wallet and bets will be deleted.',
+    },
+
+    // Bets
+    bets: {
+        addBet: 'Place a Bet',
+        editBet: 'Edit Bet',
+        resolveBet: 'Settle Bet',
+        history: 'Bet History',
+        noBets: 'No bets yet',
+        stake: 'Stake',
+        payout: 'Payout',
+        pending: 'Pending',
+        won: 'Won',
+        lost: 'Lost',
+        deleteConfirm:
+            'Are you sure you want to delete this bet? The game balance will be adjusted.',
     },
 
     // Report / Dashboard

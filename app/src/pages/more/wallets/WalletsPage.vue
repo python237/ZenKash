@@ -28,8 +28,8 @@ const store = useWalletStore();
 // State
 const showDialog = ref(false);
 
-// Load wallets
-const wallets = computed(() => store.wallets);
+// Load wallets (game wallets are managed from the Games section, hidden here)
+const wallets = computed(() => store.nonGameWallets);
 
 onMounted(() => {
     void store.loadAll();

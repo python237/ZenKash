@@ -48,6 +48,16 @@ const routes: RouteRecordRaw[] = [
                 name: 'project-detail',
                 component: () => import('pages/projects/ProjectDetailPage.vue'),
             },
+            {
+                path: 'games',
+                name: 'games',
+                component: () => import('pages/games/GamesPage.vue'),
+            },
+            {
+                path: 'games/:id',
+                name: 'game-detail',
+                component: () => import('pages/games/GameDetailPage.vue'),
+            },
             { path: 'more', name: 'more', component: () => import('pages/more/MorePage.vue') },
             // More menu pages
             {

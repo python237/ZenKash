@@ -16,7 +16,7 @@
                 <!-- Wallet -->
                 <q-select
                     v-model="form.walletId"
-                    :options="walletOptions"
+                    :options="nonGameWalletOptions"
                     :label="t('investments.wallet')"
                     :error="!!getError('walletId')"
                     :error-message="getError('walletId')"
@@ -385,7 +385,7 @@ const isFormValid = computed(() => {
     }
 });
 
-// Wallet options
+// Wallet options (all wallets, including game wallets, for transfers)
 const walletOptions = computed(() => {
     return walletStore.wallets.map((w) => ({
         value: w.id,
@@ -394,6 +394,11 @@ const walletOptions = computed(() => {
         currency: w.currency,
     }));
 });
+
+// Non-game wallet options (income/expense must not target game wallets)
+const nonGameWalletOptions = computed(() =>
+    walletOptions.value.filter((w) => !walletStore.getWalletById(w.value)?.isGame),
+);
 
 // To wallet options (exclude from wallet for transfers)
 const toWalletOptions = computed(() => {
@@ -481,7 +486,7 @@ watch(
                 form.amount = 0;
                 form.date = getLocalDateString();
                 form.description = '';
-                form.walletId = walletStore.wallets[0]?.id ?? '';
+                form.walletId = walletStore.nonGameWallets[0]?.id ?? '';
                 form.categoryId = '';
                 form.fromWalletId = walletStore.wallets[0]?.id ?? '';
                 form.toWalletId = walletStore.wallets[1]?.id ?? '';

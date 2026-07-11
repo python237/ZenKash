@@ -137,6 +137,7 @@ async function createTables(): Promise<void> {
       icon TEXT,
       currency TEXT NOT NULL,
       balance REAL NOT NULL DEFAULT 0,
+      is_game INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -224,6 +225,32 @@ async function createTables(): Promise<void> {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS games (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      icon TEXT,
+      wallet_id TEXT NOT NULL,
+      total_staked REAL NOT NULL DEFAULT 0,
+      total_won REAL NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (wallet_id) REFERENCES wallets(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS bets (
+      id TEXT PRIMARY KEY NOT NULL,
+      game_id TEXT NOT NULL,
+      stake REAL NOT NULL,
+      status TEXT NOT NULL CHECK(status IN ('pending', 'won', 'lost')),
+      payout REAL,
+      placed_at TEXT NOT NULL,
+      resolved_at TEXT,
+      description TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (game_id) REFERENCES games(id)
+    );
   `;
 
     await db.execute(schema);
@@ -267,6 +294,15 @@ async function runMigrations(): Promise<void> {
         if (!walletHasBalance) {
             await db.execute(`ALTER TABLE wallets ADD COLUMN balance REAL NOT NULL DEFAULT 0`);
             console.log('Migration: Added balance column to wallets table');
+        }
+
+        // Add is_game column if not exists (flags game-platform wallets, excluded from balance reports)
+        const walletHasIsGame = walletsColumns.some(
+            (col: { name: string }) => col.name === 'is_game',
+        );
+        if (!walletHasIsGame) {
+            await db.execute(`ALTER TABLE wallets ADD COLUMN is_game INTEGER NOT NULL DEFAULT 0`);
+            console.log('Migration: Added is_game column to wallets table');
         }
     } catch (error) {
         console.error('Wallets migration error:', error);

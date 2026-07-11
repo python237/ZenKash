@@ -33,6 +33,20 @@
                         <q-icon name="chevron_right" color="grey-5" />
                     </q-item-section>
                 </q-item>
+
+                <q-separator inset="item" />
+
+                <q-item clickable v-ripple to="/games" class="menu-item">
+                    <q-item-section avatar>
+                        <q-avatar color="deep-orange-1" text-color="deep-orange-9" icon="casino" />
+                    </q-item-section>
+                    <q-item-section>
+                        <q-item-label>{{ $t('more.games') }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                        <q-icon name="chevron_right" color="grey-5" />
+                    </q-item-section>
+                </q-item>
             </q-list>
         </q-card>
 

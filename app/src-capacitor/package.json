@@ -1,6 +1,6 @@
 {
     "name": "zenkash",
-    "version": "0.0.6",
+    "version": "0.0.7",
     "description": "Personal finance management app",
     "author": "Didier Tagne <tagnedidier@gmail.com>",
     "private": true,

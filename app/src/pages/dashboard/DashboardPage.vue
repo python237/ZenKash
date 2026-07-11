@@ -60,6 +60,17 @@
                 </q-card-section>
             </q-card>
 
+            <!-- Games (net: withdrawals received - deposits sent) -->
+            <q-card class="stat-card" flat bordered>
+                <q-card-section class="q-pa-sm text-center">
+                    <q-icon name="casino" color="deep-orange" size="20px" />
+                    <div class="text-caption text-grey-6">{{ t('games.title') }}</div>
+                    <div class="text-subtitle2 text-weight-bold" :class="gamesTextClass">
+                        {{ formattedGames }}
+                    </div>
+                </q-card-section>
+            </q-card>
+
             <!-- Net -->
             <q-card class="stat-card" flat bordered>
                 <q-card-section class="q-pa-sm text-center">
@@ -270,6 +281,10 @@ const projectStore = useProjectStore();
 const budgetStore = useBudgetStore();
 const settingsStore = useSettingsStore();
 const exchangeRateStore = useExchangeRateStore();
+const gameStore = useGameStore();
+
+// Game transfer classification (deposits = expense, withdrawals = income)
+const { classifyTransfer } = useGameTransfers();
 
 // State
 const showMonthPicker = ref(false);
@@ -357,9 +372,10 @@ function formatPercent(value: number): string {
     return `${value.toFixed(1)}%`;
 }
 
-// Global balance (sum of all wallets converted to default currency)
+// Global balance (sum of non-game wallets converted to default currency).
+// Game wallets are excluded: their money may be locked on the platform.
 const globalBalance = computed(() => {
-    return walletStore.wallets.reduce((total: number, wallet: Wallet) => {
+    return walletStore.nonGameWallets.reduce((total: number, wallet: Wallet) => {
         const converted = exchangeRateStore.convertWithDefault(
             wallet.balance,
             wallet.currency,
@@ -377,6 +393,7 @@ const monthlyStats = computed(() => {
 
     let income = 0;
     let expenses = 0;
+    let games = 0; // net game balance = transfers received - transfers sent
 
     for (const tx of transactions) {
         if (tx.type === 'income') {
@@ -396,10 +413,23 @@ const monthlyStats = computed(() => {
                 currency,
                 defaultCurrency.value,
             );
+        } else if (tx.type === 'transfer') {
+            // Game transfers form a separate "games" bucket: received (withdrawal) minus
+            // sent (deposit). Keeps income/expense clean and the net faithful.
+            const cls = classifyTransfer(tx);
+            if (cls) {
+                const converted = exchangeRateStore.convertWithDefault(
+                    cls.amount,
+                    cls.currency,
+                    defaultCurrency.value,
+                );
+                if (cls.kind === 'withdrawal') games += converted;
+                else games -= converted;
+            }
         }
     }
 
-    return { income, expenses, net: income - expenses };
+    return { income, expenses, games, net: income - expenses + games };
 });
 
 const formattedIncome = computed(() => formatCurrency(monthlyStats.value.income));
@@ -412,6 +442,14 @@ const formattedNet = computed(() => {
 const netColor = computed(() => (monthlyStats.value.net >= 0 ? 'positive' : 'negative'));
 const netTextClass = computed(() =>
     monthlyStats.value.net >= 0 ? 'text-positive' : 'text-negative',
+);
+const formattedGames = computed(() => {
+    const value = monthlyStats.value.games;
+    const prefix = value >= 0 ? '+' : '';
+    return prefix + formatCurrency(value);
+});
+const gamesTextClass = computed(() =>
+    monthlyStats.value.games >= 0 ? 'text-positive' : 'text-negative',
 );
 
 // Expense distribution by master category
@@ -685,6 +723,7 @@ onMounted(async () => {
         investmentStore.loadAll(),
         projectStore.loadAll(),
         budgetStore.loadAll(),
+        gameStore.loadAll(),
     ]);
 });
 </script>
@@ -707,7 +746,7 @@ onMounted(async () => {
 
 .stats-row {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
 }
 

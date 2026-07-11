@@ -21,6 +21,7 @@ interface WalletRow {
     icon: string | null;
     currency: string;
     balance: number;
+    is_game: number;
     created_at: string;
     updated_at: string;
 }
@@ -37,6 +38,7 @@ function rowToWallet(row: WalletRow): Wallet {
         icon: row.icon ?? 'account_balance_wallet',
         currency: row.currency as CurrencyCode,
         balance: row.balance,
+        isGame: row.is_game === 1,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
     };
@@ -55,6 +57,13 @@ export const useWalletStore = defineStore('wallet', () => {
      */
     const getWalletById = (id: string): Wallet | undefined =>
         wallets.value.find((w: Wallet) => w.id === id);
+
+    /**
+     * Regular (non-game) wallets only.
+     * Game-platform wallets are excluded because their balance may be locked
+     * and must not count towards reported liquidity.
+     */
+    const nonGameWallets = computed((): Wallet[] => wallets.value.filter((w: Wallet) => !w.isGame));
 
     /**
      * Loads all wallets from the database into the store
@@ -84,21 +93,25 @@ export const useWalletStore = defineStore('wallet', () => {
             const now = new Date();
             const wallet: Wallet = {
                 id: generateId(),
-                ...data,
+                name: data.name,
+                icon: data.icon,
+                currency: data.currency,
                 balance: data.balance ?? 0,
+                isGame: data.isGame ?? false,
                 createdAt: now,
                 updatedAt: now,
             };
 
             await execute(
-                `INSERT INTO wallets (id, name, icon, currency, balance, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO wallets (id, name, icon, currency, balance, is_game, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     wallet.id,
                     wallet.name,
                     wallet.icon,
                     wallet.currency,
                     wallet.balance,
+                    wallet.isGame ? 1 : 0,
                     wallet.createdAt.toISOString(),
                     wallet.updatedAt.toISOString(),
                 ],
@@ -129,6 +142,7 @@ export const useWalletStore = defineStore('wallet', () => {
                 icon: data.icon ?? existing.icon,
                 currency: existing.currency,
                 balance: data.balance ?? existing.balance,
+                isGame: existing.isGame,
                 createdAt: existing.createdAt,
                 updatedAt: new Date(),
             };
@@ -217,6 +231,7 @@ export const useWalletStore = defineStore('wallet', () => {
         isInitialized,
         // Getters
         getWalletById,
+        nonGameWallets,
         // Actions
         loadAll,
         create,

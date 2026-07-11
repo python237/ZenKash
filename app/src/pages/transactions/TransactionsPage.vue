@@ -14,7 +14,7 @@
                 </q-card-section>
             </q-card>
 
-            <!-- Income/Expense Cards -->
+            <!-- Income / Expense / Games Cards -->
             <div class="summary-row">
                 <q-card
                     class="summary-card summary-card--mini clickable"
@@ -22,25 +22,14 @@
                     bordered
                     @click="openBreakdown('income')"
                 >
-                    <q-card-section class="q-pa-sm">
-                        <div class="row items-center">
-                            <q-avatar
-                                size="32px"
-                                color="positive"
-                                text-color="white"
-                                class="q-mr-sm"
-                            >
-                                <q-icon name="arrow_downward" size="16px" />
-                            </q-avatar>
-                            <div>
-                                <div class="text-caption text-grey-6">
-                                    {{ t('transactions.income') }}
-                                </div>
-                                <div class="summary-value-mini text-positive">
-                                    {{ formattedIncome }}
-                                </div>
-                            </div>
+                    <q-card-section class="q-pa-sm column items-center text-center">
+                        <q-avatar size="30px" color="positive" text-color="white">
+                            <q-icon name="arrow_downward" size="16px" />
+                        </q-avatar>
+                        <div class="text-caption text-grey-6 q-mt-xs">
+                            {{ t('transactions.income') }}
                         </div>
+                        <div class="summary-value-mini text-positive">{{ formattedIncome }}</div>
                     </q-card-section>
                 </q-card>
 
@@ -50,24 +39,25 @@
                     bordered
                     @click="openBreakdown('expense')"
                 >
-                    <q-card-section class="q-pa-sm">
-                        <div class="row items-center">
-                            <q-avatar
-                                size="32px"
-                                color="negative"
-                                text-color="white"
-                                class="q-mr-sm"
-                            >
-                                <q-icon name="arrow_upward" size="16px" />
-                            </q-avatar>
-                            <div>
-                                <div class="text-caption text-grey-6">
-                                    {{ t('transactions.expense') }}
-                                </div>
-                                <div class="summary-value-mini text-negative">
-                                    {{ formattedExpense }}
-                                </div>
-                            </div>
+                    <q-card-section class="q-pa-sm column items-center text-center">
+                        <q-avatar size="30px" color="negative" text-color="white">
+                            <q-icon name="arrow_upward" size="16px" />
+                        </q-avatar>
+                        <div class="text-caption text-grey-6 q-mt-xs">
+                            {{ t('transactions.expense') }}
+                        </div>
+                        <div class="summary-value-mini text-negative">{{ formattedExpense }}</div>
+                    </q-card-section>
+                </q-card>
+
+                <q-card class="summary-card summary-card--mini" flat bordered>
+                    <q-card-section class="q-pa-sm column items-center text-center">
+                        <q-avatar size="30px" color="deep-orange" text-color="white">
+                            <q-icon name="casino" size="16px" />
+                        </q-avatar>
+                        <div class="text-caption text-grey-6 q-mt-xs">{{ t('games.title') }}</div>
+                        <div class="summary-value-mini" :class="gamesTextClass">
+                            {{ formattedGames }}
                         </div>
                     </q-card-section>
                 </q-card>
@@ -179,6 +169,10 @@ const projectStore = useProjectStore();
 const settingsStore = useSettingsStore();
 const exchangeRateStore = useExchangeRateStore();
 const investmentStore = useInvestmentStore();
+const gameStore = useGameStore();
+
+// Game transfer classification (deposits = expense, withdrawals = income)
+const { classifyTransfer } = useGameTransfers();
 
 // State
 const showDialog = ref(false);
@@ -326,6 +320,7 @@ const summary = computed(() => {
     const targetCurrency = defaultCurrency.value;
     let totalIncome = 0;
     let totalExpense = 0;
+    let totalGames = 0; // net game balance = transfers received - transfers sent
 
     for (const tx of txs) {
         // Get the wallet currency for this transaction
@@ -358,21 +353,35 @@ const summary = computed(() => {
             } else {
                 totalExpense += convertedAmount;
             }
-        } else if (tx.type === 'transfer' && tx.fee) {
-            // Convert fee as well
-            const convertedFee = exchangeRateStore.convertWithDefault(
-                tx.fee,
-                walletCurrency,
-                targetCurrency,
-            );
-            totalExpense += convertedFee;
+        } else if (tx.type === 'transfer') {
+            // Game transfers form a separate "games" bucket: received (withdrawal) minus
+            // sent (deposit). This avoids inflating expenses with money that is recovered.
+            const cls = classifyTransfer(tx);
+            if (cls) {
+                const converted = exchangeRateStore.convertWithDefault(
+                    cls.amount,
+                    cls.currency,
+                    targetCurrency,
+                );
+                if (cls.kind === 'withdrawal') totalGames += converted;
+                else totalGames -= converted;
+            } else if (tx.fee) {
+                // Regular (internal) transfer: only the fee is a real expense.
+                const convertedFee = exchangeRateStore.convertWithDefault(
+                    tx.fee,
+                    walletCurrency,
+                    targetCurrency,
+                );
+                totalExpense += convertedFee;
+            }
         }
     }
 
     return {
         totalIncome,
         totalExpense,
-        balance: totalIncome - totalExpense,
+        totalGames,
+        balance: totalIncome - totalExpense + totalGames,
         transactionCount: txs.length,
     };
 });
@@ -401,6 +410,14 @@ function formatAmount(amount: number): string {
 const formattedBalance = computed(() => formatAmount(summary.value.balance));
 const formattedIncome = computed(() => '+' + formatAmount(summary.value.totalIncome));
 const formattedExpense = computed(() => '-' + formatAmount(summary.value.totalExpense));
+const formattedGames = computed(() => {
+    const value = summary.value.totalGames;
+    const prefix = value >= 0 ? '+' : '';
+    return prefix + formatAmount(value);
+});
+const gamesTextClass = computed(() =>
+    summary.value.totalGames >= 0 ? 'text-positive' : 'text-negative',
+);
 
 // Load data
 onMounted(async () => {
@@ -413,6 +430,7 @@ onMounted(async () => {
         transactionStore.loadAll(),
         exchangeRateStore.loadAll(),
         investmentStore.loadAll(),
+        gameStore.loadAll(),
     ]);
 });
 
@@ -537,8 +555,9 @@ async function onDelete(tx: TransactionWithRelations): Promise<void> {
 }
 
 .summary-row {
-    display: flex;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
 }
 
 .summary-value {
@@ -548,8 +567,10 @@ async function onDelete(tx: TransactionWithRelations): Promise<void> {
 }
 
 .summary-value-mini {
-    font-size: 16px;
+    font-size: 15px;
     font-weight: 600;
+    white-space: nowrap;
+    line-height: 1.2;
 }
 
 .summary-currency {

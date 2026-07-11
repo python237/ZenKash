@@ -16,6 +16,8 @@ export interface Wallet {
     currency: CurrencyCode;
     /** Current balance, automatically updated with each transaction */
     balance: number;
+    /** Whether this wallet belongs to a game platform (excluded from balance reports) */
+    isGame: boolean;
     /** Timestamp when the wallet was created */
     createdAt: Date;
     /** Timestamp when the wallet was last updated */
@@ -35,6 +37,8 @@ export interface CreateWallet {
     currency: CurrencyCode;
     /** Initial balance (defaults to 0 if not specified) */
     balance?: number;
+    /** Whether this wallet belongs to a game platform (defaults to false) */
+    isGame?: boolean;
 }
 
 /**
