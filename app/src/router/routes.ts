@@ -58,12 +58,27 @@ const routes: RouteRecordRaw[] = [
                 name: 'game-detail',
                 component: () => import('pages/games/GameDetailPage.vue'),
             },
+            {
+                path: 'net-worth',
+                name: 'net-worth',
+                component: () => import('pages/dashboard/NetWorthPage.vue'),
+            },
             { path: 'more', name: 'more', component: () => import('pages/more/MorePage.vue') },
             // More menu pages
             {
                 path: 'budgets',
                 name: 'budgets',
                 component: () => import('pages/more/budgets/BudgetsPage.vue'),
+            },
+            {
+                path: 'recurring',
+                name: 'recurring',
+                component: () => import('pages/more/recurring/RecurringPage.vue'),
+            },
+            {
+                path: 'goals',
+                name: 'goals',
+                component: () => import('pages/more/goals/GoalsPage.vue'),
             },
             {
                 path: 'master-categories',

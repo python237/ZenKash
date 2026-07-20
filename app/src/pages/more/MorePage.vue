@@ -50,6 +50,52 @@
             </q-list>
         </q-card>
 
+        <!-- Section Planification -->
+        <div class="section-title">{{ $t('more.planning') }}</div>
+        <q-card flat class="menu-card">
+            <q-list>
+                <q-item clickable v-ripple to="/net-worth" class="menu-item">
+                    <q-item-section avatar>
+                        <q-avatar color="green-1" text-color="green-9" icon="show_chart" />
+                    </q-item-section>
+                    <q-item-section>
+                        <q-item-label>{{ $t('more.netWorth') }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                        <q-icon name="chevron_right" color="grey-5" />
+                    </q-item-section>
+                </q-item>
+
+                <q-separator inset="item" />
+
+                <q-item clickable v-ripple to="/recurring" class="menu-item">
+                    <q-item-section avatar>
+                        <q-avatar color="indigo-1" text-color="indigo-9" icon="autorenew" />
+                    </q-item-section>
+                    <q-item-section>
+                        <q-item-label>{{ $t('more.recurring') }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                        <q-icon name="chevron_right" color="grey-5" />
+                    </q-item-section>
+                </q-item>
+
+                <q-separator inset="item" />
+
+                <q-item clickable v-ripple to="/goals" class="menu-item">
+                    <q-item-section avatar>
+                        <q-avatar color="pink-1" text-color="pink-9" icon="flag" />
+                    </q-item-section>
+                    <q-item-section>
+                        <q-item-label>{{ $t('more.goals') }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                        <q-icon name="chevron_right" color="grey-5" />
+                    </q-item-section>
+                </q-item>
+            </q-list>
+        </q-card>
+
         <!-- Section Catégories -->
         <div class="section-title">{{ $t('more.categorization') }}</div>
         <q-card flat class="menu-card">

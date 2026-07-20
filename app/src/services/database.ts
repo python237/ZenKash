@@ -251,6 +251,53 @@ async function createTables(): Promise<void> {
       updated_at TEXT NOT NULL,
       FOREIGN KEY (game_id) REFERENCES games(id)
     );
+
+    CREATE TABLE IF NOT EXISTS net_worth_snapshots (
+      id TEXT PRIMARY KEY NOT NULL,
+      period TEXT NOT NULL UNIQUE,
+      date TEXT NOT NULL,
+      liquid REAL NOT NULL,
+      investments REAL NOT NULL,
+      games REAL NOT NULL,
+      total REAL NOT NULL,
+      currency TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS recurring_transactions (
+      id TEXT PRIMARY KEY NOT NULL,
+      type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
+      amount REAL NOT NULL,
+      category_id TEXT,
+      wallet_id TEXT NOT NULL,
+      description TEXT,
+      frequency TEXT NOT NULL CHECK(frequency IN ('weekly', 'monthly', 'yearly')),
+      interval_count INTEGER NOT NULL DEFAULT 1,
+      day_of_month INTEGER,
+      start_date TEXT NOT NULL,
+      end_date TEXT,
+      next_run TEXT NOT NULL,
+      last_run TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
+      auto_post INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (category_id) REFERENCES categories(id),
+      FOREIGN KEY (wallet_id) REFERENCES wallets(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS savings_goals (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      icon TEXT,
+      target_amount REAL NOT NULL,
+      wallet_id TEXT NOT NULL,
+      deadline TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (wallet_id) REFERENCES wallets(id)
+    );
   `;
 
     await db.execute(schema);

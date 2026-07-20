@@ -108,6 +108,80 @@
                 </q-item-section>
             </q-item>
         </q-list>
+
+        <!-- Security & Data Section -->
+        <div class="section-title">{{ t('settings.securityData') }}</div>
+
+        <q-list bordered class="rounded-borders q-mb-lg">
+            <!-- App lock -->
+            <q-item>
+                <q-item-section avatar>
+                    <q-icon name="lock" color="green" />
+                </q-item-section>
+                <q-item-section>
+                    <q-item-label>{{ t('appLock.title') }}</q-item-label>
+                    <q-item-label caption>{{ t('appLock.description') }}</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                    <q-toggle
+                        :model-value="appLockEnabled"
+                        color="primary"
+                        @update:model-value="toggleAppLock"
+                    />
+                </q-item-section>
+            </q-item>
+
+            <template v-if="appLockEnabled">
+                <q-separator />
+                <q-item clickable v-ripple @click="openChangePin">
+                    <q-item-section avatar>
+                        <q-icon name="pin" color="teal" />
+                    </q-item-section>
+                    <q-item-section>
+                        <q-item-label>{{ t('appLock.changePin') }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                        <q-icon name="chevron_right" color="grey-5" />
+                    </q-item-section>
+                </q-item>
+            </template>
+
+            <q-separator />
+
+            <!-- Export -->
+            <q-item clickable v-ripple @click="openExport">
+                <q-item-section avatar>
+                    <q-icon name="download" color="blue" />
+                </q-item-section>
+                <q-item-section>
+                    <q-item-label>{{ t('backup.export') }}</q-item-label>
+                    <q-item-label caption>{{ t('backup.exportCaption') }}</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                    <q-icon name="chevron_right" color="grey-5" />
+                </q-item-section>
+            </q-item>
+
+            <q-separator />
+
+            <!-- Import -->
+            <q-item clickable v-ripple @click="openImport">
+                <q-item-section avatar>
+                    <q-icon name="upload" color="deep-purple" />
+                </q-item-section>
+                <q-item-section>
+                    <q-item-label>{{ t('backup.import') }}</q-item-label>
+                    <q-item-label caption>{{ t('backup.importCaption') }}</q-item-label>
+                </q-item-section>
+                <q-item-section side>
+                    <q-icon name="chevron_right" color="grey-5" />
+                </q-item-section>
+            </q-item>
+        </q-list>
+
+        <!-- Dialogs -->
+        <PinDialog v-model="showPinDialog" :mode="pinMode" />
+        <BackupDialog v-model="showBackupDialog" :mode="backupMode" />
     </q-page>
 </template>
 
@@ -116,6 +190,9 @@ import { CURRENCIES } from 'src/types/currency';
 import { useSettingsStore } from 'src/stores/settings';
 import { useExchangeRateStore } from 'src/stores/exchange-rate';
 import { useReminder } from 'src/composables/useReminder';
+import { useAppLock } from 'src/composables/useAppLock';
+import PinDialog from 'src/components/app-lock/PinDialog.vue';
+import BackupDialog from 'src/components/settings/BackupDialog.vue';
 
 const { t } = useI18n();
 const router = useRouter();
@@ -123,6 +200,15 @@ usePage({ title: t('settings.title'), showHeader: true, showBack: true });
 
 const settingsStore = useSettingsStore();
 const exchangeRateStore = useExchangeRateStore();
+
+// App lock
+const { isEnabled: appLockEnabled, initialize: initializeAppLock } = useAppLock();
+const showPinDialog = ref(false);
+const pinMode = ref<'set' | 'change' | 'disable'>('set');
+
+// Backup
+const showBackupDialog = ref(false);
+const backupMode = ref<'export' | 'import'>('export');
 
 // Reminder system
 const {
@@ -140,6 +226,7 @@ const {
 onMounted(async () => {
     await settingsStore.loadSettings();
     await exchangeRateStore.loadAll();
+    await initializeAppLock();
     if (isNativePlatform.value) {
         await initializeReminder();
     }
@@ -181,6 +268,39 @@ async function toggleReminder(value: boolean): Promise<void> {
     } else {
         await disableReminder();
     }
+}
+
+/**
+ * Opens the PIN dialog to enable (set) or disable the app lock.
+ * @param value - The requested toggle state
+ */
+function toggleAppLock(value: boolean): void {
+    pinMode.value = value ? 'set' : 'disable';
+    showPinDialog.value = true;
+}
+
+/**
+ * Opens the PIN dialog to change the current PIN.
+ */
+function openChangePin(): void {
+    pinMode.value = 'change';
+    showPinDialog.value = true;
+}
+
+/**
+ * Opens the backup dialog in export mode.
+ */
+function openExport(): void {
+    backupMode.value = 'export';
+    showBackupDialog.value = true;
+}
+
+/**
+ * Opens the backup dialog in import mode.
+ */
+function openImport(): void {
+    backupMode.value = 'import';
+    showBackupDialog.value = true;
 }
 </script>
 

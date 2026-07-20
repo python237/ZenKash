@@ -36,6 +36,36 @@
             </q-card-section>
         </q-card>
 
+        <!-- Net Worth Card -->
+        <q-card
+            class="networth-card q-mb-md clickable"
+            flat
+            bordered
+            @click="router.push({ name: 'net-worth' })"
+        >
+            <q-card-section class="q-pa-md row items-center justify-between">
+                <div>
+                    <div class="text-caption text-grey-6">{{ t('netWorth.total') }}</div>
+                    <div class="text-h6 text-weight-bold q-mt-xs">
+                        {{ formatCurrency(netWorthTotal) }}
+                    </div>
+                    <div
+                        v-if="netWorthDelta"
+                        class="text-caption q-mt-xs"
+                        :class="netWorthDelta.amount >= 0 ? 'text-positive' : 'text-negative'"
+                    >
+                        <q-icon
+                            :name="netWorthDelta.amount >= 0 ? 'trending_up' : 'trending_down'"
+                            size="14px"
+                        />
+                        {{ netWorthDelta.percent > 0 ? '+' : '' }}{{ netWorthDelta.percent.toFixed(1) }}%
+                        {{ t('netWorth.vsPrevious') }}
+                    </div>
+                </div>
+                <q-icon name="show_chart" color="primary" size="28px" />
+            </q-card-section>
+        </q-card>
+
         <!-- Quick Stats Row -->
         <div class="stats-row q-mb-md">
             <!-- Income -->
@@ -262,6 +292,7 @@ import type { Wallet } from 'src/types/wallet';
 import type { BudgetWithStats } from 'src/types/budget';
 import { CURRENCIES, CurrencyCode } from 'src/types/currency';
 import { useBudgetStore } from 'src/stores/budget';
+import { useNetWorthStore } from 'src/stores/net-worth';
 import BtnIcon from 'src/components/buttons/BtnIcon.vue';
 
 // Register Chart.js components
@@ -282,6 +313,7 @@ const budgetStore = useBudgetStore();
 const settingsStore = useSettingsStore();
 const exchangeRateStore = useExchangeRateStore();
 const gameStore = useGameStore();
+const netWorthStore = useNetWorthStore();
 
 // Game transfer classification (deposits = expense, withdrawals = income)
 const { classifyTransfer } = useGameTransfers();
@@ -386,6 +418,10 @@ const globalBalance = computed(() => {
 });
 
 const formattedGlobalBalance = computed(() => formatCurrency(globalBalance.value));
+
+// Net worth (from latest snapshot, or live computation as fallback)
+const netWorthTotal = computed(() => netWorthStore.latest?.total ?? netWorthStore.computeCurrent().total);
+const netWorthDelta = computed(() => netWorthStore.deltaVsPrevious);
 
 // Monthly income/expenses
 const monthlyStats = computed(() => {
@@ -724,7 +760,10 @@ onMounted(async () => {
         projectStore.loadAll(),
         budgetStore.loadAll(),
         gameStore.loadAll(),
+        netWorthStore.loadAll(),
     ]);
+    // Keep the current-month net worth snapshot in sync
+    await netWorthStore.captureCurrent();
 });
 </script>
 
