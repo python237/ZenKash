@@ -198,8 +198,7 @@ async function save() {
         return;
     }
 
-    const transferAmount =
-        props.direction === 'withdraw' ? form.amount - form.fee : form.amount;
+    const transferAmount = props.direction === 'withdraw' ? form.amount - form.fee : form.amount;
 
     try {
         const transaction = await transactionStore.create({

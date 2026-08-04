@@ -1,7 +1,9 @@
 <template>
     <div class="pin-pad column items-center">
         <div class="text-subtitle1 text-weight-medium">{{ title }}</div>
-        <div v-if="subtitle" class="text-caption text-grey-6 q-mt-xs text-center">{{ subtitle }}</div>
+        <div v-if="subtitle" class="text-caption text-grey-6 q-mt-xs text-center">
+            {{ subtitle }}
+        </div>
 
         <!-- Dots -->
         <div class="pin-dots q-my-md">
@@ -13,7 +15,10 @@
             />
         </div>
 
-        <div class="pin-error text-caption text-negative" :class="{ 'pin-error--visible': !!error }">
+        <div
+            class="pin-error text-caption text-negative"
+            :class="{ 'pin-error--visible': !!error }"
+        >
             {{ error }}
         </div>
 

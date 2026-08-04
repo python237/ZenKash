@@ -50,6 +50,25 @@
             </q-list>
         </q-card>
 
+        <!-- Section Analyse -->
+        <div class="section-title">{{ $t('more.analysis') }}</div>
+        <q-card flat class="menu-card">
+            <q-list>
+                <q-item clickable v-ripple to="/analytics" class="menu-item">
+                    <q-item-section avatar>
+                        <q-avatar color="teal-1" text-color="teal-9" icon="insights" />
+                    </q-item-section>
+                    <q-item-section>
+                        <q-item-label>{{ $t('more.analytics') }}</q-item-label>
+                        <q-item-label caption>{{ $t('analytics.subtitle') }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                        <q-icon name="chevron_right" color="grey-5" />
+                    </q-item-section>
+                </q-item>
+            </q-list>
+        </q-card>
+
         <!-- Section Planification -->
         <div class="section-title">{{ $t('more.planning') }}</div>
         <q-card flat class="menu-card">

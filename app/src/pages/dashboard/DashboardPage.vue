@@ -58,11 +58,31 @@
                             :name="netWorthDelta.amount >= 0 ? 'trending_up' : 'trending_down'"
                             size="14px"
                         />
-                        {{ netWorthDelta.percent > 0 ? '+' : '' }}{{ netWorthDelta.percent.toFixed(1) }}%
+                        {{ netWorthDelta.percent > 0 ? '+' : ''
+                        }}{{ netWorthDelta.percent.toFixed(1) }}%
                         {{ t('netWorth.vsPrevious') }}
                     </div>
                 </div>
                 <q-icon name="show_chart" color="primary" size="28px" />
+            </q-card-section>
+        </q-card>
+
+        <!-- Analytics shortcut -->
+        <q-card
+            class="q-mb-md clickable-card"
+            flat
+            bordered
+            @click="router.push({ name: 'analytics' })"
+        >
+            <q-card-section class="row items-center q-pa-md">
+                <q-avatar color="teal-1" text-color="teal-9" size="48px" class="q-mr-md">
+                    <q-icon name="insights" size="24px" />
+                </q-avatar>
+                <div class="col">
+                    <div class="text-subtitle2 text-weight-medium">{{ t('analytics.title') }}</div>
+                    <div class="text-caption text-grey-6">{{ t('analytics.subtitle') }}</div>
+                </div>
+                <q-icon name="chevron_right" color="grey-5" size="24px" />
             </q-card-section>
         </q-card>
 
@@ -256,11 +276,7 @@
 
                 <!-- Legend -->
                 <div v-if="categoryDistribution.length > 0" class="pie-legend q-mt-md">
-                    <div
-                        v-for="item in categoryDistribution.slice(0, 6)"
-                        :key="item.id"
-                        class="legend-item"
-                    >
+                    <div v-for="item in categoryDistribution" :key="item.id" class="legend-item">
                         <span
                             class="legend-color"
                             :style="{ backgroundColor: item.chartColor }"
@@ -290,9 +306,10 @@ import type { MasterCategory } from 'src/types/master-category';
 import type { Category } from 'src/types/category';
 import type { Wallet } from 'src/types/wallet';
 import type { BudgetWithStats } from 'src/types/budget';
-import { CURRENCIES, CurrencyCode } from 'src/types/currency';
 import { useBudgetStore } from 'src/stores/budget';
 import { useNetWorthStore } from 'src/stores/net-worth';
+import { MAX_SERIES, OTHER_COLOR, colorAt } from 'src/services/chart';
+import { useCurrency } from 'src/composables/useCurrency';
 import BtnIcon from 'src/components/buttons/BtnIcon.vue';
 
 // Register Chart.js components
@@ -375,52 +392,24 @@ function nextMonth(): void {
     selectedMonth.value = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-// Currency
-const defaultCurrency = computed(() => settingsStore.defaultCurrency ?? CurrencyCode.XOF);
-const currencyInfo = computed(() => CURRENCIES[defaultCurrency.value]);
-
-// Currency formatting
-/**
- * Formats a numeric amount as a localized currency string.
- * Uses the user's default currency and locale settings.
- * @param {number} amount - The amount to format
- * @returns {string} The formatted currency string
- */
-function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency: defaultCurrency.value,
-        minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
-    }).format(amount);
-}
-
-/**
- * Formats a numeric value as a percentage string with one decimal place.
- * @param {number} value - The percentage value to format
- * @returns {string} The formatted percentage string (e.g., "45.5%")
- */
-function formatPercent(value: number): string {
-    return `${value.toFixed(1)}%`;
-}
+// Currency formatting and conversion (shared with every other money screen)
+const { formatCurrency, formatPercent, convert, convertFromWallet } = useCurrency();
 
 // Global balance (sum of non-game wallets converted to default currency).
 // Game wallets are excluded: their money may be locked on the platform.
 const globalBalance = computed(() => {
-    return walletStore.nonGameWallets.reduce((total: number, wallet: Wallet) => {
-        const converted = exchangeRateStore.convertWithDefault(
-            wallet.balance,
-            wallet.currency,
-            defaultCurrency.value,
-        );
-        return total + converted;
-    }, 0);
+    return walletStore.nonGameWallets.reduce(
+        (total: number, wallet: Wallet) => total + convert(wallet.balance, wallet.currency),
+        0,
+    );
 });
 
 const formattedGlobalBalance = computed(() => formatCurrency(globalBalance.value));
 
 // Net worth (from latest snapshot, or live computation as fallback)
-const netWorthTotal = computed(() => netWorthStore.latest?.total ?? netWorthStore.computeCurrent().total);
+const netWorthTotal = computed(
+    () => netWorthStore.latest?.total ?? netWorthStore.computeCurrent().total,
+);
 const netWorthDelta = computed(() => netWorthStore.deltaVsPrevious);
 
 // Monthly income/expenses
@@ -433,32 +422,15 @@ const monthlyStats = computed(() => {
 
     for (const tx of transactions) {
         if (tx.type === 'income') {
-            // Get wallet currency and convert
-            const wallet = walletStore.getWalletById(tx.walletId);
-            const currency = wallet?.currency ?? defaultCurrency.value;
-            income += exchangeRateStore.convertWithDefault(
-                tx.amount,
-                currency,
-                defaultCurrency.value,
-            );
+            income += convertFromWallet(tx.amount, tx.walletId);
         } else if (tx.type === 'expense') {
-            const wallet = walletStore.getWalletById(tx.walletId);
-            const currency = wallet?.currency ?? defaultCurrency.value;
-            expenses += exchangeRateStore.convertWithDefault(
-                tx.amount,
-                currency,
-                defaultCurrency.value,
-            );
+            expenses += convertFromWallet(tx.amount, tx.walletId);
         } else if (tx.type === 'transfer') {
             // Game transfers form a separate "games" bucket: received (withdrawal) minus
             // sent (deposit). Keeps income/expense clean and the net faithful.
             const cls = classifyTransfer(tx);
             if (cls) {
-                const converted = exchangeRateStore.convertWithDefault(
-                    cls.amount,
-                    cls.currency,
-                    defaultCurrency.value,
-                );
+                const converted = convert(cls.amount, cls.currency);
                 if (cls.kind === 'withdrawal') games += converted;
                 else games -= converted;
             }
@@ -501,25 +473,6 @@ interface DistributionItem {
     chartColor?: string;
 }
 
-// Chart colors palette
-const chartColors = [
-    '#4CAF50',
-    '#2196F3',
-    '#FF9800',
-    '#E91E63',
-    '#9C27B0',
-    '#00BCD4',
-    '#795548',
-    '#607D8B',
-    '#FF5722',
-    '#3F51B5',
-    '#8BC34A',
-    '#FFC107',
-    '#673AB7',
-    '#009688',
-    '#CDDC39',
-];
-
 const expenseDistribution = computed((): DistributionItem[] => {
     const transactions = transactionStore.filterTransactions({
         month: monthFilter.value,
@@ -536,13 +489,7 @@ const expenseDistribution = computed((): DistributionItem[] => {
         if (!category) continue;
 
         const masterCategoryId = category.masterCategoryId;
-        const wallet = walletStore.getWalletById(tx.walletId);
-        const currency = wallet?.currency ?? defaultCurrency.value;
-        const converted = exchangeRateStore.convertWithDefault(
-            tx.amount,
-            currency,
-            defaultCurrency.value,
-        );
+        const converted = convertFromWallet(tx.amount, tx.walletId);
 
         const current = byMasterCategory.get(masterCategoryId) ?? 0;
         byMasterCategory.set(masterCategoryId, current + converted);
@@ -588,17 +535,9 @@ const categoryDistribution = computed((): DistributionItem[] => {
     for (const tx of transactions) {
         if (tx.type !== 'expense') continue;
 
-        const categoryId = tx.categoryId;
-        const wallet = walletStore.getWalletById(tx.walletId);
-        const currency = wallet?.currency ?? defaultCurrency.value;
-        const converted = exchangeRateStore.convertWithDefault(
-            tx.amount,
-            currency,
-            defaultCurrency.value,
-        );
-
-        const current = byCategory.get(categoryId) ?? 0;
-        byCategory.set(categoryId, current + converted);
+        const converted = convertFromWallet(tx.amount, tx.walletId);
+        const current = byCategory.get(tx.categoryId) ?? 0;
+        byCategory.set(tx.categoryId, current + converted);
     }
 
     // Calculate total
@@ -609,25 +548,36 @@ const categoryDistribution = computed((): DistributionItem[] => {
 
     if (total === 0) return [];
 
-    // Build distribution items
-    const items: DistributionItem[] = [];
-    let colorIndex = 0;
+    // Build distribution items, largest first
+    const named: { id: string; name: string; amount: number }[] = [];
     for (const [catId, amount] of byCategory) {
         const cat = categoryStore.getCategoryById(catId) as Category | undefined;
         if (!cat) continue;
+        named.push({ id: catId, name: cat.name, amount });
+    }
+    named.sort((a, b) => b.amount - a.amount);
 
+    // The palette is never cycled: beyond its last slot the remainder is folded
+    // into a single "other" slice, so a color always means one category.
+    const items: DistributionItem[] = named.slice(0, MAX_SERIES).map((item, index) => ({
+        ...item,
+        percent: (item.amount / total) * 100,
+        chartColor: colorAt(index),
+    }));
+
+    const foldedAmount = named.slice(MAX_SERIES).reduce((sum, item) => sum + item.amount, 0);
+
+    if (foldedAmount > 0) {
         items.push({
-            id: catId,
-            name: cat.name,
-            amount,
-            percent: (amount / total) * 100,
-            chartColor: chartColors[colorIndex % chartColors.length] ?? '#999',
+            id: 'other',
+            name: t('analytics.other'),
+            amount: foldedAmount,
+            percent: (foldedAmount / total) * 100,
+            chartColor: OTHER_COLOR,
         });
-        colorIndex++;
     }
 
-    // Sort by amount descending
-    return items.sort((a, b) => b.amount - a.amount);
+    return items;
 });
 
 // Pie chart data

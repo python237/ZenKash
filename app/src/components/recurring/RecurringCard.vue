@@ -1,5 +1,10 @@
 <template>
-    <q-card class="recurring-card" :class="{ 'recurring-card--inactive': !recurring.isActive }" flat bordered>
+    <q-card
+        class="recurring-card"
+        :class="{ 'recurring-card--inactive': !recurring.isActive }"
+        flat
+        bordered
+    >
         <q-card-section class="q-pa-md">
             <div class="row items-center no-wrap">
                 <q-avatar :color="avatarColor" text-color="white" size="40px" class="q-mr-md">
@@ -8,7 +13,9 @@
 
                 <div class="col clickable" @click="$emit('click')">
                     <div class="text-subtitle2 text-weight-medium">{{ categoryName }}</div>
-                    <div class="text-caption text-grey-6">{{ frequencyLabel }} · {{ walletName }}</div>
+                    <div class="text-caption text-grey-6">
+                        {{ frequencyLabel }} · {{ walletName }}
+                    </div>
                 </div>
 
                 <div class="text-right q-mr-sm clickable" @click="$emit('click')">
@@ -67,9 +74,7 @@ const amountSign = computed(() => (isIncome.value ? '+' : '-'));
 const categoryName = computed(
     () => categoryStore.getCategoryById(props.recurring.categoryId)?.name ?? '—',
 );
-const walletName = computed(
-    () => walletStore.getWalletById(props.recurring.walletId)?.name ?? '—',
-);
+const walletName = computed(() => walletStore.getWalletById(props.recurring.walletId)?.name ?? '—');
 
 const formattedAmount = computed(() => {
     const info = CURRENCIES[props.currency];
@@ -82,9 +87,11 @@ const formattedAmount = computed(() => {
 });
 
 const formattedNextRun = computed(() =>
-    new Intl.DateTimeFormat(locale.value, { day: 'numeric', month: 'short', year: 'numeric' }).format(
-        props.recurring.nextRun,
-    ),
+    new Intl.DateTimeFormat(locale.value, {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+    }).format(props.recurring.nextRun),
 );
 
 const frequencyLabel = computed(() => {

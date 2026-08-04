@@ -4,9 +4,14 @@
         <q-card class="networth-card bg-dark text-white q-mb-md" flat>
             <q-card-section class="q-pa-md">
                 <div class="text-caption text-grey-5">{{ t('netWorth.total') }}</div>
-                <div class="text-h4 text-weight-bold q-mt-xs">{{ formatCurrency(current.total) }}</div>
+                <div class="text-h4 text-weight-bold q-mt-xs">
+                    {{ formatCurrency(current.total) }}
+                </div>
                 <div v-if="delta" class="text-caption q-mt-xs" :class="deltaClass">
-                    <q-icon :name="delta.amount >= 0 ? 'trending_up' : 'trending_down'" size="14px" />
+                    <q-icon
+                        :name="delta.amount >= 0 ? 'trending_up' : 'trending_down'"
+                        size="14px"
+                    />
                     {{ formatSignedCurrency(delta.amount) }} ({{ formatPercent(delta.percent) }})
                     <span class="text-grey-5">{{ t('netWorth.vsPrevious') }}</span>
                 </div>
@@ -105,9 +110,9 @@ import {
     type ChartData,
     type ChartOptions,
 } from 'chart.js';
-import { CURRENCIES, CurrencyCode } from 'src/types/currency';
 import type { NetWorthComponents } from 'src/types/net-worth-snapshot';
 import { useNetWorthStore } from 'src/stores/net-worth';
+import { useCurrency } from 'src/composables/useCurrency';
 import BtnPrimary from 'src/components/buttons/BtnPrimary.vue';
 
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend, Filler);
@@ -121,41 +126,16 @@ const investmentStore = useInvestmentStore();
 const exchangeRateStore = useExchangeRateStore();
 const settingsStore = useSettingsStore();
 
-const defaultCurrency = computed(() => settingsStore.defaultCurrency ?? CurrencyCode.XOF);
-const currencyInfo = computed(() => CURRENCIES[defaultCurrency.value]);
+// Currency formatting and conversion (shared with every other money screen)
+const { formatCurrency, formatSignedCurrency, formatPercent: formatPercentValue } = useCurrency();
 
 /**
- * Formats an amount as a localized currency string.
- * @param amount - The amount to format
- * @returns The formatted currency string
- */
-function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency: defaultCurrency.value,
-        minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
-    }).format(amount);
-}
-
-/**
- * Formats an amount with an explicit sign prefix.
- * @param amount - The amount to format
- * @returns The signed currency string
- */
-function formatSignedCurrency(amount: number): string {
-    const sign = amount >= 0 ? '+' : '';
-    return `${sign}${formatCurrency(amount)}`;
-}
-
-/**
- * Formats a percentage value.
+ * Formats a percentage value with an explicit sign on gains.
  * @param value - The percentage value
  * @returns The formatted percentage string
  */
 function formatPercent(value: number): string {
-    const sign = value > 0 ? '+' : '';
-    return `${sign}${value.toFixed(1)}%`;
+    return formatPercentValue(value, { signed: true });
 }
 
 /**

@@ -63,6 +63,11 @@ const routes: RouteRecordRaw[] = [
                 name: 'net-worth',
                 component: () => import('pages/dashboard/NetWorthPage.vue'),
             },
+            {
+                path: 'analytics',
+                name: 'analytics',
+                component: () => import('pages/analytics/AnalyticsPage.vue'),
+            },
             { path: 'more', name: 'more', component: () => import('pages/more/MorePage.vue') },
             // More menu pages
             {

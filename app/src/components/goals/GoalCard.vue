@@ -12,7 +12,8 @@
                         {{ t('goals.walletMissing') }}
                     </div>
                     <div v-else class="text-caption text-grey-6">
-                        {{ formatCurrency(goal.currentAmount) }} / {{ formatCurrency(goal.targetAmount) }}
+                        {{ formatCurrency(goal.currentAmount) }} /
+                        {{ formatCurrency(goal.targetAmount) }}
                     </div>
                 </div>
                 <BtnIcon dense icon="delete" color="negative" @click="$emit('delete')" />
@@ -36,10 +37,17 @@
                     </template>
                 </div>
                 <div v-if="goal.deadline" class="text-caption row items-center q-gutter-xs">
-                    <q-badge v-if="goal.onTrack !== null && !goal.isReached" :color="badgeColor" outline>
+                    <q-badge
+                        v-if="goal.onTrack !== null && !goal.isReached"
+                        :color="badgeColor"
+                        outline
+                    >
                         {{ goal.onTrack ? t('goals.onTrack') : t('goals.behind') }}
                     </q-badge>
-                    <span v-if="!goal.isReached && goal.requiredMonthly !== null" class="text-grey-7">
+                    <span
+                        v-if="!goal.isReached && goal.requiredMonthly !== null"
+                        class="text-grey-7"
+                    >
                         {{ t('goals.requiredMonthly') }}
                         {{ formatCurrency(goal.requiredMonthly) }}{{ t('goals.perMonth') }}
                     </span>

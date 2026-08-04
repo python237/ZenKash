@@ -10,6 +10,7 @@
 - 🚀 **Projets** - Suivi des investissements startup/crowdfunding et ROI
 - 💰 **Budgets** - Budgets mensuels avec alertes
 - 💳 **Portefeuilles** - Plusieurs portefeuilles (espèces, banque, mobile money, etc.)
+- 🔎 **Analyse** - Répartition des dépenses sur toute période, filtres avancés et drill-down
 
 ## Stack Technique
 

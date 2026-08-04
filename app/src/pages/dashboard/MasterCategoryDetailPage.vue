@@ -148,7 +148,8 @@ import {
 } from 'chart.js';
 import type { MasterCategory } from 'src/types/master-category';
 import type { Category } from 'src/types/category';
-import { CURRENCIES, CurrencyCode } from 'src/types/currency';
+import { MAX_SERIES, OTHER_COLOR, colorAt } from 'src/services/chart';
+import { useCurrency } from 'src/composables/useCurrency';
 import BtnIcon from 'src/components/buttons/BtnIcon.vue';
 
 // Register Chart.js components
@@ -245,53 +246,8 @@ function nextMonth(): void {
     selectedMonth.value = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`;
 }
 
-// Currency
-const defaultCurrency = computed(() => settingsStore.defaultCurrency ?? CurrencyCode.XOF);
-const currencyInfo = computed(() => CURRENCIES[defaultCurrency.value]);
-
-// Currency formatting
-/**
- * Formats a numeric amount as a localized currency string.
- * Uses the user's default currency and locale settings.
- * @param {number} amount - The amount to format
- * @returns {string} The formatted currency string
- */
-function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency: defaultCurrency.value,
-        minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
-    }).format(amount);
-}
-
-/**
- * Formats a numeric value as a percentage string with one decimal place.
- * @param {number} value - The percentage value to format
- * @returns {string} The formatted percentage string (e.g., "45.5%")
- */
-function formatPercent(value: number): string {
-    return `${value.toFixed(1)}%`;
-}
-
-// Chart colors palette
-const chartColors = [
-    '#4CAF50',
-    '#2196F3',
-    '#FF9800',
-    '#E91E63',
-    '#9C27B0',
-    '#00BCD4',
-    '#795548',
-    '#607D8B',
-    '#FF5722',
-    '#3F51B5',
-    '#8BC34A',
-    '#FFC107',
-    '#673AB7',
-    '#009688',
-    '#CDDC39',
-];
+// Currency formatting and conversion (shared with every other money screen)
+const { formatCurrency, formatPercent, convertFromWallet } = useCurrency();
 
 // Category distribution
 /**
@@ -324,13 +280,7 @@ const categoryDistribution = computed((): CategoryDistributionItem[] => {
         if (tx.type !== 'expense') continue;
         if (!categoryIds.has(tx.categoryId)) continue;
 
-        const wallet = walletStore.getWalletById(tx.walletId);
-        const currency = wallet?.currency ?? defaultCurrency.value;
-        const converted = exchangeRateStore.convertWithDefault(
-            tx.amount,
-            currency,
-            defaultCurrency.value,
-        );
+        const converted = convertFromWallet(tx.amount, tx.walletId);
 
         const current = byCategory.get(tx.categoryId) ?? { amount: 0, count: 0 };
         byCategory.set(tx.categoryId, {
@@ -347,27 +297,42 @@ const categoryDistribution = computed((): CategoryDistributionItem[] => {
 
     if (total === 0) return [];
 
-    // Build distribution items
-    const items: CategoryDistributionItem[] = [];
-    let colorIndex = 0;
+    // Build distribution items, largest first
+    const named: { id: string; name: string; icon: string; amount: number; count: number }[] = [];
     for (const [catId, { amount, count }] of byCategory) {
         const cat = categoryStore.getCategoryById(catId) as Category | undefined;
         if (!cat) continue;
+        named.push({ id: catId, name: cat.name, icon: cat.icon, amount, count });
+    }
+    named.sort((a, b) => b.amount - a.amount);
 
+    // The palette is never cycled: beyond its last slot the remainder is folded
+    // into a single "other" row, so a color always means one category.
+    const items: CategoryDistributionItem[] = named.slice(0, MAX_SERIES).map((item, index) => ({
+        id: item.id,
+        name: item.name,
+        icon: item.icon,
+        amount: item.amount,
+        percent: (item.amount / total) * 100,
+        transactionCount: item.count,
+        chartColor: colorAt(index),
+    }));
+
+    const folded = named.slice(MAX_SERIES);
+    if (folded.length > 0) {
+        const amount = folded.reduce((sum, item) => sum + item.amount, 0);
         items.push({
-            id: catId,
-            name: cat.name,
-            icon: cat.icon,
+            id: 'other',
+            name: t('analytics.other'),
+            icon: 'more_horiz',
             amount,
             percent: (amount / total) * 100,
-            transactionCount: count,
-            chartColor: chartColors[colorIndex % chartColors.length] ?? '#999',
+            transactionCount: folded.reduce((sum, item) => sum + item.count, 0),
+            chartColor: OTHER_COLOR,
         });
-        colorIndex++;
     }
 
-    // Sort by amount descending
-    return items.sort((a, b) => b.amount - a.amount);
+    return items;
 });
 
 // Total amount

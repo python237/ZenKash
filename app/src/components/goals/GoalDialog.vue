@@ -7,11 +7,7 @@
     >
         <q-form @submit.prevent="save" class="q-gutter-md">
             <!-- Name -->
-            <InputSingle
-                v-model="form.name"
-                :label="t('goals.name')"
-                :error="errors.name"
-            />
+            <InputSingle v-model="form.name" :label="t('goals.name')" :error="errors.name" />
 
             <!-- Target amount -->
             <InputNumber

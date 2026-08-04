@@ -7,7 +7,9 @@
                 <div class="text-h5 text-weight-bold q-mt-xs">
                     {{ formatCurrency(projectedBalance) }}
                 </div>
-                <div class="text-caption text-grey-5 q-mt-xs">{{ t('recurring.projectedHint') }}</div>
+                <div class="text-caption text-grey-5 q-mt-xs">
+                    {{ t('recurring.projectedHint') }}
+                </div>
             </q-card-section>
         </q-card>
 
@@ -99,7 +101,8 @@ function formatCurrency(amount: number): string {
 const currentLiquid = computed(() =>
     walletStore.nonGameWallets.reduce(
         (sum: number, w: Wallet) =>
-            sum + exchangeRateStore.convertWithDefault(w.balance, w.currency, defaultCurrency.value),
+            sum +
+            exchangeRateStore.convertWithDefault(w.balance, w.currency, defaultCurrency.value),
         0,
     ),
 );

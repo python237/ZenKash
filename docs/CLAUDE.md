@@ -314,6 +314,44 @@ Always use custom wrappers in `src/components/`.
 <q-input v-model.number="form.amount" type="number" />
 ```
 
+### Money & Charts
+
+⚠️ **STRICT RULE**: never format or convert an amount inline in a page.
+
+| Concern | Use | Never |
+|---------|-----|-------|
+| Formatting an amount | `useCurrency().formatCurrency()` | a local `Intl.NumberFormat` |
+| Converting a wallet amount | `useCurrency().convertFromWallet()` | `exchangeRateStore.convertWithDefault()` in a page |
+| Chart colors | `CHART_COLORS` / `colorAt()` from `services/chart` | a local palette array |
+| Aggregating transactions | `services/analytics` through `useAnalytics()` | a bespoke `reduce` in a page |
+
+The conversion rule (per wallet currency, through the exchange-rate store) is what
+keeps the dashboard, the reports and the analytics screens in agreement — a local
+copy is how the figures start to diverge.
+
+The categorical palette is **validated** for colorblind separation and is
+assigned in fixed order, **never cycled**: past `MAX_SERIES` entries, fold the
+remainder into a single "other" bucket (`t('analytics.other')`) instead of
+reusing a color. Every chart using it also ships a legend with values and a list
+view, because three of its slots sit below 3:1 contrast on a white card.
+
+### Analytics Layer
+
+```
+types/analytics.ts       Period, filters, NormalizedFlow, breakdown rows
+services/analytics.ts    pure aggregation (no Vue, no Pinia — injected context)
+composables/useAnalytics.ts        reactive dataset (labels, colors, deltas)
+composables/useAnalyticsFilters.ts shared filter state (module scope)
+```
+
+A **flow** is one directional movement of money derived from a transaction; a
+transaction can yield several (a transfer with a fee). Everything is aggregated
+on flows, never directly on transactions, and the pipeline is always
+`toFlows() → selectFlows() → summarize()/aggregateBy()`.
+
+`services/analytics.ts` receives its store lookups through an
+`AnalyticsContext`, so it stays pure and testable — keep it that way.
+
 ### Naming Conventions
 - **Files**: kebab-case (`transaction-list.vue`, `use-currency.ts`)
 - **Components**: PascalCase (`TransactionList.vue`)

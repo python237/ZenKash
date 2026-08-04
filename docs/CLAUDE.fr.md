@@ -316,6 +316,45 @@ Always use custom wrappers in `src/components/`. / Toujours utiliser les wrapper
 <q-input v-model.number="form.amount" type="number" />
 ```
 
+### Montants & graphiques
+
+⚠️ **RÈGLE STRICTE** : ne jamais formater ni convertir un montant directement dans une page.
+
+| Besoin | Utiliser | Jamais |
+|--------|----------|--------|
+| Formater un montant | `useCurrency().formatCurrency()` | un `Intl.NumberFormat` local |
+| Convertir un montant de portefeuille | `useCurrency().convertFromWallet()` | `exchangeRateStore.convertWithDefault()` dans une page |
+| Couleurs de graphique | `CHART_COLORS` / `colorAt()` de `services/chart` | un tableau de couleurs local |
+| Agréger des transactions | `services/analytics` via `useAnalytics()` | un `reduce` maison dans une page |
+
+La règle de conversion (par devise de portefeuille, via le store de taux de change)
+est ce qui garde le dashboard, les rapports et les écrans d'analyse d'accord entre
+eux — une copie locale, c'est le début de la divergence des chiffres.
+
+La palette catégorielle est **validée** pour la séparation daltonienne et
+s'assigne dans un ordre fixe, **jamais cyclé** : au-delà de `MAX_SERIES` entrées,
+regrouper le reste dans un unique bucket « autres » (`t('analytics.other')`)
+plutôt que de réutiliser une couleur. Tout graphique l'utilisant embarque aussi
+une légende avec les valeurs et une vue liste, car trois de ses slots passent sous
+3:1 de contraste sur une carte blanche.
+
+### Couche analytique
+
+```
+types/analytics.ts       Période, filtres, NormalizedFlow, lignes de répartition
+services/analytics.ts    agrégation pure (sans Vue ni Pinia — contexte injecté)
+composables/useAnalytics.ts        dataset réactif (libellés, couleurs, deltas)
+composables/useAnalyticsFilters.ts état de filtres partagé (portée module)
+```
+
+Un **flow** est un mouvement d'argent directionnel dérivé d'une transaction ; une
+transaction peut en produire plusieurs (un transfert avec frais). Tout est agrégé
+sur les flows, jamais directement sur les transactions, et le pipeline est
+toujours `toFlows() → selectFlows() → summarize()/aggregateBy()`.
+
+`services/analytics.ts` reçoit ses accès aux stores via un `AnalyticsContext` :
+il reste pur et testable — le garder ainsi.
+
 ### Naming Conventions
 - **Files**: kebab-case (`transaction-list.vue`, `use-currency.ts`)
 - **Components**: PascalCase (`TransactionList.vue`)

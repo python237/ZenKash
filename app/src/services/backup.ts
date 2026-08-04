@@ -176,8 +176,7 @@ export function pickBackupFile(): Promise<string | null> {
                 return;
             }
             const reader = new FileReader();
-            reader.onload = () =>
-                resolve(typeof reader.result === 'string' ? reader.result : '');
+            reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
             reader.onerror = () => reject(new Error('READ_ERROR'));
             reader.readAsText(file);
         };

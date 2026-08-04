@@ -62,11 +62,7 @@ const toDelete = ref<SavingsGoal | null>(null);
 const goals = computed(() => goalStore.goalsWithStats);
 
 onMounted(async () => {
-    await Promise.all([
-        settingsStore.loadSettings(),
-        goalStore.loadAll(),
-        walletStore.loadAll(),
-    ]);
+    await Promise.all([settingsStore.loadSettings(), goalStore.loadAll(), walletStore.loadAll()]);
 });
 
 /**

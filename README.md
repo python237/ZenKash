@@ -10,6 +10,7 @@
 - 🚀 **Projects** - Track startup/crowdfunding investments and ROI
 - 💰 **Budgets** - Monthly budgets with alerts
 - 💳 **Wallets** - Multiple wallets (cash, bank, mobile money, etc.)
+- 🔎 **Analytics** - Spending breakdown over any period, with advanced filters and drill-down
 
 ## Tech Stack
 
