@@ -348,7 +348,13 @@ composables/useAnalyticsFilters.ts état de filtres partagé (portée module)
 ```
 
 Un **flow** est un mouvement d'argent directionnel dérivé d'une transaction ; une
-transaction peut en produire plusieurs (un transfert avec frais). Tout est agrégé
+transaction peut en produire plusieurs (un transfert avec frais). Chaque flow porte
+une `nature` : **une sortie n'est pas automatiquement une dépense**. Les injections
+de projet et les dépôts jeux sont des `allocation` (argent réalloué), les dépenses
+et frais de transfert sont de la `consumption`. Ne jamais sommer les deux dans un
+chiffre intitulé « dépenses » : ça gonfle les dépenses et écrase le taux d'épargne.
+Les achats/ventes d'investissement vivent dans `investment_transactions` et
+n'entrent jamais dans les flows. Tout est agrégé
 sur les flows, jamais directement sur les transactions, et le pipeline est
 toujours `toFlows() → selectFlows() → summarize()/aggregateBy()`. Les séries
 temporelles passent par `bucketsFor() → buildSeries()/buildComparison()`, et

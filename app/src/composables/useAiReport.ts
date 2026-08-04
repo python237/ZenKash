@@ -97,7 +97,13 @@ export function useAiReport() {
      * @returns The lines, largest first, capped to {@link GROUP_LIMIT}
      */
     function groupsFor(flows: NormalizedFlow[], direction: 'in' | 'out'): ReportGroup[] {
-        const directional = flows.filter((flow) => flow.direction === direction);
+        // The expense side lists consumption only; allocations are reported as
+        // their own total so they are never read as spending.
+        const directional = flows.filter(
+            (flow) =>
+                flow.direction === direction &&
+                (direction === 'in' || flow.nature !== 'allocation'),
+        );
         const buckets = aggregateBy(directional, (flow) => flow.masterCategoryId ?? 'other');
         const total = buckets.reduce((sum, bucket) => sum + bucket.amount, 0);
 
@@ -140,7 +146,7 @@ export function useAiReport() {
         const months: ReportMonth[] = buildComparison(flows, buckets, 'month').map((point) => ({
             label: monthLabel(point.start),
             inflow: point.inflow,
-            outflow: point.outflow,
+            outflow: point.spending,
             net: point.net,
             savingsRate: point.savingsRate,
         }));
@@ -178,7 +184,8 @@ export function useAiReport() {
             periodLabel: `${monthLabel(range.start)} – ${monthLabel(range.end)}`,
             totals: {
                 inflow: totals.inflow,
-                outflow: totals.outflow,
+                spending: totals.spending,
+                allocated: totals.allocated,
                 net: totals.net,
                 savingsRate: totals.savingsRate,
             },

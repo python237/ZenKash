@@ -41,7 +41,15 @@
             map-options
             clearable
             class="q-mb-md"
-        />
+        >
+            <template #after-options>
+                <q-item v-close-popup clickable class="done-option">
+                    <q-item-section class="text-primary text-weight-medium text-center">
+                        {{ t('common.close') }}
+                    </q-item-section>
+                </q-item>
+            </template>
+        </q-select>
 
         <!-- Categories -->
         <q-select
@@ -59,7 +67,15 @@
             input-debounce="0"
             class="q-mb-md"
             @filter="filterCategories"
-        />
+        >
+            <template #after-options>
+                <q-item v-close-popup clickable class="done-option">
+                    <q-item-section class="text-primary text-weight-medium text-center">
+                        {{ t('common.close') }}
+                    </q-item-section>
+                </q-item>
+            </template>
+        </q-select>
 
         <!-- Wallets -->
         <q-select
@@ -74,7 +90,15 @@
             map-options
             clearable
             class="q-mb-md"
-        />
+        >
+            <template #after-options>
+                <q-item v-close-popup clickable class="done-option">
+                    <q-item-section class="text-primary text-weight-medium text-center">
+                        {{ t('common.close') }}
+                    </q-item-section>
+                </q-item>
+            </template>
+        </q-select>
 
         <!-- Amount bounds -->
         <div class="row q-col-gutter-sm q-mb-md">
@@ -261,6 +285,13 @@ onMounted(() => {
 </script>
 
 <style lang="scss" scoped>
+.done-option {
+    border-top: 1px solid $border-light;
+    position: sticky;
+    bottom: 0;
+    background: $bg-card;
+}
+
 .field-label {
     font-size: 13px;
     font-weight: 600;

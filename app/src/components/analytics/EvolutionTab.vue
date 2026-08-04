@@ -295,7 +295,7 @@ const tableRows = computed(() => {
 
 .legend {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 8px;
 }
 
@@ -303,6 +303,7 @@ const tableRows = computed(() => {
     display: flex;
     align-items: center;
     gap: 6px;
+    min-width: 0;
 }
 
 .legend-color {
@@ -314,6 +315,7 @@ const tableRows = computed(() => {
 
 .legend-label {
     flex: 1;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

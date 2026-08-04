@@ -428,6 +428,7 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     gap: 8px;
+    min-width: 0;
 }
 
 .legend-color {
@@ -439,6 +440,7 @@ onMounted(async () => {
 
 .legend-label {
     flex: 1;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

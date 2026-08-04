@@ -48,6 +48,8 @@ interface ReportLabels {
     expenses: string;
     /** "Net" */
     net: string;
+    /** "Allocated" */
+    allocated: string;
     /** "Savings rate" */
     savingsRate: string;
     /** "Share of income" */
@@ -103,6 +105,7 @@ const LABELS: Record<ReportLanguage, ReportLabels> = {
         income: 'Revenus',
         expenses: 'Dépenses',
         net: 'Net',
+        allocated: 'Alloué (projets, jeux — non dépensé)',
         savingsRate: "Taux d'épargne",
         shareOfIncome: 'Part des revenus',
         monthByMonth: 'Mois par mois',
@@ -141,6 +144,7 @@ const LABELS: Record<ReportLanguage, ReportLabels> = {
         income: 'Income',
         expenses: 'Expenses',
         net: 'Net',
+        allocated: 'Allocated (projects, games — not spent)',
         savingsRate: 'Savings rate',
         shareOfIncome: 'Share of income',
         monthByMonth: 'Month by month',
@@ -216,19 +220,24 @@ export function buildAiReport(
     }
     lines.push(label.noDescriptions, '', `**${label.period}** : ${data.periodLabel}`, '');
 
-    // Overview
-    const { inflow, outflow, net, savingsRate } = data.totals;
+    // Overview. Spending and allocation are reported separately: money put into a
+    // project or onto a game platform is reallocated, not consumed.
+    const { inflow, spending, allocated, net, savingsRate } = data.totals;
     lines.push(`## ${label.overview}`, '');
     if (withAmounts) {
         lines.push(
             `- ${label.income} : ${format.amount(inflow)}`,
-            `- ${label.expenses} : ${format.amount(outflow)}`,
-            `- ${label.net} : ${format.amount(net)}`,
+            `- ${label.expenses} : ${format.amount(spending)}`,
         );
+        if (allocated > 0) lines.push(`- ${label.allocated} : ${format.amount(allocated)}`);
+        lines.push(`- ${label.net} : ${format.amount(net)}`);
     } else {
-        lines.push(
-            `- ${label.expenses} (${label.shareOfIncome}) : ${value(outflow, inflow)}`,
-        );
+        lines.push(`- ${label.expenses} (${label.shareOfIncome}) : ${value(spending, inflow)}`);
+        if (allocated > 0) {
+            lines.push(
+                `- ${label.allocated} (${label.shareOfIncome}) : ${value(allocated, inflow)}`,
+            );
+        }
     }
     lines.push(`- ${label.savingsRate} : ${format.percent(savingsRate)}`, '');
 

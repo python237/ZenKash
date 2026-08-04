@@ -60,7 +60,6 @@
                     </q-item-section>
                     <q-item-section>
                         <q-item-label>{{ $t('more.analytics') }}</q-item-label>
-                        <q-item-label caption>{{ $t('analytics.subtitle') }}</q-item-label>
                     </q-item-section>
                     <q-item-section side>
                         <q-icon name="chevron_right" color="grey-5" />

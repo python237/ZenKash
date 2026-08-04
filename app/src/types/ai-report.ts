@@ -30,7 +30,7 @@ export interface ReportMonth {
     label: string;
     /** Incoming flows */
     inflow: number;
-    /** Outgoing flows */
+    /** Outgoing flows actually consumed */
     outflow: number;
     /** `inflow - outflow` */
     net: number;
@@ -90,11 +90,13 @@ export interface AiReportData {
     totals: {
         /** Incoming flows */
         inflow: number;
-        /** Outgoing flows */
-        outflow: number;
-        /** `inflow - outflow` */
+        /** Outgoing flows actually consumed */
+        spending: number;
+        /** Outgoing flows reallocated (projects, games), never counted as spending */
+        allocated: number;
+        /** `inflow - spending - allocated` */
         net: number;
-        /** `net / inflow` in percent */
+        /** Share of income not consumed, in percent */
         savingsRate: number;
     };
     /** Month-by-month figures, oldest first */

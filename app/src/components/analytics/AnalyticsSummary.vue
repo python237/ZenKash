@@ -3,9 +3,14 @@
         <!-- Hero: total outflow over the period -->
         <q-card class="hero-card bg-dark text-white q-mb-md" flat>
             <q-card-section class="q-pa-md">
-                <div class="text-caption text-grey-5">{{ t('analytics.totalSpent') }}</div>
+                <div class="text-caption text-grey-5">{{ heroLabel }}</div>
                 <div class="text-h4 text-weight-bold q-mt-xs">
                     {{ formatCurrency(summary.outflow) }}
+                </div>
+                <!-- Reallocated money is never folded into the spending figure -->
+                <div v-if="summary.allocated > 0" class="text-caption text-grey-5 q-mt-xs">
+                    {{ t('analytics.ofWhichSpent') }} {{ formatCurrency(summary.spending) }} ·
+                    {{ t('analytics.ofWhichAllocated') }} {{ formatCurrency(summary.allocated) }}
                 </div>
                 <div class="text-caption q-mt-xs" :class="deltaClass">
                     <q-icon :name="deltaIcon" size="14px" />
@@ -32,7 +37,7 @@
 
             <q-card class="stat-card" flat bordered>
                 <q-card-section class="q-pa-sm text-center">
-                    <div class="text-caption text-grey-6">{{ t('analytics.largestExpense') }}</div>
+                    <div class="text-caption text-grey-6">{{ t('analytics.largestOutflow') }}</div>
                     <div class="text-subtitle2 text-weight-bold">
                         {{ formatCurrency(summary.largestOutflow) }}
                     </div>
@@ -74,6 +79,11 @@ const props = defineProps<{
 
 const { t } = useI18n();
 const { formatCurrency, formatSignedCurrency, formatPercent } = useCurrency();
+
+// The headline only claims "spent" when nothing was merely reallocated.
+const heroLabel = computed(() =>
+    props.summary.allocated > 0 ? t('analytics.totalOutflow') : t('analytics.totalSpent'),
+);
 
 // Spending more than the previous period is the negative outcome here, so the
 // color mapping is inverted compared with a balance.

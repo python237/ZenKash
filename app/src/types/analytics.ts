@@ -32,6 +32,19 @@ export type BreakdownDimension = 'masterCategory' | 'category' | 'wallet';
 export type FlowDirection = 'in' | 'out';
 
 /**
+ * What a flow economically *is*, which is not the same thing as its direction.
+ *
+ * Money put into a project or moved onto a game platform leaves the wallet but is
+ * **not consumed**: it is reallocated. Counting it as spending would inflate the
+ * expense figures and crush the savings rate, so the two are kept apart:
+ * - `consumption` — money actually spent (expenses, transfer fees)
+ * - `allocation` — money reallocated (project injections, game deposits)
+ * - `earning` — money earned (income)
+ * - `return` — money coming back from an allocation (dividends, game withdrawals)
+ */
+export type FlowNature = 'earning' | 'return' | 'consumption' | 'allocation';
+
+/**
  * Coarse flow families the user can toggle on and off. They map 1:1 to the
  * filter checkboxes and always partition the data (no flow belongs to two).
  */
@@ -101,6 +114,8 @@ export interface NormalizedFlow {
     group: FlowGroup;
     /** Whether money came in or went out */
     direction: FlowDirection;
+    /** What the flow economically is, independent of its direction */
+    nature: FlowNature;
     /** Amount, always positive, converted to the default currency */
     amount: number;
     /** Amount as originally recorded */
@@ -169,9 +184,13 @@ export interface ComparisonPoint extends TimeBucket {
     inflow: number;
     /** Outgoing flows of the bucket */
     outflow: number;
-    /** `inflow - outflow` */
+    /** Outgoing flows actually consumed */
+    spending: number;
+    /** Outgoing flows reallocated (projects, game platforms) */
+    allocated: number;
+    /** `inflow - outflow`: what is left liquid */
     net: number;
-    /** `net / inflow` in percent, 0 when there is no inflow */
+    /** `(inflow - spending) / inflow` in percent, 0 when there is no inflow */
     savingsRate: number;
 }
 
@@ -181,11 +200,15 @@ export interface PeriodSummary {
     range: DateRange;
     /** Sum of every incoming flow */
     inflow: number;
-    /** Sum of every outgoing flow */
+    /** Sum of every outgoing flow: `spending + allocated` */
     outflow: number;
-    /** `inflow - outflow` over the selected groups */
+    /** Outgoing flows actually consumed (expenses, fees) */
+    spending: number;
+    /** Outgoing flows reallocated (project injections, game deposits) */
+    allocated: number;
+    /** `inflow - outflow`: what is left liquid */
     net: number;
-    /** `net / inflow` in percent, 0 when there is no inflow */
+    /** `(inflow - spending) / inflow` in percent: the share of income not consumed */
     savingsRate: number;
     /** Number of flows */
     count: number;

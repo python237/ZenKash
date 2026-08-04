@@ -792,7 +792,9 @@ onMounted(async () => {
 
 .pie-legend {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    // Falls back to a single column on narrow screens rather than squeezing
+    // two unreadable ones.
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
     gap: 8px;
 }
 
@@ -800,6 +802,8 @@ onMounted(async () => {
     display: flex;
     align-items: center;
     gap: 6px;
+    // Without this the grid cell refuses to shrink and the label overflows.
+    min-width: 0;
 }
 
 .legend-color {
@@ -811,6 +815,7 @@ onMounted(async () => {
 
 .legend-label {
     flex: 1;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

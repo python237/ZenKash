@@ -205,6 +205,7 @@ export function toFlows(transactions: Transaction[], ctx: AnalyticsContext): Nor
                 kind: tx.type,
                 group: tx.type,
                 direction: tx.type === 'income' ? 'in' : 'out',
+                nature: tx.type === 'income' ? 'earning' : 'consumption',
                 amount: ctx.convert(tx.amount, currency),
                 originalAmount: tx.amount,
                 currency,
@@ -224,6 +225,8 @@ export function toFlows(transactions: Transaction[], ctx: AnalyticsContext): Nor
                 kind: isInjection ? 'projectInjection' : 'projectDividend',
                 group: 'project',
                 direction: isInjection ? 'out' : 'in',
+                // Injecting money into a project reallocates it, it does not spend it.
+                nature: isInjection ? 'allocation' : 'return',
                 amount: ctx.convert(tx.amount, currency),
                 originalAmount: tx.amount,
                 currency,
@@ -242,6 +245,9 @@ export function toFlows(transactions: Transaction[], ctx: AnalyticsContext): Nor
                     kind: classification.kind === 'deposit' ? 'gameDeposit' : 'gameWithdrawal',
                     group: 'game',
                     direction: classification.kind === 'deposit' ? 'out' : 'in',
+                    // Same reasoning as projects: a deposit moves money onto a
+                    // platform, it is only consumed once it is lost.
+                    nature: classification.kind === 'deposit' ? 'allocation' : 'return',
                     amount: ctx.convert(classification.amount, classification.currency),
                     originalAmount: classification.amount,
                     currency: classification.currency,
@@ -261,6 +267,7 @@ export function toFlows(transactions: Transaction[], ctx: AnalyticsContext): Nor
                     kind: 'transferFee',
                     group: 'fee',
                     direction: 'out',
+                    nature: 'consumption',
                     amount: ctx.convert(fee, currency),
                     originalAmount: fee,
                     currency,
@@ -329,18 +336,27 @@ export function selectFlows(
  */
 export function summarize(flows: NormalizedFlow[], range: DateRange, now?: Date): PeriodSummary {
     let inflow = 0;
-    let outflow = 0;
+    let spending = 0;
+    let allocated = 0;
     let largestOutflow = 0;
 
     for (const flow of flows) {
         if (flow.direction === 'in') {
             inflow += flow.amount;
-        } else {
-            outflow += flow.amount;
-            if (flow.amount > largestOutflow) largestOutflow = flow.amount;
+            continue;
         }
+
+        // Spending and allocation are both outflows but must never be summed
+        // into a single "expenses" figure.
+        if (flow.nature === 'allocation') {
+            allocated += flow.amount;
+        } else {
+            spending += flow.amount;
+        }
+        if (flow.amount > largestOutflow) largestOutflow = flow.amount;
     }
 
+    const outflow = spending + allocated;
     const net = inflow - outflow;
     const dayMs = 24 * 60 * 60 * 1000;
     // Averaging over days that have not happened yet would understate spending.
@@ -352,8 +368,11 @@ export function summarize(flows: NormalizedFlow[], range: DateRange, now?: Date)
         range,
         inflow,
         outflow,
+        spending,
+        allocated,
         net,
-        savingsRate: inflow > 0 ? (net / inflow) * 100 : 0,
+        // What was not consumed, whether it stayed liquid or was invested.
+        savingsRate: inflow > 0 ? ((inflow - spending) / inflow) * 100 : 0,
         count: flows.length,
         dailyAverage: outflow / days,
         largestOutflow,
@@ -549,6 +568,8 @@ export function buildComparison(
         ...bucket,
         inflow: 0,
         outflow: 0,
+        spending: 0,
+        allocated: 0,
         net: 0,
         savingsRate: 0,
     }));
@@ -560,14 +581,18 @@ export function buildComparison(
 
         if (flow.direction === 'in') {
             point.inflow += flow.amount;
+        } else if (flow.nature === 'allocation') {
+            point.allocated += flow.amount;
         } else {
-            point.outflow += flow.amount;
+            point.spending += flow.amount;
         }
     }
 
     for (const point of points) {
+        point.outflow = point.spending + point.allocated;
         point.net = point.inflow - point.outflow;
-        point.savingsRate = point.inflow > 0 ? (point.net / point.inflow) * 100 : 0;
+        point.savingsRate =
+            point.inflow > 0 ? ((point.inflow - point.spending) / point.inflow) * 100 : 0;
     }
 
     return points;

@@ -25,11 +25,22 @@
                 <q-card-section class="q-pa-sm text-center">
                     <div class="text-caption text-grey-6">{{ t('analytics.groups.expense') }}</div>
                     <div class="text-subtitle2 text-weight-bold text-negative">
-                        {{ formatCurrency(summary.outflow) }}
+                        {{ formatCurrency(summary.spending) }}
                     </div>
                     <div class="text-caption text-grey-6">
-                        {{ formatPercent(outflowDelta.percent, { signed: true }) }}
+                        {{ formatPercent(spendingDelta.percent, { signed: true }) }}
                     </div>
+                </q-card-section>
+            </q-card>
+
+            <!-- Money reallocated, kept out of the spending figure on purpose -->
+            <q-card v-if="summary.allocated > 0" class="stat-card" flat bordered>
+                <q-card-section class="q-pa-sm text-center">
+                    <div class="text-caption text-grey-6">{{ t('analytics.allocated') }}</div>
+                    <div class="text-subtitle2 text-weight-bold text-info">
+                        {{ formatCurrency(summary.allocated) }}
+                    </div>
+                    <div class="text-caption text-grey-6">{{ t('analytics.allocatedHint') }}</div>
                 </q-card-section>
             </q-card>
 
@@ -131,8 +142,14 @@
                                     </span>
                                     ·
                                     <span class="text-negative">
-                                        {{ formatCurrency(point.outflow) }}
+                                        {{ formatCurrency(point.spending) }}
                                     </span>
+                                    <template v-if="point.allocated > 0">
+                                        ·
+                                        <span class="text-info">
+                                            {{ formatCurrency(point.allocated) }}
+                                        </span>
+                                    </template>
                                 </q-item-label>
                             </q-item-section>
                             <q-item-section side>
@@ -186,6 +203,9 @@ ChartJS.register(BarElement, CategoryScale, LinearScale, Tooltip);
 const INFLOW_COLOR = '#2a78d6';
 const OUTFLOW_COLOR = '#e34948';
 
+/** Reallocated money reads as neither earned nor spent. */
+const ALLOCATION_COLOR = '#4a3aa7';
+
 /** Flow families the comparison always accounts for. */
 const COMPARISON_GROUPS: FlowGroup[] = ['income', 'expense', 'game', 'project', 'fee'];
 
@@ -215,8 +235,8 @@ const previousSummary = computed(() => summarize(previousFlows.value, previousRa
 const inflowDelta = computed(() =>
     computeDelta(summary.value.inflow, previousSummary.value.inflow),
 );
-const outflowDelta = computed(() =>
-    computeDelta(summary.value.outflow, previousSummary.value.outflow),
+const spendingDelta = computed(() =>
+    computeDelta(summary.value.spending, previousSummary.value.spending),
 );
 
 const netClass = computed(() => (summary.value.net >= 0 ? 'text-positive' : 'text-negative'));
@@ -230,9 +250,11 @@ const reversedPoints = computed(() => [...points.value].reverse());
 
 const labels = computed(() => points.value.map((point) => bucketLabel(point)));
 
-const comparisonData = computed<ChartData<'bar'>>(() => ({
-    labels: labels.value,
-    datasets: [
+/** Whether any bucket reallocated money, which earns the third series. */
+const hasAllocation = computed(() => points.value.some((point) => point.allocated > 0));
+
+const comparisonData = computed<ChartData<'bar'>>(() => {
+    const datasets = [
         {
             label: t('analytics.groups.income'),
             data: points.value.map((point) => point.inflow),
@@ -241,12 +263,23 @@ const comparisonData = computed<ChartData<'bar'>>(() => ({
         },
         {
             label: t('analytics.groups.expense'),
-            data: points.value.map((point) => point.outflow),
+            data: points.value.map((point) => point.spending),
             backgroundColor: OUTFLOW_COLOR,
             borderRadius: 4,
         },
-    ],
-}));
+    ];
+
+    if (hasAllocation.value) {
+        datasets.push({
+            label: t('analytics.allocated'),
+            data: points.value.map((point) => point.allocated),
+            backgroundColor: ALLOCATION_COLOR,
+            borderRadius: 4,
+        });
+    }
+
+    return { labels: labels.value, datasets };
+});
 
 const comparisonOptions = computed<ChartOptions<'bar'>>(() => ({
     responsive: true,
@@ -315,7 +348,11 @@ const netOptions = computed<ChartOptions<'bar'>>(() => ({
  * @returns The rows, largest first
  */
 function rowsFor(direction: 'in' | 'out', color: string): BreakdownRow[] {
-    const directional = flows.value.filter((flow) => flow.direction === direction);
+    // The expense side lists consumption only: allocations have their own figure.
+    const directional = flows.value.filter(
+        (flow) =>
+            flow.direction === direction && (direction === 'in' || flow.nature !== 'allocation'),
+    );
     const buckets = foldToLimit(
         aggregateBy(directional, (flow: NormalizedFlow) => flow.masterCategoryId ?? 'other'),
         DETAIL_LIMIT,

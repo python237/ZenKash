@@ -345,7 +345,12 @@ composables/useAnalyticsFilters.ts shared filter state (module scope)
 ```
 
 A **flow** is one directional movement of money derived from a transaction; a
-transaction can yield several (a transfer with a fee). Everything is aggregated
+transaction can yield several (a transfer with a fee). Each flow carries a
+`nature`: **an outflow is not automatically an expense**. Project injections and
+game deposits are `allocation` (money reallocated), expenses and transfer fees
+are `consumption`. Never sum the two into a figure labelled "expenses" — that
+inflates spending and crushes the savings rate. Investment buys/sells live in
+`investment_transactions` and never enter the flows at all. Everything is aggregated
 on flows, never directly on transactions, and the pipeline is always
 `toFlows() → selectFlows() → summarize()/aggregateBy()`. Time series go through
 `bucketsFor() → buildSeries()/buildComparison()`, and `bucketKeyOf()` must stay
