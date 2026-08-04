@@ -354,6 +354,26 @@ in sync with the keys `bucketsFor()` generates.
 `services/analytics.ts` receives its store lookups through an
 `AnalyticsContext`, so it stays pure and testable — keep it that way.
 
+### Outbound Data (AI report)
+
+The app is offline-first: **`services/ai-report.ts` + `composables/useAiReport.ts`
+are the only code that produces data meant to leave the device.** Keep it that
+way, and keep these invariants when touching them:
+
+- **Nothing sends itself.** The user sees the exact text in an editable field and
+  presses the button. No silent, scheduled or background send.
+- **Transaction descriptions are never included** — they are the likeliest place
+  for third-party names. Only aggregates, categories, commitments, budgets and
+  net worth totals.
+- **Two privacy switches ship with the feature**: shares-only (no absolute
+  amounts) and anonymized labels. Do not remove them.
+- **Delivery goes through the system share sheet** (`@capacitor/share`), so the
+  user picks the destination app. No provider is hardcoded, no HTTP call is made
+  by the app itself; the desktop fallback copies to the clipboard.
+- The report wording lives in a local dictionary inside the service, not in the
+  i18n bundle: it is prompt content, and it must be reviewable in one place next
+  to these rules.
+
 ### Naming Conventions
 - **Files**: kebab-case (`transaction-list.vue`, `use-currency.ts`)
 - **Components**: PascalCase (`TransactionList.vue`)

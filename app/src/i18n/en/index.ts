@@ -372,6 +372,30 @@ export default {
         },
     },
 
+    // AI report export
+    aiReport: {
+        title: 'AI analysis',
+        subtitle: 'Send a summary of my finances to an assistant',
+        disclaimer:
+            'This data leaves your phone. The assistant you pick may retain it and use it for training. Review the text before sending.',
+        window: 'Period to send',
+        months: '{count} months',
+        includeAmounts: 'Include amounts',
+        includeAmountsHint: 'Off: only shares and rates are sent, no amounts.',
+        anonymizeLabels: 'Anonymize labels',
+        anonymizeLabelsHint:
+            'Replaces category names with "Master category 1, 2, 3…". Transaction labels are never included.',
+        preview: 'Text to send (editable)',
+        characters: '{count} characters',
+        copy: 'Copy',
+        send: 'Share with…',
+        shareWith: 'Send to an assistant',
+        sent: 'Report shared',
+        copied: 'Report copied',
+        copiedAndOpened: 'Report copied, paste it in the chat',
+        failed: 'Sharing failed',
+    },
+
     // Net Worth
     netWorth: {
         title: 'Net Worth',

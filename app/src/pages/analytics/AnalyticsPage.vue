@@ -9,6 +9,7 @@
                     {{ activeFilterCount }}
                 </q-badge>
             </div>
+            <BtnIcon icon="auto_awesome" color="primary" @click="showAiReport = true" />
         </div>
 
         <TabNav v-model="tab" :tabs="tabs" variant="pills" class="q-mb-md" />
@@ -18,12 +19,14 @@
         <ComparisonTab v-else />
 
         <AnalyticsFilterSheet v-model="showFilters" />
+        <AiReportDialog v-model="showAiReport" />
     </q-page>
 </template>
 
 <script setup lang="ts">
 import BtnIcon from 'src/components/buttons/BtnIcon.vue';
 import TabNav from 'src/components/tabs/TabNav.vue';
+import AiReportDialog from 'src/components/analytics/AiReportDialog.vue';
 import AnalyticsFilterSheet from 'src/components/analytics/AnalyticsFilterSheet.vue';
 import BreakdownTab from 'src/components/analytics/BreakdownTab.vue';
 import ComparisonTab from 'src/components/analytics/ComparisonTab.vue';
@@ -40,6 +43,7 @@ const { activeFilterCount } = useAnalyticsFilters();
 const { range, loadAll } = useAnalytics();
 
 const showFilters = ref(false);
+const showAiReport = ref(false);
 
 /** Tab identifiers, also accepted as the `tab` query parameter. */
 const TAB_NAMES = ['breakdown', 'evolution', 'comparison'];

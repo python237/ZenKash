@@ -11,6 +11,7 @@
 - 💰 **Budgets** - Budgets mensuels avec alertes
 - 💳 **Portefeuilles** - Plusieurs portefeuilles (espèces, banque, mobile money, etc.)
 - 🔎 **Analyse** - Répartition des dépenses sur toute période, filtres avancés et drill-down
+- 🤖 **Analyse IA** - Exporter un résumé de ses dépenses vers l'assistant de son choix, sous contrôle
 
 ## Stack Technique
 

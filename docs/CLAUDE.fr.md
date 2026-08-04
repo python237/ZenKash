@@ -357,6 +357,27 @@ temporelles passent par `bucketsFor() → buildSeries()/buildComparison()`, et
 `services/analytics.ts` reçoit ses accès aux stores via un `AnalyticsContext` :
 il reste pur et testable — le garder ainsi.
 
+### Données sortantes (rapport IA)
+
+L'app est offline-first : **`services/ai-report.ts` + `composables/useAiReport.ts`
+sont le seul code qui produit des données destinées à quitter l'appareil.** Le
+garder ainsi, et préserver ces invariants :
+
+- **Rien ne s'envoie tout seul.** L'utilisateur voit le texte exact dans un champ
+  éditable et appuie sur le bouton. Aucun envoi silencieux, planifié ou en tâche
+  de fond.
+- **Les descriptions de transactions ne sont jamais incluses** — c'est là que se
+  trouvent le plus probablement des noms de tiers. Uniquement des agrégats,
+  catégories, engagements, budgets et totaux de patrimoine.
+- **Deux interrupteurs de confidentialité font partie de la feature** : parts
+  seules (sans montants absolus) et libellés anonymisés. Ne pas les retirer.
+- **La livraison passe par le share sheet système** (`@capacitor/share`) :
+  l'utilisateur choisit l'app de destination. Aucun fournisseur en dur, aucun
+  appel HTTP émis par l'app ; le fallback desktop copie dans le presse-papier.
+- Le texte du rapport vit dans un dictionnaire local au service, pas dans le
+  bundle i18n : c'est du contenu de prompt, il doit être relisible en un seul
+  endroit à côté de ces règles.
+
 ### Naming Conventions
 - **Files**: kebab-case (`transaction-list.vue`, `use-currency.ts`)
 - **Components**: PascalCase (`TransactionList.vue`)

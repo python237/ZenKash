@@ -372,6 +372,30 @@ export default {
         },
     },
 
+    // AI report export
+    aiReport: {
+        title: 'Analyse IA',
+        subtitle: 'Envoyer un résumé de mes finances à un assistant',
+        disclaimer:
+            "Ces données quittent ton téléphone. L'assistant que tu choisis peut les conserver et s'en servir pour son entraînement. Relis le texte avant l'envoi.",
+        window: 'Période à envoyer',
+        months: '{count} mois',
+        includeAmounts: 'Inclure les montants',
+        includeAmountsHint: 'Désactivé : seules les parts et les taux sont envoyés, aucun montant.',
+        anonymizeLabels: 'Anonymiser les libellés',
+        anonymizeLabelsHint:
+            'Remplace les noms de catégories par « Grande catégorie 1, 2, 3… ». Aucun libellé de transaction n\'est jamais inclus.',
+        preview: 'Texte envoyé (modifiable)',
+        characters: '{count} caractères',
+        copy: 'Copier',
+        send: 'Partager vers…',
+        shareWith: 'Envoyer à un assistant',
+        sent: 'Rapport partagé',
+        copied: 'Rapport copié',
+        copiedAndOpened: 'Rapport copié, colle-le dans le chat',
+        failed: 'Échec du partage',
+    },
+
     // Net Worth
     netWorth: {
         title: 'Patrimoine',

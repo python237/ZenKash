@@ -11,6 +11,7 @@
 - 💰 **Budgets** - Monthly budgets with alerts
 - 💳 **Wallets** - Multiple wallets (cash, bank, mobile money, etc.)
 - 🔎 **Analytics** - Spending breakdown over any period, with advanced filters and drill-down
+- 🤖 **AI analysis** - Export a spending summary to the assistant of your choice, on your terms
 
 ## Tech Stack
 
