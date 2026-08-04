@@ -22,6 +22,8 @@ export interface AiReportOptions {
     anonymizeLabels: boolean;
     /** Language of the generated report */
     language: ReportLanguage;
+    /** Amount above which an expense is listed individually, in the default currency */
+    largeExpenseThreshold: number;
 }
 
 /** One month of the report. */
@@ -34,6 +36,8 @@ export interface ReportMonth {
     outflow: number;
     /** `inflow - outflow` */
     net: number;
+    /** Income not consumed: `inflow - spending` */
+    savings: number;
     /** `net / inflow` in percent */
     savingsRate: number;
 }
@@ -70,6 +74,56 @@ export interface ReportBudget {
     spent: number;
     /** Share of the budget used, in percent */
     percentUsed: number;
+}
+
+/** Progress of one savings goal. */
+export interface ReportGoal {
+    /** Display name, replaced when anonymizing */
+    name: string;
+    /** Amount saved so far */
+    current: number;
+    /** Amount to reach */
+    target: number;
+    /** Share of the target reached, in percent */
+    percent: number;
+    /** Monthly amount still required to meet the deadline, when one is set */
+    requiredMonthly?: number | undefined;
+    /** Months left before the deadline, when one is set */
+    monthsLeft?: number | undefined;
+}
+
+/** One line of the detailed net worth. */
+export interface ReportAsset {
+    /** Display name, replaced when anonymizing */
+    name: string;
+    /** What kind of holding it is */
+    kind: 'wallet' | 'investment' | 'project';
+    /** Current value of the holding */
+    value: number;
+    /** Amount put in, for investments and projects */
+    invested?: number | undefined;
+    /** Dividends received, for projects */
+    dividends?: number | undefined;
+}
+
+/** One individually listed transaction. */
+export interface ReportEntry {
+    /** Localized short date */
+    date: string;
+    /** Description, or the category name when there is none */
+    label: string;
+    /** Category name, when it adds information to the label */
+    category?: string | undefined;
+    /** Amount in the default currency */
+    amount: number;
+}
+
+/** Entries of one month, for the large-expense listing. */
+export interface ReportMonthEntries {
+    /** Localized month label */
+    label: string;
+    /** Entries of the month, largest first */
+    entries: ReportEntry[];
 }
 
 /** One net worth data point. */
@@ -111,6 +165,16 @@ export interface AiReportData {
     budgets: ReportBudget[];
     /** Net worth history over the window */
     netWorth: ReportNetWorth[];
+    /** Savings goals and their progress */
+    goals: ReportGoal[];
+    /** Detailed net worth, holding by holding */
+    assets: ReportAsset[];
+    /** Individual income transactions, most recent first */
+    incomes: ReportEntry[];
+    /** How many income transactions exist in the window, to disclose any capping */
+    incomeTotalCount: number;
+    /** Expenses above the threshold, grouped by month */
+    largeExpenses: ReportMonthEntries[];
 }
 
 /** Formatters injected into the builder so it stays free of locale concerns. */

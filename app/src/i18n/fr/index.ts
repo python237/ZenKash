@@ -390,6 +390,8 @@ export default {
         anonymizeLabels: 'Anonymiser les libellés',
         anonymizeLabelsHint:
             'Remplace les noms de catégories par « Grande catégorie 1, 2, 3… ». Aucun libellé de transaction n\'est jamais inclus.',
+        largeExpenseThreshold: 'Seuil des grosses dépenses',
+        largeExpenseThresholdHint: 'Les dépenses au-dessus sont listées une par une',
         preview: 'Texte envoyé (modifiable)',
         characters: '{count} caractères',
         copy: 'Copier',

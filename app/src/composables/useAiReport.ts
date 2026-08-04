@@ -21,11 +21,19 @@ import type { RecurringTransaction } from 'src/types/recurring-transaction';
 import type { BudgetWithStats } from 'src/types/budget';
 import type { NetWorthSnapshot } from 'src/types/net-worth-snapshot';
 import type { NormalizedFlow } from 'src/types/analytics';
+import type { SavingsGoalWithStats } from 'src/types/savings-goal';
+import type { InvestmentItem } from 'src/types/investment';
+import type { Project } from 'src/types/project';
+import type { Wallet } from 'src/types/wallet';
 import type {
     AiReportData,
     AiReportOptions,
+    ReportAsset,
+    ReportEntry,
+    ReportGoal,
     ReportGroup,
     ReportMonth,
+    ReportMonthEntries,
 } from 'src/types/ai-report';
 import {
     aggregateBy,
@@ -40,10 +48,14 @@ import {
 import { buildAiReport } from 'src/services/ai-report';
 import { useBudgetStore } from 'src/stores/budget';
 import { useNetWorthStore } from 'src/stores/net-worth';
+import { useSavingsGoalStore } from 'src/stores/savings-goal';
 import { useCurrency } from './useCurrency';
 
 /** Master categories listed per direction; enough signal without bloating the prompt. */
 const GROUP_LIMIT = 8;
+
+/** Individually listed income transactions, newest first, to bound the prompt size. */
+const INCOME_LIMIT = 40;
 
 /** Where the user is sent when no share sheet is available. */
 const CHATGPT_URL = 'https://chatgpt.com/';
@@ -70,6 +82,9 @@ export function useAiReport() {
     const budgetStore = useBudgetStore();
     const netWorthStore = useNetWorthStore();
     const recurringStore = useRecurringTransactionStore();
+    const investmentStore = useInvestmentStore();
+    const projectStore = useProjectStore();
+    const savingsGoalStore = useSavingsGoalStore();
     const { classifyTransfer } = useGameTransfers();
 
     const context = computed<AnalyticsContext>(() => ({
@@ -123,6 +138,126 @@ export function useAiReport() {
     }
 
     /**
+     * Formats a date for the individually listed transactions.
+     * @param date - The transaction date
+     * @returns A short localized date
+     */
+    function dayLabel(date: Date): string {
+        return new Intl.DateTimeFormat(locale.value, { day: '2-digit', month: '2-digit' }).format(
+            date,
+        );
+    }
+
+    /**
+     * Turns a flow into an individually listed entry.
+     * @param flow - The flow to describe
+     * @returns The entry, labelled by its description or its category
+     */
+    function toEntry(flow: NormalizedFlow): ReportEntry {
+        const category = flow.categoryId
+            ? (categoryStore.getCategoryById(flow.categoryId) as Category | undefined)
+            : undefined;
+
+        return {
+            date: dayLabel(flow.date),
+            label: flow.description ?? category?.name ?? t(`analytics.groups.${flow.group}`),
+            category: category?.name,
+            amount: flow.amount,
+        };
+    }
+
+    /**
+     * Collects savings goals and their progress, converted to the default currency.
+     * @returns The goals, furthest from completion last
+     */
+    function collectGoals(): ReportGoal[] {
+        return savingsGoalStore.goalsWithStats.map((goal: SavingsGoalWithStats) => ({
+            name: goal.name,
+            current: convert(goal.currentAmount, goal.currency),
+            target: convert(goal.targetAmount, goal.currency),
+            percent: goal.percent,
+            requiredMonthly:
+                goal.requiredMonthly !== null
+                    ? convert(goal.requiredMonthly, goal.currency)
+                    : undefined,
+            monthsLeft: goal.monthsLeft ?? undefined,
+        }));
+    }
+
+    /**
+     * Collects the detailed net worth: every wallet, investment and project.
+     *
+     * Game wallets are included but flagged by their own name, since their money
+     * may be locked on the platform.
+     * @returns The holdings, wallets first
+     */
+    function collectAssets(): ReportAsset[] {
+        const assets: ReportAsset[] = walletStore.wallets.map((wallet: Wallet) => ({
+            name: wallet.name,
+            kind: 'wallet' as const,
+            value: convert(wallet.balance, wallet.currency),
+        }));
+
+        for (const item of investmentStore.items as InvestmentItem[]) {
+            const stats = investmentStore.getItemStats(item.id);
+            assets.push({
+                name: item.label,
+                kind: 'investment',
+                value: convert(item.quantity * item.currentRate, item.currency),
+                invested: stats ? convert(stats.totalInvested, item.currency) : undefined,
+            });
+        }
+
+        for (const project of projectStore.projects as Project[]) {
+            assets.push({
+                name: project.name,
+                kind: 'project',
+                value: project.totalInvested,
+                dividends: project.totalDividends,
+            });
+        }
+
+        return assets.filter((asset) => asset.value !== 0);
+    }
+
+    /**
+     * Groups the expenses above the threshold by month, largest first.
+     * @param flows - Flows of the window
+     * @param threshold - Minimum amount for an expense to be listed
+     * @returns One entry list per month, most recent month first
+     */
+    function collectLargeExpenses(
+        flows: NormalizedFlow[],
+        threshold: number,
+    ): ReportMonthEntries[] {
+        const byMonth = new Map<string, { label: string; entries: ReportEntry[] }>();
+
+        const large = flows
+            .filter(
+                (flow) =>
+                    flow.direction === 'out' &&
+                    flow.nature === 'consumption' &&
+                    flow.amount >= threshold,
+            )
+            .sort((a, b) => b.amount - a.amount);
+
+        for (const flow of large) {
+            const key = `${flow.date.getFullYear()}-${flow.date.getMonth()}`;
+            const bucket = byMonth.get(key);
+            if (bucket) {
+                bucket.entries.push(toEntry(flow));
+            } else {
+                byMonth.set(key, { label: monthLabel(flow.date), entries: [toEntry(flow)] });
+            }
+        }
+
+        // Most recent month first, matching how the other sections read.
+        return [...byMonth.entries()]
+            .sort((a, b) => b[0].localeCompare(a[0]))
+            .map(([, bucket]) => bucket);
+    }
+
+    /**
      * Collects the financial snapshot for the requested window.
      * @param options - User-controlled report options
      * @returns The snapshot the report is built from
@@ -148,6 +283,7 @@ export function useAiReport() {
             inflow: point.inflow,
             outflow: point.spending,
             net: point.net,
+            savings: point.inflow - point.spending,
             savingsRate: point.savingsRate,
         }));
 
@@ -172,6 +308,14 @@ export function useAiReport() {
                 percentUsed: budget.percentUsed,
             }));
 
+        // Income is listed individually so the assistant can see where money comes
+        // from; the list is capped and the cap is disclosed in the report.
+        const incomeFlows = flows
+            .filter((flow) => flow.direction === 'in')
+            .sort((a, b) => b.date.getTime() - a.date.getTime());
+        const incomeTotalCount = incomeFlows.length;
+        const incomes = incomeFlows.slice(0, INCOME_LIMIT).map(toEntry);
+
         const netWorth = netWorthStore
             .series(options.window)
             .map((snapshot: NetWorthSnapshot) => ({
@@ -195,6 +339,11 @@ export function useAiReport() {
             commitments,
             budgets,
             netWorth,
+            goals: collectGoals(),
+            assets: collectAssets(),
+            incomes,
+            incomeTotalCount,
+            largeExpenses: collectLargeExpenses(flows, options.largeExpenseThreshold),
         };
     }
 
@@ -292,6 +441,9 @@ export function useAiReport() {
             budgetStore.loadAll(),
             netWorthStore.loadAll(),
             recurringStore.loadAll(),
+            investmentStore.loadAll(),
+            projectStore.loadAll(),
+            savingsGoalStore.loadAll(),
         ]);
     }
 

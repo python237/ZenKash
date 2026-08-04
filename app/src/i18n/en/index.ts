@@ -390,6 +390,8 @@ export default {
         anonymizeLabels: 'Anonymize labels',
         anonymizeLabelsHint:
             'Replaces category names with "Master category 1, 2, 3…". Transaction labels are never included.',
+        largeExpenseThreshold: 'Large expense threshold',
+        largeExpenseThresholdHint: 'Expenses above it are listed one by one',
         preview: 'Text to send (editable)',
         characters: '{count} characters',
         copy: 'Copy',

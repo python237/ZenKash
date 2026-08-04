@@ -372,9 +372,11 @@ garder ainsi, et préserver ces invariants :
 - **Rien ne s'envoie tout seul.** L'utilisateur voit le texte exact dans un champ
   éditable et appuie sur le bouton. Aucun envoi silencieux, planifié ou en tâche
   de fond.
-- **Les descriptions de transactions ne sont jamais incluses** — c'est là que se
-  trouvent le plus probablement des noms de tiers. Uniquement des agrégats,
-  catégories, engagements, budgets et totaux de patrimoine.
+- **Les descriptions de transactions n'apparaissent que dans les listes détaillées**
+  (revenus détaillés, grosses dépenses) et l'interrupteur `anonymizeLabels`
+  supprime ces listes entièrement — c'est du texte libre saisi par l'utilisateur,
+  l'endroit le plus probable pour des noms de tiers : elles ne doivent jamais
+  fuiter dans les sections agrégées.
 - **Deux interrupteurs de confidentialité font partie de la feature** : parts
   seules (sans montants absolus) et libellés anonymisés. Ne pas les retirer.
 - **La livraison passe par le share sheet système** (`@capacitor/share`) :

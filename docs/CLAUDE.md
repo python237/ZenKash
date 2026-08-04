@@ -367,9 +367,10 @@ way, and keep these invariants when touching them:
 
 - **Nothing sends itself.** The user sees the exact text in an editable field and
   presses the button. No silent, scheduled or background send.
-- **Transaction descriptions are never included** — they are the likeliest place
-  for third-party names. Only aggregates, categories, commitments, budgets and
-  net worth totals.
+- **Transaction descriptions only appear in the detailed listings** (income
+  detail, large expenses) and the `anonymizeLabels` switch drops those listings
+  entirely — they are user-written free text and the likeliest place for
+  third-party names, so they must never leak into the aggregate sections.
 - **Two privacy switches ship with the feature**: shares-only (no absolute
   amounts) and anonymized labels. Do not remove them.
 - **Delivery goes through the system share sheet** (`@capacitor/share`), so the

@@ -40,6 +40,15 @@
         />
         <div class="text-caption text-grey-6 q-mb-md">{{ t('aiReport.anonymizeLabelsHint') }}</div>
 
+        <!-- Threshold above which an expense is listed one by one -->
+        <InputNumber
+            v-model="options.largeExpenseThreshold"
+            :label="t('aiReport.largeExpenseThreshold')"
+            :min="0"
+            :hint="t('aiReport.largeExpenseThresholdHint')"
+            class="q-mb-md"
+        />
+
         <!-- The exact text, editable before it goes anywhere -->
         <div class="field-label">{{ t('aiReport.preview') }}</div>
         <InputMultiline v-model="text" :rows="12" class="q-mb-xs" />
@@ -60,11 +69,15 @@ import type { AiReportOptions, ReportWindow } from 'src/types/ai-report';
 import BtnLink from 'src/components/buttons/BtnLink.vue';
 import BtnPrimary from 'src/components/buttons/BtnPrimary.vue';
 import InputMultiline from 'src/components/inputs/InputMultiline.vue';
+import InputNumber from 'src/components/inputs/InputNumber.vue';
 import ModalBase from 'src/components/modals/ModalBase.vue';
 import { useAiReport } from 'src/composables/useAiReport';
 
 /** History windows offered, in months. */
 const WINDOWS: ReportWindow[] = [3, 6, 12];
+
+/** Default amount above which an expense is listed individually. */
+const DEFAULT_LARGE_EXPENSE_THRESHOLD = 50000;
 
 const props = defineProps<{
     /** Whether the dialog is open */
@@ -89,6 +102,7 @@ const options = ref<AiReportOptions>({
     includeAmounts: true,
     anonymizeLabels: false,
     language: locale.value.startsWith('fr') ? 'fr' : 'en',
+    largeExpenseThreshold: DEFAULT_LARGE_EXPENSE_THRESHOLD,
 });
 
 // The user edits the generated text, so it is kept as its own state and only
@@ -102,7 +116,12 @@ function regenerate(): void {
 }
 
 watch(
-    () => [options.value.window, options.value.includeAmounts, options.value.anonymizeLabels],
+    () => [
+        options.value.window,
+        options.value.includeAmounts,
+        options.value.anonymizeLabels,
+        options.value.largeExpenseThreshold,
+    ],
     () => regenerate(),
 );
 

@@ -7,8 +7,9 @@
  *
  * ⚠️ This is the only place in the app that produces content meant to leave the
  * device. Two consequences, both deliberate:
- * - transaction descriptions are **never** included — they are the most likely
- *   place for third-party names and other personal data;
+ * - transaction descriptions are user-written free text and the likeliest place
+ *   for third-party names, so they only appear in the detailed listings and the
+ *   `anonymizeLabels` switch drops those listings entirely;
  * - the wording lives in a local dictionary rather than the i18n bundle: it is
  *   prompt content, not interface text, and it must be reviewable in one place
  *   next to the privacy rules it has to respect.
@@ -18,6 +19,7 @@
 import type {
     AiReportData,
     AiReportOptions,
+    ReportEntry,
     ReportFormatters,
     ReportLanguage,
 } from 'src/types/ai-report';
@@ -84,6 +86,30 @@ interface ReportLabels {
     anonymizedBudget: string;
     /** Closing section heading */
     ask: string;
+    /** "Savings" column header */
+    savings: string;
+    /** Savings goals section heading */
+    goals: string;
+    /** Detailed net worth section heading */
+    assets: string;
+    /** Suffix marking an amount put into a holding */
+    invested: string;
+    /** Suffix marking dividends received */
+    dividends: string;
+    /** Total line of the detailed net worth */
+    assetsTotal: string;
+    /** Note explaining how projects are valued in that total */
+    assetsTotalNote: string;
+    /** Income detail section heading */
+    incomeDetail: string;
+    /** Large expenses section heading, with a `{threshold}` placeholder */
+    largeExpenses: string;
+    /** Notice disclosing that a list was capped, with `{shown}` and `{total}` */
+    listCapped: string;
+    /** Notice explaining why free-text sections are missing */
+    labelsWithheld: string;
+    /** Monthly requirement of a goal, with `{amount}` and `{months}` */
+    goalPace: string;
     /** Numbered questions asked to the assistant */
     questions: string;
     /** Placeholder for an empty period */
@@ -119,6 +145,20 @@ const LABELS: Record<ReportLanguage, ReportLabels> = {
         budgets: 'Budgets du mois en cours',
         netWorth: 'Évolution du patrimoine',
         used: 'utilisé',
+        savings: 'Épargne',
+        goals: "Objectifs d'épargne",
+        assets: 'Patrimoine détaillé',
+        invested: 'investi',
+        dividends: 'dividendes reçus',
+        assetsTotal: 'Total',
+        assetsTotalNote:
+            'les projets sont comptés à leur montant investi, ce qui peut différer du suivi de patrimoine',
+        incomeDetail: 'Revenus détaillés',
+        largeExpenses: 'Dépenses importantes (> {threshold})',
+        listCapped: '({shown} listés sur {total})',
+        labelsWithheld:
+            'Les listes détaillées (revenus, grosses dépenses) sont omises : les libellés sont anonymisés.',
+        goalPace: 'requis {amount}/mois sur {months} mois',
         anonymizedGroup: 'Grande catégorie',
         anonymizedCommitment: 'Engagement',
         anonymizedBudget: 'Budget',
@@ -158,6 +198,20 @@ const LABELS: Record<ReportLanguage, ReportLabels> = {
         budgets: 'Budgets for the current month',
         netWorth: 'Net worth trend',
         used: 'used',
+        savings: 'Savings',
+        goals: 'Savings goals',
+        assets: 'Detailed net worth',
+        invested: 'invested',
+        dividends: 'dividends received',
+        assetsTotal: 'Total',
+        assetsTotalNote:
+            'projects are counted at their invested amount, which may differ from the net worth tracking',
+        incomeDetail: 'Income detail',
+        largeExpenses: 'Large expenses (> {threshold})',
+        listCapped: '({shown} listed out of {total})',
+        labelsWithheld:
+            'Detailed lists (income, large expenses) are omitted: labels are anonymized.',
+        goalPace: 'requires {amount}/month over {months} months',
         anonymizedGroup: 'Master category',
         anonymizedCommitment: 'Commitment',
         anonymizedBudget: 'Budget',
@@ -211,6 +265,16 @@ export function buildAiReport(
         return reference > 0 ? format.percent((amount / reference) * 100) : '—';
     };
 
+    /**
+     * Renders one individually listed transaction.
+     * @param entry - The entry to render
+     * @returns The rendered line, without its bullet
+     */
+    const renderEntry = (entry: ReportEntry): string => {
+        const context = entry.category && entry.category !== entry.label ? ` — ${entry.category}` : '';
+        return `${entry.date} · ${entry.label}${context} : ${value(entry.amount, data.totals.inflow)}`;
+    };
+
     // Header
     lines.push(`# ${label.title}`, '', label.intro, '');
     if (withAmounts) {
@@ -218,7 +282,9 @@ export function buildAiReport(
     } else {
         lines.push(label.percentOnlyNote);
     }
-    lines.push(label.noDescriptions, '', `**${label.period}** : ${data.periodLabel}`, '');
+    // Only claimed when it is actually true.
+    if (options.anonymizeLabels) lines.push(label.noDescriptions);
+    lines.push('', `**${label.period}** : ${data.periodLabel}`, '');
 
     // Overview. Spending and allocation are reported separately: money put into a
     // project or onto a game platform is reallocated, not consumed.
@@ -248,14 +314,14 @@ export function buildAiReport(
     } else {
         lines.push(
             withAmounts
-                ? `| ${label.month} | ${label.income} | ${label.expenses} | ${label.net} | ${label.savingsRate} |`
+                ? `| ${label.month} | ${label.income} | ${label.expenses} | ${label.savings} | ${label.net} | ${label.savingsRate} |`
                 : `| ${label.month} | ${label.expenses} (${label.shareOfIncome}) | ${label.savingsRate} |`,
-            withAmounts ? '|---|---|---|---|---|' : '|---|---|---|',
+            withAmounts ? '|---|---|---|---|---|---|' : '|---|---|---|',
         );
         for (const month of data.months) {
             lines.push(
                 withAmounts
-                    ? `| ${month.label} | ${format.amount(month.inflow)} | ${format.amount(month.outflow)} | ${format.amount(month.net)} | ${format.percent(month.savingsRate)} |`
+                    ? `| ${month.label} | ${format.amount(month.inflow)} | ${format.amount(month.outflow)} | ${format.amount(month.savings)} | ${format.amount(month.net)} | ${format.percent(month.savingsRate)} |`
                     : `| ${month.label} | ${value(month.outflow, month.inflow)} | ${format.percent(month.savingsRate)} |`,
             );
         }
@@ -324,6 +390,61 @@ export function buildAiReport(
         lines.push('');
     }
 
+    // Savings goals
+    if (data.goals.length > 0) {
+        lines.push(`## ${label.goals}`, '');
+        data.goals.forEach((goal, index) => {
+            const name = options.anonymizeLabels ? anonymize(label.goals, index) : goal.name;
+            const progress = withAmounts
+                ? `${format.amount(goal.current)} / ${format.amount(goal.target)} (${format.percent(goal.percent)})`
+                : format.percent(goal.percent);
+
+            const pace =
+                withAmounts && goal.requiredMonthly !== undefined && goal.monthsLeft !== undefined
+                    ? ` · ${label.goalPace
+                          .replace('{amount}', format.amount(goal.requiredMonthly))
+                          .replace('{months}', String(goal.monthsLeft))}`
+                    : '';
+
+            lines.push(`- ${name} : ${progress}${pace}`);
+        });
+        lines.push('');
+    }
+
+    // Detailed net worth, holding by holding (amounts only: a share of the
+    // portfolio of itself carries no information)
+    if (withAmounts && data.assets.length > 0) {
+        lines.push(`## ${label.assets}`, '');
+        let total = 0;
+
+        data.assets.forEach((asset, index) => {
+            const name = options.anonymizeLabels ? anonymize(label.assets, index) : asset.name;
+
+            if (asset.kind === 'project') {
+                total += asset.value;
+                const dividends =
+                    asset.dividends !== undefined
+                        ? ` (${label.dividends} : ${format.amount(asset.dividends)})`
+                        : '';
+                lines.push(
+                    `- ${name} : ${format.amount(asset.value)} ${label.invested}${dividends}`,
+                );
+                return;
+            }
+
+            total += asset.value;
+            const invested =
+                asset.invested !== undefined
+                    ? ` (${label.invested} : ${format.amount(asset.invested)})`
+                    : '';
+            lines.push(`- ${name} : ${format.amount(asset.value)}${invested}`);
+        });
+
+        const hasProject = data.assets.some((asset) => asset.kind === 'project');
+        const note = hasProject ? ` (${label.assetsTotalNote})` : '';
+        lines.push('', `**${label.assetsTotal}** : ${format.amount(total)}${note}`, '');
+    }
+
     // Net worth trend (amounts only: a share of itself carries no information)
     if (withAmounts && data.netWorth.length > 0) {
         lines.push(`## ${label.netWorth}`, '');
@@ -331,6 +452,41 @@ export function buildAiReport(
             lines.push(`- ${point.label} : ${format.amount(point.total)}`);
         }
         lines.push('');
+    }
+
+    // Free-text listings. Anonymizing means no user-written label leaves the
+    // device, so these two sections are dropped rather than emptied.
+    if (options.anonymizeLabels) {
+        lines.push(label.labelsWithheld, '');
+    } else {
+        if (data.incomes.length > 0) {
+            lines.push(`## ${label.incomeDetail}`, '');
+            for (const entry of data.incomes) {
+                lines.push(`- ${renderEntry(entry)}`);
+            }
+            if (data.incomeTotalCount > data.incomes.length) {
+                lines.push(
+                    label.listCapped
+                        .replace('{shown}', String(data.incomes.length))
+                        .replace('{total}', String(data.incomeTotalCount)),
+                );
+            }
+            lines.push('');
+        }
+
+        if (data.largeExpenses.length > 0) {
+            lines.push(
+                `## ${label.largeExpenses.replace('{threshold}', format.amount(options.largeExpenseThreshold))}`,
+                '',
+            );
+            for (const month of data.largeExpenses) {
+                lines.push(`### ${month.label}`, '');
+                for (const entry of month.entries) {
+                    lines.push(`- ${renderEntry(entry)}`);
+                }
+                lines.push('');
+            }
+        }
     }
 
     // The ask
