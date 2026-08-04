@@ -10,10 +10,20 @@
 
 import type { Category } from 'src/types/category';
 import type { MasterCategory } from 'src/types/master-category';
-import type { AggregateBucket, BreakdownRow, NormalizedFlow } from 'src/types/analytics';
+import type {
+    AggregateBucket,
+    AnalyticsFilters,
+    BreakdownRow,
+    DateRange,
+    NormalizedFlow,
+    SeriesPoint,
+    TimeBucket,
+} from 'src/types/analytics';
 import { CHART_COLORS, MAX_SERIES, OTHER_COLOR, colorAt } from 'src/services/chart';
 import {
     aggregateBy,
+    bucketsFor,
+    buildSeries,
     computeDelta,
     foldToLimit,
     resolvePreviousRange,
@@ -62,7 +72,7 @@ function stableColor(id: string, taken: Set<number>): string {
  * @returns The analytics dataset and its loader
  */
 export function useAnalytics() {
-    const { t } = useI18n();
+    const { t, locale } = useI18n();
     const { filters } = useAnalyticsFilters();
     const { convert, walletCurrency } = useCurrency();
 
@@ -246,6 +256,84 @@ export function useAnalytics() {
             .slice(0, 5),
     );
 
+    /** Series keys of the period, in display order, `'other'` last. */
+    const seriesKeys = computed(() => breakdownRows.value.map((row) => row.key));
+
+    /** Color of each series key, shared by every tab so a color means one entity. */
+    const colorByKey = computed(
+        () => new Map(breakdownRows.value.map((row) => [row.key, row.color])),
+    );
+
+    /** Label of each series key. */
+    const nameByKey = computed(() => new Map(breakdownRows.value.map((row) => [row.key, row.name])));
+
+    /**
+     * Maps a flow to its series key, folding everything outside the top keys
+     * into `'other'` so the stacked series match the breakdown rows exactly.
+     * @param flow - The flow to map
+     * @returns The series key
+     */
+    function seriesKeyOf(flow: NormalizedFlow): string {
+        const key = keyOf(flow);
+        return colorByKey.value.has(key) ? key : 'other';
+    }
+
+    /** Time buckets covering the selected period at the chosen granularity. */
+    const timeBuckets = computed(() => bucketsFor(range.value, filters.value.granularity));
+
+    /** Evolution series: one point per bucket, split by the active dimension. */
+    const series = computed<SeriesPoint[]>(() =>
+        buildSeries(
+            flows.value,
+            timeBuckets.value,
+            filters.value.granularity,
+            seriesKeys.value,
+            seriesKeyOf,
+        ),
+    );
+
+    /**
+     * Selects flows over a range while overriding part of the filter state.
+     *
+     * The comparison view needs incoming flows even when the user is browsing
+     * expenses, without disturbing the shared filters.
+     * @param target - The range to select over
+     * @param overrides - Filter fields to override
+     * @returns The matching flows, most recent first
+     */
+    function selectIn(
+        target: DateRange,
+        overrides: Partial<AnalyticsFilters> = {},
+    ): NormalizedFlow[] {
+        return selectFlows(allFlows.value, { ...filters.value, ...overrides }, target);
+    }
+
+    /**
+     * Formats a time bucket for chart axes and tables.
+     * @param bucket - The bucket to label
+     * @returns A short localized label
+     */
+    function bucketLabel(bucket: TimeBucket): string {
+        const granularity = filters.value.granularity;
+
+        if (granularity === 'week') {
+            return new Intl.DateTimeFormat(locale.value, {
+                day: 'numeric',
+                month: 'short',
+            }).format(bucket.start);
+        }
+
+        if (granularity === 'quarter') {
+            const quarter = Math.floor(bucket.start.getMonth() / 3) + 1;
+            return `${t('analytics.quarterShort')}${quarter} ${bucket.start.getFullYear()}`;
+        }
+
+        return new Intl.DateTimeFormat(locale.value, {
+            month: 'short',
+            year: '2-digit',
+        }).format(bucket.start);
+    }
+
     /** Whether the selected period contains no flow at all. */
     const isEmpty = computed(() => flows.value.length === 0);
 
@@ -292,6 +380,13 @@ export function useAnalytics() {
         flowsByKey,
         topOutflows,
         isEmpty,
+        seriesKeys,
+        colorByKey,
+        nameByKey,
+        timeBuckets,
+        series,
+        selectIn,
+        bucketLabel,
         labelOf,
         loadAll,
     };

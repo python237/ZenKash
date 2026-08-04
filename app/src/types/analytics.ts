@@ -145,6 +145,36 @@ export interface BreakdownRow extends AggregateBucket {
     drillable: boolean;
 }
 
+/** One time bucket of an evolution series. */
+export interface TimeBucket {
+    /** Sortable identifier, for example `2026-08` or `2026-Q3` */
+    key: string;
+    /** First millisecond of the bucket */
+    start: Date;
+    /** Last millisecond of the bucket */
+    end: Date;
+}
+
+/** One point of an evolution series: a bucket and its per-series amounts. */
+export interface SeriesPoint extends TimeBucket {
+    /** Amount per series key, in the default currency */
+    values: Record<string, number>;
+    /** Sum of every series value */
+    total: number;
+}
+
+/** One point of the income-versus-expense comparison. */
+export interface ComparisonPoint extends TimeBucket {
+    /** Incoming flows of the bucket */
+    inflow: number;
+    /** Outgoing flows of the bucket */
+    outflow: number;
+    /** `inflow - outflow` */
+    net: number;
+    /** `net / inflow` in percent, 0 when there is no inflow */
+    savingsRate: number;
+}
+
 /** Headline figures for a period. */
 export interface PeriodSummary {
     /** Period the figures were computed on */

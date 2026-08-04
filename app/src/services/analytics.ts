@@ -18,11 +18,15 @@ import type { GameTransferClassification } from 'src/composables/useGameTransfer
 import type {
     AggregateBucket,
     AnalyticsFilters,
+    ComparisonPoint,
     DateRange,
     Delta,
     FlowGroup,
+    Granularity,
     NormalizedFlow,
     PeriodSummary,
+    SeriesPoint,
+    TimeBucket,
 } from 'src/types/analytics';
 
 /** Minimal category shape the service needs. */
@@ -406,6 +410,194 @@ export function foldToLimit(buckets: AggregateBucket[], limit: number): Aggregat
     );
 
     return [...kept, folded];
+}
+
+/**
+ * Returns the first millisecond of the week a date belongs to (weeks start on
+ * Monday, matching the DACH/EU convention the app targets).
+ * @param date - Reference date
+ * @returns A new date on that Monday at 00:00:00.000
+ */
+export function startOfWeek(date: Date): Date {
+    const result = startOfDay(date);
+    // getDay() is 0 on Sunday, which is the last day of an ISO week.
+    const shift = (result.getDay() + 6) % 7;
+    result.setDate(result.getDate() - shift);
+    return result;
+}
+
+/**
+ * Returns the first millisecond of the quarter a date belongs to.
+ * @param date - Reference date
+ * @returns A new date on the first day of the quarter at 00:00:00.000
+ */
+export function startOfQuarter(date: Date): Date {
+    return new Date(date.getFullYear(), Math.floor(date.getMonth() / 3) * 3, 1, 0, 0, 0, 0);
+}
+
+/**
+ * Splits a range into consecutive time buckets.
+ *
+ * The first bucket starts at the beginning of the period containing
+ * `range.start`, so a month bucket always covers a whole month even when the
+ * range starts mid-month.
+ * @param range - The period to split
+ * @param granularity - Bucket size
+ * @returns The buckets, oldest first
+ */
+export function bucketsFor(range: DateRange, granularity: Granularity): TimeBucket[] {
+    const buckets: TimeBucket[] = [];
+    let cursor =
+        granularity === 'week'
+            ? startOfWeek(range.start)
+            : granularity === 'quarter'
+              ? startOfQuarter(range.start)
+              : startOfMonth(range.start);
+
+    while (cursor.getTime() <= range.end.getTime()) {
+        const next =
+            granularity === 'week'
+                ? new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 7)
+                : granularity === 'quarter'
+                  ? new Date(cursor.getFullYear(), cursor.getMonth() + 3, 1)
+                  : new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+
+        buckets.push({
+            key: bucketKeyOf(cursor, granularity),
+            start: cursor,
+            end: new Date(next.getTime() - 1),
+        });
+        cursor = next;
+    }
+
+    return buckets;
+}
+
+/**
+ * Computes the bucket key a date falls into.
+ *
+ * Used to place a flow in its bucket in constant time, so it must stay in sync
+ * with the keys {@link bucketsFor} generates.
+ * @param date - The date to place
+ * @param granularity - Bucket size
+ * @returns The bucket key
+ */
+export function bucketKeyOf(date: Date, granularity: Granularity): string {
+    if (granularity === 'week') {
+        const monday = startOfWeek(date);
+        const month = String(monday.getMonth() + 1).padStart(2, '0');
+        const day = String(monday.getDate()).padStart(2, '0');
+        return `${monday.getFullYear()}-W${month}-${day}`;
+    }
+    if (granularity === 'quarter') {
+        return `${date.getFullYear()}-Q${Math.floor(date.getMonth() / 3) + 1}`;
+    }
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+/**
+ * Distributes flows over time buckets, split by series key.
+ *
+ * Every bucket carries an entry for every series key (zero when absent), so a
+ * stacked chart never has holes and the series order stays stable.
+ * @param flows - Flows to distribute
+ * @param buckets - Target buckets, oldest first
+ * @param granularity - Bucket size the buckets were built with
+ * @param seriesKeys - Series keys to report, in display order
+ * @param seriesKeyOf - Extracts the series key of a flow
+ * @returns One point per bucket, oldest first
+ */
+export function buildSeries(
+    flows: NormalizedFlow[],
+    buckets: TimeBucket[],
+    granularity: Granularity,
+    seriesKeys: string[],
+    seriesKeyOf: (flow: NormalizedFlow) => string,
+): SeriesPoint[] {
+    const points: SeriesPoint[] = buckets.map((bucket) => {
+        const values: Record<string, number> = {};
+        for (const key of seriesKeys) values[key] = 0;
+        return { ...bucket, values, total: 0 };
+    });
+    const byKey = new Map(points.map((point) => [point.key, point]));
+
+    for (const flow of flows) {
+        const point = byKey.get(bucketKeyOf(flow.date, granularity));
+        if (!point) continue;
+
+        const key = seriesKeyOf(flow);
+        point.values[key] = (point.values[key] ?? 0) + flow.amount;
+        point.total += flow.amount;
+    }
+
+    return points;
+}
+
+/**
+ * Distributes flows over time buckets as inflow / outflow pairs.
+ * @param flows - Flows to distribute
+ * @param buckets - Target buckets, oldest first
+ * @param granularity - Bucket size the buckets were built with
+ * @returns One comparison point per bucket, oldest first
+ */
+export function buildComparison(
+    flows: NormalizedFlow[],
+    buckets: TimeBucket[],
+    granularity: Granularity,
+): ComparisonPoint[] {
+    const points: ComparisonPoint[] = buckets.map((bucket) => ({
+        ...bucket,
+        inflow: 0,
+        outflow: 0,
+        net: 0,
+        savingsRate: 0,
+    }));
+    const byKey = new Map(points.map((point) => [point.key, point]));
+
+    for (const flow of flows) {
+        const point = byKey.get(bucketKeyOf(flow.date, granularity));
+        if (!point) continue;
+
+        if (flow.direction === 'in') {
+            point.inflow += flow.amount;
+        } else {
+            point.outflow += flow.amount;
+        }
+    }
+
+    for (const point of points) {
+        point.net = point.inflow - point.outflow;
+        point.savingsRate = point.inflow > 0 ? (point.net / point.inflow) * 100 : 0;
+    }
+
+    return points;
+}
+
+/**
+ * Computes a trailing moving average.
+ * @param values - Ordered values
+ * @param window - Number of points averaged, including the current one
+ * @returns The averages, `null` where there is not enough history yet
+ */
+export function movingAverage(values: number[], window: number): (number | null)[] {
+    return values.map((_, index) => {
+        if (index + 1 < window) return null;
+        const slice = values.slice(index + 1 - window, index + 1);
+        return slice.reduce((sum, value) => sum + value, 0) / window;
+    });
+}
+
+/**
+ * Turns a series of values into their running total.
+ * @param values - Ordered values
+ * @returns The cumulative values
+ */
+export function cumulate(values: number[]): number[] {
+    let running = 0;
+    return values.map((value) => {
+        running += value;
+        return running;
+    });
 }
 
 /**

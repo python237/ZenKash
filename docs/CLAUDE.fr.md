@@ -350,7 +350,9 @@ composables/useAnalyticsFilters.ts état de filtres partagé (portée module)
 Un **flow** est un mouvement d'argent directionnel dérivé d'une transaction ; une
 transaction peut en produire plusieurs (un transfert avec frais). Tout est agrégé
 sur les flows, jamais directement sur les transactions, et le pipeline est
-toujours `toFlows() → selectFlows() → summarize()/aggregateBy()`.
+toujours `toFlows() → selectFlows() → summarize()/aggregateBy()`. Les séries
+temporelles passent par `bucketsFor() → buildSeries()/buildComparison()`, et
+`bucketKeyOf()` doit rester synchrone avec les clés générées par `bucketsFor()`.
 
 `services/analytics.ts` reçoit ses accès aux stores via un `AnalyticsContext` :
 il reste pur et testable — le garder ainsi.

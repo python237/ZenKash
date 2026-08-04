@@ -13,6 +13,7 @@ import type {
     BreakdownDimension,
     DateRange,
     FlowGroup,
+    Granularity,
     PeriodPreset,
 } from 'src/types/analytics';
 
@@ -27,6 +28,9 @@ export const PERIOD_PRESETS: PeriodPreset[] = [
 
 /** Flow families offered in the filter sheet, in display order. */
 export const FLOW_GROUPS: FlowGroup[] = ['expense', 'income', 'game', 'project', 'fee'];
+
+/** Bucket sizes offered for the evolution and comparison views, in display order. */
+export const GRANULARITIES: Granularity[] = ['week', 'month', 'quarter'];
 
 /**
  * Builds the default filter state: the last three months of expenses, grouped
@@ -98,6 +102,14 @@ export function useAnalyticsFilters() {
     }
 
     /**
+     * Changes the bucket size of the time series.
+     * @param granularity - The bucket size to apply
+     */
+    function setGranularity(granularity: Granularity): void {
+        filters.value.granularity = granularity;
+    }
+
+    /**
      * Drills into a master category: restricts the data to it and regroups the
      * rows by category.
      * @param masterCategoryId - The master category to focus on
@@ -126,6 +138,7 @@ export function useAnalyticsFilters() {
         setPreset,
         setCustomRange,
         setDimension,
+        setGranularity,
         drillIntoMasterCategory,
         clearDrill,
         resetFilters,
