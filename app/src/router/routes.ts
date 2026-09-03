@@ -86,6 +86,16 @@ const routes: RouteRecordRaw[] = [
                 component: () => import('pages/more/goals/GoalsPage.vue'),
             },
             {
+                path: 'goals/diagnostic',
+                name: 'goal-diagnostic',
+                component: () => import('pages/more/goals/GoalDiagnosticPage.vue'),
+            },
+            {
+                path: 'goals/allocation',
+                name: 'goal-allocation',
+                component: () => import('pages/more/goals/AllocationPage.vue'),
+            },
+            {
                 path: 'master-categories',
                 name: 'master-categories',
                 component: () => import('pages/more/master-categories/MasterCategoriesPage.vue'),

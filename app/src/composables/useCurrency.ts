@@ -39,15 +39,22 @@ export function useCurrency() {
 
     /**
      * Formats an amount as a localized currency string.
-     * @param amount - Amount in the default currency
+     *
+     * The optional `currency` is for the few screens that display amounts in the
+     * currency they were recorded in (savings goals, wallet details) instead of
+     * converting them: pass it rather than building a local `Intl` formatter.
+     * @param amount - Amount in `currency`, or in the default currency
+     * @param currency - Currency to render in, defaults to the user's currency
      * @returns The formatted string, for example `12 500 FCFA`
      */
-    function formatCurrency(amount: number): string {
+    function formatCurrency(amount: number, currency?: CurrencyCode): string {
+        const code = currency ?? defaultCurrency.value;
+        const decimals = CURRENCIES[code]?.decimals ?? 0;
         return new Intl.NumberFormat(locale.value, {
             style: 'currency',
-            currency: defaultCurrency.value,
-            minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
-            maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
+            currency: code,
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals,
         }).format(amount);
     }
 

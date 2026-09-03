@@ -12,6 +12,13 @@ import { execute, query } from 'src/services/database';
 const DAYS_PER_MONTH = 30.44;
 
 /**
+ * Thrown by {@link create} and {@link update} when the wallet is already linked
+ * to another goal. A goal's progress is the wallet balance, so two goals sharing
+ * a wallet would advance together — the link must stay one-to-one.
+ */
+export const WALLET_ALREADY_LINKED = 'WALLET_ALREADY_LINKED';
+
+/**
  * Generates a unique identifier for a savings goal
  * @returns A unique string identifier combining timestamp and random values
  */
@@ -66,6 +73,15 @@ export const useSavingsGoalStore = defineStore('savingsGoal', () => {
     const getById = (id: string): SavingsGoal | undefined => goals.value.find((g) => g.id === id);
 
     /**
+     * Tells whether a wallet is already linked to a goal.
+     * @param walletId - The wallet to test
+     * @param excludeGoalId - Goal to ignore, when editing that same goal
+     * @returns True when another goal already tracks this wallet
+     */
+    const isWalletTaken = (walletId: string, excludeGoalId?: string): boolean =>
+        goals.value.some((g) => g.walletId === walletId && g.id !== excludeGoalId);
+
+    /**
      * Enriches a goal with progress (from the linked wallet balance) and,
      * when a deadline is set, a linear-pace projection.
      * @param goal - The goal to enrich
@@ -79,6 +95,7 @@ export const useSavingsGoalStore = defineStore('savingsGoal', () => {
         const currency = wallet?.currency ?? settingsStore.defaultCurrency ?? CurrencyCode.XOF;
         const currentAmount = wallet?.balance ?? 0;
 
+        const sharesWallet = isWalletTaken(goal.walletId, goal.id);
         const remaining = Math.max(0, goal.targetAmount - currentAmount);
         const percent =
             goal.targetAmount > 0 ? Math.min(100, (currentAmount / goal.targetAmount) * 100) : 0;
@@ -111,6 +128,7 @@ export const useSavingsGoalStore = defineStore('savingsGoal', () => {
             percent,
             isReached,
             walletExists: !!wallet,
+            sharesWallet,
             monthsLeft,
             requiredMonthly,
             onTrack,
@@ -145,8 +163,10 @@ export const useSavingsGoalStore = defineStore('savingsGoal', () => {
      * Creates a new savings goal in the database and adds it to the store
      * @param data - The goal creation data
      * @returns Promise resolving to the newly created goal
+     * @throws Error `WALLET_ALREADY_LINKED` when the wallet already has a goal
      */
     async function create(data: CreateSavingsGoal): Promise<SavingsGoal> {
+        if (isWalletTaken(data.walletId)) throw new Error(WALLET_ALREADY_LINKED);
         isLoading.value = true;
         try {
             const now = new Date();
@@ -188,12 +208,16 @@ export const useSavingsGoalStore = defineStore('savingsGoal', () => {
      * @param id - The unique identifier of the goal to update
      * @param data - The partial goal data to update
      * @returns Promise resolving to the updated goal, or null if not found
+     * @throws Error `WALLET_ALREADY_LINKED` when the wallet already has another goal
      */
     async function update(id: string, data: UpdateSavingsGoal): Promise<SavingsGoal | null> {
         isLoading.value = true;
         try {
             const existing = goals.value.find((g) => g.id === id);
             if (!existing) return null;
+            if (data.walletId && isWalletTaken(data.walletId, id)) {
+                throw new Error(WALLET_ALREADY_LINKED);
+            }
 
             const updated: SavingsGoal = {
                 id: existing.id,
@@ -252,6 +276,7 @@ export const useSavingsGoalStore = defineStore('savingsGoal', () => {
         isInitialized,
         // Getters
         getById,
+        isWalletTaken,
         withStats,
         goalsWithStats,
         // Actions

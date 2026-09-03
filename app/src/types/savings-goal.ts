@@ -64,6 +64,13 @@ export interface SavingsGoalWithStats extends SavingsGoal {
     isReached: boolean;
     /** Whether the linked wallet still exists */
     walletExists: boolean;
+    /**
+     * Whether another goal is linked to the same wallet. Always false on a
+     * healthy database — the wallet link is unique — but legacy rows created
+     * before the constraint may still share one, and a shared wallet means both
+     * goals advance together.
+     */
+    sharesWallet: boolean;
     /** Number of whole months left until the deadline (0 if past/none) */
     monthsLeft: number | null;
     /** Amount to save per month to reach the target by the deadline */

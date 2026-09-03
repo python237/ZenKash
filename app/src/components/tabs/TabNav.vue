@@ -6,6 +6,7 @@
         :active-color="variant === 'pills' ? 'white' : 'primary'"
         :indicator-color="variant === 'pills' ? 'transparent' : 'primary'"
         align="justify"
+        mobile-arrows
         @update:model-value="$emit('update:modelValue', $event)"
     >
         <q-tab v-for="tab in tabs" :key="tab.value" :name="tab.value" :label="tab.label" no-caps />

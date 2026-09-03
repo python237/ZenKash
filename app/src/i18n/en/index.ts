@@ -465,6 +465,7 @@ export default {
         target: 'Target',
         current: 'Saved',
         remaining: 'Remaining',
+        completionRate: 'Completion rate',
         wallet: 'Linked wallet',
         walletHint: 'Progress tracks this wallet balance',
         deadline: 'Target date',
@@ -476,8 +477,119 @@ export default {
         perMonth: '/mo',
         monthsLeft: '{count} month(s) left',
         noDeadline: 'No deadline',
+        noFreeWallet: 'Every wallet already has a goal',
+        walletTaken: 'This wallet is already linked to a goal',
+        sharedWallet: 'Wallet shared with another goal',
         walletMissing: 'Linked wallet deleted',
         deleteConfirm: 'Are you sure you want to delete this goal?',
+        diagnosis: {
+            title: 'Financial diagnosis',
+            subtitle: 'Are your goals actually reachable?',
+            verdict: 'Verdict',
+            capacity: 'Real capacity',
+            required: 'Required',
+            gap: 'Gap',
+            short: 'short',
+            spare: 'spare',
+            byGoal: 'Goal by goal',
+            noGoals: 'No goal to diagnose',
+            requiredVsShare: 'Required / realistic:',
+            reachableOn: 'At the current pace: reached in {date}',
+            feasibleTarget: 'Target that fits the deadline: {amount}',
+            noProgress: 'At the current pace, this goal makes no progress',
+            health: {
+                reachable: 'Reachable',
+                tight: 'Tight',
+                unreachable: 'Out of reach',
+                undated: 'No deadline',
+                unknown: 'Undetermined',
+            },
+            messages: {
+                no_goals: 'No open goal to diagnose.',
+                capacity_unknown:
+                    'Not enough history to measure your savings capacity: at least one complete month of transactions is needed.',
+                capacity_negative:
+                    'You are saving nothing net ({amount}/month): no goal moves until that turns positive.',
+                pace_exceeds_capacity:
+                    'Your deadlines demand {required}/month while you save {capacity}/month — {gap} short. The gap is structural: {unreachable} goal(s) need a later date or a lower target.',
+                cushion_thin:
+                    'Your deadlines hold, but your cushion only covers {months} months of spending (target: {target}). Rebuild it before speeding goals up.',
+                all_reachable:
+                    'Every deadline holds at your current pace, with {spare}/month to spare.',
+                capacity_sample:
+                    'Capacity measured over {months} complete month(s): {amount}/month saved net (median, from {low} to {high}).',
+                capacity_provisional:
+                    'Only {months} complete month(s) available out of {target}: an exceptional month still weighs on the median, so the diagnosis is provisional.',
+                commitments: '{amount} of recurring charges fall due in the next {days} days.',
+                cushion: 'Your liquid balance covers {months} months of spending.',
+                cushion_unknown: 'Not enough recorded spending to assess your safety cushion.',
+                unreachable_goals: '{count} goal(s) out of reach at your current pace.',
+                spare_capacity: '{amount}/month stays free once every deadline is held.',
+            },
+        },
+        allocation: {
+            title: 'Smart allocation',
+            subtitle: 'Where the next available amount should go',
+            amount: 'Available amount',
+            currency: 'Currency',
+            enterAmount: 'Enter an amount to spread',
+            noEligible: 'No goal to fund in this currency',
+            noLines: 'Nothing can be allocated with this amount',
+            recommended: 'Recommended',
+            recommendedStrategy: 'Recommended method',
+            paceNotCovered: 'Does not cover the required monthly pace',
+            stillBehind: 'Still behind after this allocation: {goals}',
+            sharedWalletWarning:
+                '{count} goal(s) share their wallet: their figures overlap.',
+            tabs: {
+                general: 'General',
+            },
+            strategies: {
+                balanced: {
+                    label: 'Balanced',
+                    description: 'Hold every deadline, then speed up with the surplus',
+                },
+                snowball: {
+                    label: 'Snowball',
+                    description: 'Close the smallest goals first',
+                },
+                deadline: {
+                    label: 'Deadline',
+                    description: 'Serve the nearest due date first',
+                },
+                at_risk: {
+                    label: 'At risk',
+                    description: 'Protect the goals demanding the heaviest monthly effort',
+                },
+            },
+            summary: {
+                completed: '{count} closed',
+                atRisk: '{count} behind',
+                leftover: 'Leftover {amount}',
+            },
+            excluded: {
+                reached: '{count} goal(s) already reached, ignored.',
+                otherCurrency: '{count} goal(s) in another currency, not analyzed.',
+                walletMissing: '{count} goal(s) without a linked wallet, ignored.',
+            },
+            reasons: {
+                strategy_balanced:
+                    'Reserves {reserved} to hold the deadlines, the rest speeds up a goal close to its target.',
+                strategy_snowball:
+                    'Goals closest to their target come first — {completed} closed.',
+                strategy_deadline: 'Follows the calendar: the nearest due date is served first.',
+                strategy_at_risk:
+                    'Covers the heaviest monthly effort first — {protected} goal(s) protected.',
+                pace_not_covered:
+                    '{shortfall} short of holding the {count} deadlines this month: the slipping goals come first.',
+                no_deadlines: 'None of the {count} goals has a deadline: closing some is the best use.',
+                closes_goals: 'This amount closes {count} goal(s) without putting the others behind.',
+                deadline_near: 'A deadline lands in {months} month(s): the calendar wins.',
+                all_on_track:
+                    'Everything is on pace: {reserved} holds the schedule, {leftover} speeds things up.',
+                nothing_to_allocate: 'Nothing to spread right now.',
+            },
+        },
     },
 
     // Settings

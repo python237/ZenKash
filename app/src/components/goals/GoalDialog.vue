@@ -17,11 +17,12 @@
                 :error="errors.targetAmount"
             />
 
-            <!-- Linked wallet -->
+            <!-- Linked wallet: only wallets without a goal, one goal per wallet -->
             <q-select
                 v-model="form.walletId"
                 :options="walletOptions"
                 :label="t('goals.wallet')"
+                :hint="walletOptions.length === 0 ? t('goals.noFreeWallet') : t('goals.walletHint')"
                 outlined
                 dense
                 emit-value
@@ -54,7 +55,7 @@ import InputDate from '../inputs/InputDate.vue';
 import BtnLink from '../buttons/BtnLink.vue';
 import BtnPrimary from '../buttons/BtnPrimary.vue';
 import { useFormValidation } from 'src/composables/useFormValidation';
-import { useSavingsGoalStore } from 'src/stores/savings-goal';
+import { useSavingsGoalStore, WALLET_ALREADY_LINKED } from 'src/stores/savings-goal';
 
 const props = defineProps<{
     modelValue: boolean;
@@ -98,8 +99,13 @@ const { form, errors, validate, reset } = useFormValidation(schema, {
 const isEditing = computed(() => !!props.goal);
 const isLoading = computed(() => goalStore.isLoading);
 
+// A wallet carries at most one goal: progress is read from its balance, so a
+// second goal on the same wallet would advance with the first one. Taken wallets
+// are simply not offered — except the one the edited goal already uses.
 const walletOptions = computed(() =>
-    walletStore.nonGameWallets.map((w: Wallet) => ({ value: w.id, label: w.name })),
+    walletStore.nonGameWallets
+        .filter((w: Wallet) => !goalStore.isWalletTaken(w.id, props.goal?.id))
+        .map((w: Wallet) => ({ value: w.id, label: w.name })),
 );
 
 // Currency symbol follows the linked wallet, falling back to the default currency
@@ -170,6 +176,10 @@ async function save(): Promise<void> {
         emit('saved', goal);
         close();
     } catch (error) {
+        if (error instanceof Error && error.message === WALLET_ALREADY_LINKED) {
+            errors.value.walletId = t('goals.walletTaken');
+            return;
+        }
         console.error('Failed to save goal:', error);
     }
 }

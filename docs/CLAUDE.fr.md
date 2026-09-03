@@ -363,6 +363,41 @@ temporelles passent par `bucketsFor() → buildSeries()/buildComparison()`, et
 `services/analytics.ts` reçoit ses accès aux stores via un `AnalyticsContext` :
 il reste pur et testable — le garder ainsi.
 
+### Objectifs d'épargne & allocation
+
+```
+types/goal-allocation.ts        stratégies, plan, codes de raison
+services/goal-allocation.ts     moteur pur (sans Vue, sans Pinia)
+composables/useAllocationText.ts transforme les codes de raison en phrases localisées
+```
+
+La progression d'un objectif **est** le solde du portefeuille lié : le lien est
+donc un-à-un — appliqué dans `GoalDialog` (les portefeuilles pris ne sont pas
+proposés), gardé dans le store (`WALLET_ALREADY_LINKED`) et adossé à un index
+unique sur `savings_goals(wallet_id)`. Les lignes anciennes qui partagent encore
+un portefeuille remontent via `sharesWallet` et sont signalées dans l'UI, jamais
+supprimées.
+
+Le moteur d'allocation travaille sur **une seule devise à la fois** : les
+objectifs sont comparés dans la devise du montant réparti, jamais convertis —
+aucun plan ne dépend donc d'un taux de change. Les objectifs atteints sont
+ignorés (ils n'ont besoin de rien) ; `isReached` étant dérivé du solde, un
+objectif repassé sous sa cible réapparaît de lui-même.
+
+Chaque stratégie est le même parcours — un ordre et un plafond par objectif — via
+`distribute()`. Le moteur **ne construit jamais de phrase** : il renvoie une
+`AllocationExplanation` (code + chiffres) que la vue traduit, la même règle qui
+garde `services/analytics.ts` pur.
+
+`services/goal-diagnosis.ts` se place **en amont** de l'allocation et répond à
+la question qu'un gestionnaire pose en premier : *est-ce seulement atteignable ?*
+La capacité est **mesurée, jamais déclarée** — médiane de l'épargne nette des
+derniers mois complets (médiane, pour qu'une prime ou une réparation ne réécrive
+pas le tableau), croisée avec le coussin liquide et les charges récurrentes déjà
+engagées. C'est la seule couche « objectifs » qui convertit les devises, parce
+qu'elle compare des agrégats entre tous les objectifs ; un plan d'allocation, lui,
+ne dépend toujours d'aucun taux.
+
 ### Données sortantes (rapport IA)
 
 L'app est offline-first : **`services/ai-report.ts` + `composables/useAiReport.ts`

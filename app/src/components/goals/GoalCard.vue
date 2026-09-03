@@ -12,11 +12,22 @@
                         {{ t('goals.walletMissing') }}
                     </div>
                     <div v-else class="text-caption text-grey-6">
-                        {{ formatCurrency(goal.currentAmount) }} /
-                        {{ formatCurrency(goal.targetAmount) }}
+                        {{ formatAmount(goal.currentAmount) }} /
+                        {{ formatAmount(goal.targetAmount) }}
+                    </div>
+                    <div v-if="goal.sharesWallet" class="text-caption text-warning">
+                        {{ t('goals.sharedWallet') }}
                     </div>
                 </div>
                 <BtnIcon dense icon="delete" color="negative" @click="$emit('delete')" />
+            </div>
+
+            <!-- Completion rate -->
+            <div class="row items-center justify-between q-mb-xs">
+                <span class="text-caption text-grey-6">{{ t('goals.completionRate') }}</span>
+                <span class="text-caption text-weight-medium" :class="`text-${progressColor}`">
+                    {{ formatPercent(goal.percent) }}
+                </span>
             </div>
 
             <!-- Progress -->
@@ -33,7 +44,7 @@
                 <div class="text-caption text-grey-7">
                     <template v-if="goal.isReached">{{ t('goals.reached') }} 🎉</template>
                     <template v-else>
-                        {{ t('goals.remaining') }}: {{ formatCurrency(goal.remaining) }}
+                        {{ t('goals.remaining') }}: {{ formatAmount(goal.remaining) }}
                     </template>
                 </div>
                 <div v-if="goal.deadline" class="text-caption row items-center q-gutter-xs">
@@ -49,7 +60,7 @@
                         class="text-grey-7"
                     >
                         {{ t('goals.requiredMonthly') }}
-                        {{ formatCurrency(goal.requiredMonthly) }}{{ t('goals.perMonth') }}
+                        {{ formatAmount(goal.requiredMonthly) }}{{ t('goals.perMonth') }}
                     </span>
                 </div>
             </div>
@@ -65,7 +76,6 @@
 
 <script setup lang="ts">
 import type { SavingsGoalWithStats } from 'src/types/savings-goal';
-import { CURRENCIES } from 'src/types/currency';
 import BtnIcon from '../buttons/BtnIcon.vue';
 
 const props = defineProps<{
@@ -78,6 +88,7 @@ defineEmits<{
 }>();
 
 const { t, locale } = useI18n();
+const { formatCurrency, formatPercent } = useCurrency();
 
 const avatarColor = computed(() => (props.goal.isReached ? 'positive' : 'pink-5'));
 
@@ -90,18 +101,13 @@ const progressColor = computed(() => {
 const badgeColor = computed(() => (props.goal.onTrack ? 'positive' : 'warning'));
 
 /**
- * Formats an amount using the goal's currency.
+ * Formats an amount in the goal's own currency (the linked wallet's), not the
+ * user's default one — the target is expressed in that currency.
  * @param amount - The amount to format
  * @returns The formatted currency string
  */
-function formatCurrency(amount: number): string {
-    const info = CURRENCIES[props.goal.currency];
-    return new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency: props.goal.currency,
-        minimumFractionDigits: info?.decimals ?? 0,
-        maximumFractionDigits: info?.decimals ?? 0,
-    }).format(amount);
+function formatAmount(amount: number): string {
+    return formatCurrency(amount, props.goal.currency);
 }
 
 const formattedDeadline = computed(() => {

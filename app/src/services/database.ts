@@ -317,6 +317,7 @@ async function createTables(): Promise<void> {
  * - Adding total_dividends to projects
  * - Removing NOT NULL constraint from category_id in transactions
  * - Removing wallet_id from projects
+ * - Enforcing one savings goal per wallet (unique index)
  */
 async function runMigrations(): Promise<void> {
     if (!db) return;
@@ -511,6 +512,29 @@ async function runMigrations(): Promise<void> {
         }
     } catch (error) {
         console.error('Projects wallet_id migration error:', error);
+    }
+
+    // Migration: one savings goal per wallet.
+    // A goal's progress is the linked wallet balance, so two goals on the same
+    // wallet would advance together and make any allocation meaningless.
+    // Legacy databases may already hold duplicates: never delete user data here,
+    // just skip the index and let the UI flag the offending goals.
+    try {
+        const duplicates = await db.query(
+            'SELECT wallet_id FROM savings_goals GROUP BY wallet_id HAVING COUNT(*) > 1',
+        );
+
+        if ((duplicates.values || []).length > 0) {
+            console.warn(
+                'Migration skipped: some wallets are linked to several savings goals, unique index not created',
+            );
+        } else {
+            await db.execute(
+                'CREATE UNIQUE INDEX IF NOT EXISTS idx_savings_goals_wallet ON savings_goals(wallet_id)',
+            );
+        }
+    } catch (error) {
+        console.error('Savings goals wallet uniqueness migration error:', error);
     }
 }
 

@@ -465,6 +465,7 @@ export default {
         target: 'Cible',
         current: 'Épargné',
         remaining: 'Restant',
+        completionRate: "Taux d'atteinte",
         wallet: 'Portefeuille lié',
         walletHint: 'La progression suit le solde de ce portefeuille',
         deadline: 'Date cible',
@@ -476,8 +477,121 @@ export default {
         perMonth: '/mois',
         monthsLeft: '{count} mois restant(s)',
         noDeadline: 'Sans échéance',
+        noFreeWallet: 'Tous les portefeuilles ont déjà un objectif',
+        walletTaken: 'Ce portefeuille est déjà lié à un objectif',
+        sharedWallet: 'Portefeuille partagé avec un autre objectif',
         walletMissing: 'Portefeuille lié supprimé',
         deleteConfirm: 'Voulez-vous vraiment supprimer cet objectif ?',
+        diagnosis: {
+            title: 'Diagnostic financier',
+            subtitle: 'Tes objectifs sont-ils tenables ?',
+            verdict: 'Verdict',
+            capacity: 'Capacité réelle',
+            required: 'Requis',
+            gap: 'Écart',
+            short: 'manquant',
+            spare: 'de marge',
+            byGoal: 'Objectif par objectif',
+            noGoals: 'Aucun objectif à diagnostiquer',
+            requiredVsShare: 'Requis / réalisable :',
+            reachableOn: 'Au rythme actuel : atteint en {date}',
+            feasibleTarget: 'Cible tenable à la date prévue : {amount}',
+            noProgress: "Au rythme actuel, cet objectif n'avance pas",
+            health: {
+                reachable: 'Atteignable',
+                tight: 'Juste',
+                unreachable: "Hors d'atteinte",
+                undated: 'Sans échéance',
+                unknown: 'Indéterminé',
+            },
+            messages: {
+                no_goals: 'Aucun objectif en cours à diagnostiquer.',
+                capacity_unknown:
+                    "Pas assez d'historique pour mesurer ta capacité d'épargne : il faut au moins un mois complet de transactions.",
+                capacity_negative:
+                    "Tu ne dégages aucune épargne nette ({amount}/mois) : aucun objectif n'avance tant que ce solde ne repasse pas positif.",
+                pace_exceeds_capacity:
+                    "Tes échéances demandent {required}/mois alors que tu épargnes {capacity}/mois : il manque {gap}. L'écart est structurel — {unreachable} objectif(s) doivent être décalés ou revus à la baisse.",
+                cushion_thin:
+                    "Tes échéances tiennent, mais ton coussin ne couvre que {months} mois de dépenses (cible : {target}). Reconstitue-le avant d'accélérer les objectifs.",
+                all_reachable:
+                    'Toutes tes échéances tiennent à ton rythme actuel, avec {spare}/mois de marge.',
+                capacity_sample:
+                    "Capacité mesurée sur {months} mois complet(s) : {amount}/mois d'épargne nette (médiane, de {low} à {high}).",
+                capacity_provisional:
+                    'Seulement {months} mois complet(s) disponibles sur {target} : un mois exceptionnel pèse encore sur la médiane, le diagnostic est provisoire.',
+                commitments: '{amount} de charges récurrentes tombent dans les {days} prochains jours.',
+                cushion: 'Ton solde liquide couvre {months} mois de dépenses.',
+                cushion_unknown:
+                    'Pas assez de dépenses enregistrées pour évaluer ton coussin de sécurité.',
+                unreachable_goals: "{count} objectif(s) hors d'atteinte à ton rythme actuel.",
+                spare_capacity: '{amount}/mois restent libres une fois toutes les échéances tenues.',
+            },
+        },
+        allocation: {
+            title: 'Allocation intelligente',
+            subtitle: 'Où placer la prochaine somme disponible',
+            amount: 'Montant disponible',
+            currency: 'Devise',
+            enterAmount: 'Saisis un montant à répartir',
+            noEligible: 'Aucun objectif à financer dans cette devise',
+            noLines: 'Aucune allocation possible avec ce montant',
+            recommended: 'Recommandé',
+            recommendedStrategy: 'Méthode recommandée',
+            paceNotCovered: 'Ne couvre pas le rythme mensuel requis',
+            stillBehind: 'Toujours en retard après cette allocation : {goals}',
+            sharedWalletWarning:
+                '{count} objectif(s) partagent leur portefeuille : leurs montants se recoupent.',
+            tabs: {
+                general: 'Général',
+            },
+            strategies: {
+                balanced: {
+                    label: 'Équilibrée',
+                    description: 'Tenir toutes les échéances, puis accélérer avec le surplus',
+                },
+                snowball: {
+                    label: 'Snowball',
+                    description: 'Clôturer les plus petits objectifs en premier',
+                },
+                deadline: {
+                    label: 'Échéance',
+                    description: "Servir d'abord l'échéance la plus proche",
+                },
+                at_risk: {
+                    label: 'Anti-retard',
+                    description: 'Protéger les objectifs qui demandent le plus gros effort mensuel',
+                },
+            },
+            summary: {
+                completed: '{count} clôturé(s)',
+                atRisk: '{count} en retard',
+                leftover: 'Reliquat {amount}',
+            },
+            excluded: {
+                reached: '{count} objectif(s) déjà atteint(s), ignoré(s).',
+                otherCurrency: '{count} objectif(s) dans une autre devise, non analysé(s).',
+                walletMissing: '{count} objectif(s) sans portefeuille lié, ignoré(s).',
+            },
+            reasons: {
+                strategy_balanced:
+                    'Réserve {reserved} pour tenir les échéances, le reste accélère un objectif proche de sa cible.',
+                strategy_snowball:
+                    'Priorité aux objectifs les plus proches de leur cible — {completed} clôturé(s).',
+                strategy_deadline: "Suit le calendrier : l'échéance la plus proche est servie en premier.",
+                strategy_at_risk:
+                    "Couvre d'abord le plus gros effort mensuel — {protected} objectif(s) protégé(s).",
+                pace_not_covered:
+                    'Il manque {shortfall} pour tenir les {count} échéances ce mois-ci : priorité aux objectifs qui décrochent.',
+                no_deadlines: "Aucun des {count} objectifs n'a d'échéance : autant en clôturer.",
+                closes_goals:
+                    'Ce montant clôture {count} objectif(s) sans mettre les autres en retard.',
+                deadline_near: 'Une échéance tombe dans {months} mois : le calendrier prime.',
+                all_on_track:
+                    'Tout est dans les temps : {reserved} suffisent à tenir le rythme, {leftover} accélèrent.',
+                nothing_to_allocate: 'Rien à répartir pour le moment.',
+            },
+        },
     },
 
     // Settings

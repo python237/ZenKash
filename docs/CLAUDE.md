@@ -359,6 +359,39 @@ in sync with the keys `bucketsFor()` generates.
 `services/analytics.ts` receives its store lookups through an
 `AnalyticsContext`, so it stays pure and testable — keep it that way.
 
+### Savings Goals & Allocation
+
+```
+types/goal-allocation.ts        strategies, plan, reason codes
+services/goal-allocation.ts     pure engine (no Vue, no Pinia)
+composables/useAllocationText.ts turns reason codes into localized sentences
+```
+
+A goal's progress **is** the linked wallet's balance, so the wallet link is
+one-to-one: enforced in `GoalDialog` (taken wallets are not offered), guarded in
+the store (`WALLET_ALREADY_LINKED`) and backed by a unique index on
+`savings_goals(wallet_id)`. Legacy rows that still share a wallet surface as
+`sharesWallet` on the stats and are flagged in the UI, never deleted.
+
+The allocation engine runs on **one currency at a time** — goals are compared in
+the currency of the amount being spread and never converted, so no plan depends
+on an exchange rate. Reached goals are ignored (they need nothing); `isReached`
+is derived from the balance, so a goal dipping back under its target reappears
+on its own.
+
+Every strategy is the same walk — an order plus a per-goal cap — through
+`distribute()`. The engine **never builds a sentence**: it returns an
+`AllocationExplanation` (reason code + figures) and the view translates it, the
+same rule that keeps `services/analytics.ts` pure.
+
+`services/goal-diagnosis.ts` sits **in front of** allocation and answers the
+question a manager asks first: *is this reachable at all?* Capacity is
+**measured, never declared** — the median net saved over the last complete
+months (median, so one bonus or one car repair does not rewrite the picture),
+paired with the liquid cushion and the recurring charges already committed. It
+is the one goal layer that converts currencies, because it compares aggregates
+across every goal; an allocation plan still never depends on a rate.
+
 ### Outbound Data (AI report)
 
 The app is offline-first: **`services/ai-report.ts` + `composables/useAiReport.ts`
