@@ -81,6 +81,16 @@ const routes: RouteRecordRaw[] = [
                 component: () => import('pages/more/recurring/RecurringPage.vue'),
             },
             {
+                path: 'debts',
+                name: 'debts',
+                component: () => import('pages/more/debts/DebtsPage.vue'),
+            },
+            {
+                path: 'cash-flow',
+                name: 'cash-flow',
+                component: () => import('pages/more/cash-flow/CashFlowPage.vue'),
+            },
+            {
                 path: 'goals',
                 name: 'goals',
                 component: () => import('pages/more/goals/GoalsPage.vue'),

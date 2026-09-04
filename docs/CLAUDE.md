@@ -392,6 +392,34 @@ paired with the liquid cushion and the recurring charges already committed. It
 is the one goal layer that converts currencies, because it compares aggregates
 across every goal; an allocation plan still never depends on a rate.
 
+### Cash Flow & Debts
+
+```
+types/cash-flow.ts          forecast events, points, per-wallet runway
+services/cash-flow.ts       pure projection (no Vue, no Pinia)
+composables/useCashFlow.ts  balances + recurring rules + habitual spending
+types/debt.ts               money lent and borrowed
+stores/debt.ts              CRUD; principal and repaid totals follow the transactions
+```
+
+The forecast is the forward half of the analysis trio: analytics reads the past,
+the goal diagnosis reads the capacity, this projects the **runway** — each wallet
+day by day, its low point, and the first day it turns negative. A forecast built
+on recurring rules alone is always too optimistic, so the habitual spending
+measured from history is applied as a daily drift; because history already
+contains the recurring charges that were posted, the drift is that history
+**minus** what the active rules represent per month. Each wallet is projected in
+its own currency; only the aggregated total converts.
+
+A **loan is not an expense**: money lent is reallocated, and repaying a debt
+settles a liability. Both are `allocation` flows in their own `debt` group, never
+`consumption` — counting them as spending would inflate expenses and crush the
+savings rate. A debt's `principal` and `total_repaid` are the sum of its
+transactions (like a project's invested total), never written directly, which is
+why `CreateDebt` carries no amount. Borrowed money landing in is a `return`, so
+it does count in `inflow` and lifts the savings rate: filter the `debt` group out
+in Analytics when that matters.
+
 ### Outbound Data (AI report)
 
 The app is offline-first: **`services/ai-report.ts` + `composables/useAiReport.ts`

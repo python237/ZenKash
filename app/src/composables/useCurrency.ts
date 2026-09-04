@@ -60,11 +60,12 @@ export function useCurrency() {
 
     /**
      * Formats an amount with an explicit `+` on positive values.
-     * @param amount - Amount in the default currency
+     * @param amount - Amount in `currency`, or in the default currency
+     * @param currency - Currency to render in, defaults to the user's currency
      * @returns The signed currency string
      */
-    function formatSignedCurrency(amount: number): string {
-        return `${amount > 0 ? '+' : ''}${formatCurrency(amount)}`;
+    function formatSignedCurrency(amount: number, currency?: CurrencyCode): string {
+        return `${amount > 0 ? '+' : ''}${formatCurrency(amount, currency)}`;
     }
 
     /**

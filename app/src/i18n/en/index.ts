@@ -55,6 +55,8 @@ export default {
         recurring: 'Recurring',
         netWorth: 'Net Worth',
         goals: 'Goals',
+        cashFlow: 'Cash flow',
+        debts: 'Loans & debts',
         settings: 'Settings',
         analytics: 'Analytics',
         management: 'Management',
@@ -98,6 +100,56 @@ export default {
         deleteConfirm: 'Are you sure you want to delete this transaction?',
         incomeBreakdown: 'Income Breakdown',
         expenseBreakdown: 'Expense Breakdown',
+    },
+
+    // Loans and debts
+    debts: {
+        title: 'Loans & debts',
+        subtitle: 'Money lent and borrowed',
+        addDebt: 'Record a loan',
+        editDebt: 'Edit',
+        noDebts: 'No loan or debt yet',
+        counterparty: 'Person or organization',
+        principal: 'Amount',
+        principalLocked: 'The initial amount cannot be edited: record a repayment instead.',
+        wallet: 'Wallet',
+        walletHint: 'The wallet the money leaves from, or lands in',
+        walletMissing: 'Linked wallet deleted',
+        dueDateOptional: 'Due date (optional)',
+        repaid: 'Repaid',
+        outstanding: 'Outstanding',
+        settled: 'Settled',
+        overdue: 'Overdue',
+        daysLeft: '{count} day(s) left',
+        addRepayment: 'Repayment',
+        totalReceivable: 'Owed to you',
+        totalPayable: 'You owe',
+        openCount: '{count} open',
+        deleteConfirm: 'Delete this loan? The related transactions are kept.',
+        directions: {
+            lent: 'Lent',
+            borrowed: 'Borrowed',
+        },
+    },
+
+    // Cash flow forecast
+    cashFlow: {
+        title: 'Cash flow',
+        subtitle: 'What is left, day after day',
+        today: 'Today',
+        lowest: 'Low point',
+        endOfHorizon: 'In {days} days',
+        days: '{days}d',
+        projection: 'Projection',
+        includeDrift: 'Everyday spending',
+        driftNote:
+            'Includes {amount}/month of everyday spending, estimated from your last 3 complete months.',
+        scheduledOnly: 'Based on recurring rules only: the projection is optimistic.',
+        atRisk: 'Wallets going negative',
+        goesNegative: '{wallet} drops below zero on {date} (low {amount}).',
+        byWallet: 'By wallet',
+        upcoming: 'Expected movements',
+        noEvents: 'No recurring rule over this period',
     },
 
     // Wallets
@@ -368,6 +420,7 @@ export default {
             game: 'Games',
             project: 'Projects',
             fee: 'Transfer fees',
+            debt: 'Loans & debts',
             unknown: 'Uncategorized',
         },
         dimensions: {

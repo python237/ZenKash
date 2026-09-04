@@ -38,9 +38,11 @@ export type FlowDirection = 'in' | 'out';
  * **not consumed**: it is reallocated. Counting it as spending would inflate the
  * expense figures and crush the savings rate, so the two are kept apart:
  * - `consumption` — money actually spent (expenses, transfer fees)
- * - `allocation` — money reallocated (project injections, game deposits)
+ * - `allocation` — money reallocated (project injections, game deposits, money
+ *   lent out, and instalments settling a debt)
  * - `earning` — money earned (income)
- * - `return` — money coming back from an allocation (dividends, game withdrawals)
+ * - `return` — money coming back from an allocation (dividends, game
+ *   withdrawals, repayments received, and borrowed principal landing in)
  */
 export type FlowNature = 'earning' | 'return' | 'consumption' | 'allocation';
 
@@ -48,7 +50,7 @@ export type FlowNature = 'earning' | 'return' | 'consumption' | 'allocation';
  * Coarse flow families the user can toggle on and off. They map 1:1 to the
  * filter checkboxes and always partition the data (no flow belongs to two).
  */
-export type FlowGroup = 'expense' | 'income' | 'game' | 'project' | 'fee';
+export type FlowGroup = 'expense' | 'income' | 'game' | 'project' | 'fee' | 'debt';
 
 /** Precise nature of a flow, kept for labelling and future drill-downs. */
 export type FlowKind =
@@ -58,6 +60,10 @@ export type FlowKind =
     | 'gameWithdrawal'
     | 'projectInjection'
     | 'projectDividend'
+    | 'debtLent'
+    | 'debtBorrowed'
+    | 'debtRepaymentReceived'
+    | 'debtRepaymentMade'
     | 'transferFee';
 
 /** Half-open date range used for every period computation. */
@@ -132,6 +138,8 @@ export interface NormalizedFlow {
     projectId?: string | undefined;
     /** Game the flow belongs to, for game transfers */
     gameId?: string | undefined;
+    /** Debt the flow belongs to, for debt movements */
+    debtId?: string | undefined;
     /** Free-text description of the transaction */
     description?: string | undefined;
 }

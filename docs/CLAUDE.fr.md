@@ -398,6 +398,35 @@ engagées. C'est la seule couche « objectifs » qui convertit les devises, parc
 qu'elle compare des agrégats entre tous les objectifs ; un plan d'allocation, lui,
 ne dépend toujours d'aucun taux.
 
+### Trésorerie & prêts
+
+```
+types/cash-flow.ts          événements, points, runway par portefeuille
+services/cash-flow.ts       projection pure (sans Vue, sans Pinia)
+composables/useCashFlow.ts  soldes + récurrences + dépenses courantes
+types/debt.ts               argent prêté et emprunté
+stores/debt.ts              CRUD ; principal et remboursements suivent les transactions
+```
+
+La prévision est la moitié « futur » du trio d'analyse : l'analytique lit le
+passé, le diagnostic lit la capacité, ceci projette le **runway** — chaque
+portefeuille jour par jour, son point bas, et le premier jour où il passe
+négatif. Une prévision fondée sur les seules récurrences est toujours trop
+optimiste : les dépenses courantes mesurées sur l'historique sont donc appliquées
+comme une dérive quotidienne ; comme l'historique contient déjà les charges
+récurrentes passées, cette dérive vaut l'historique **moins** ce que les règles
+actives représentent par mois. Chaque portefeuille est projeté dans sa propre
+devise ; seul le total agrégé convertit.
+
+Un **prêt n'est pas une dépense** : l'argent prêté est réalloué, et rembourser
+solde un passif. Les deux sont des flux `allocation` dans leur groupe `debt`,
+jamais `consumption` — les compter en dépenses gonflerait les dépenses et
+écraserait le taux d'épargne. Le `principal` et le `total_repaid` d'une dette
+sont la somme de ses transactions (comme le total investi d'un projet), jamais
+écrits directement : c'est pourquoi `CreateDebt` ne porte aucun montant. L'argent
+emprunté qui entre est un `return` : il compte donc dans `inflow` et gonfle le
+taux d'épargne — filtrer le groupe `debt` dans l'Analyse quand cela compte.
+
 ### Données sortantes (rapport IA)
 
 L'app est offline-first : **`services/ai-report.ts` + `composables/useAiReport.ts`

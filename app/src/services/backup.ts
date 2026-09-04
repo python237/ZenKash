@@ -25,6 +25,7 @@ const TABLES = [
     'master_categories',
     'categories',
     'wallets',
+    'debts',
     'app_settings',
     'exchange_rates',
     'transactions',

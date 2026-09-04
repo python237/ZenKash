@@ -1,4 +1,5 @@
 import type { CurrencyCode } from './currency';
+import type { DebtDirection } from './debt';
 
 /**
  * Core transaction types stored in the database.
@@ -6,8 +7,9 @@ import type { CurrencyCode } from './currency';
  * - expense: Money spent (purchases, bills, etc.)
  * - transfer: Money moved between wallets
  * - project: Investment project injections or dividends
+ * - debt: Money lent/borrowed and its repayments
  */
-export type TransactionType = 'income' | 'expense' | 'transfer' | 'project';
+export type TransactionType = 'income' | 'expense' | 'transfer' | 'project' | 'debt';
 
 /**
  * Extended transaction types for UI display purposes.
@@ -21,6 +23,13 @@ export type DisplayTransactionType = TransactionType | 'investment';
  * - dividend: Returns received from a project
  */
 export type ProjectTransactionType = 'injection' | 'dividend';
+
+/**
+ * Subtypes for debt transactions.
+ * - principal: the initial movement, out when lending, in when borrowing
+ * - repayment: a settlement instalment, in the opposite direction
+ */
+export type DebtTransactionType = 'principal' | 'repayment';
 
 /**
  * Subtypes for investment transactions in display contexts.
@@ -107,6 +116,24 @@ export interface ProjectTransaction extends BaseTransaction {
 }
 
 /**
+ * Represents a debt-related movement (principal or repayment).
+ *
+ * The wallet direction is not carried here: it follows the linked debt's own
+ * direction, so lending 50k and borrowing 50k are the same shape with opposite
+ * effects. Resolving it in one place keeps the two from drifting apart.
+ */
+export interface DebtTransaction extends BaseTransaction {
+    /** Type discriminator */
+    type: 'debt';
+    /** Whether this is the initial movement or a repayment */
+    debtTransactionType: DebtTransactionType;
+    /** Reference to the associated debt */
+    debtId: string;
+    /** Wallet the money leaves from, or lands in */
+    walletId: string;
+}
+
+/**
  * Union type representing any valid transaction.
  * Use type guards or switch on 'type' to handle specific variants.
  */
@@ -114,7 +141,8 @@ export type Transaction =
     | IncomeTransaction
     | ExpenseTransaction
     | TransferTransaction
-    | ProjectTransaction;
+    | ProjectTransaction
+    | DebtTransaction;
 
 /**
  * Data required to create a new income transaction.
@@ -176,6 +204,27 @@ export interface CreateTransferTransaction {
 }
 
 /**
+ * Data required to create a new debt transaction.
+ * Excludes auto-generated fields (id, createdAt, updatedAt).
+ */
+export interface CreateDebtTransaction {
+    /** Type discriminator */
+    type: 'debt';
+    /** Whether this is the initial movement or a repayment */
+    debtTransactionType: DebtTransactionType;
+    /** Transaction amount */
+    amount: number;
+    /** Date of the transaction */
+    date: Date;
+    /** Associated debt */
+    debtId: string;
+    /** Wallet for the transaction */
+    walletId: string;
+    /** Optional description */
+    description?: string | undefined;
+}
+
+/**
  * Data required to create a new project transaction.
  * Excludes auto-generated fields (id, createdAt, updatedAt).
  */
@@ -203,7 +252,8 @@ export type CreateTransaction =
     | CreateIncomeTransaction
     | CreateExpenseTransaction
     | CreateTransferTransaction
-    | CreateProjectTransaction;
+    | CreateProjectTransaction
+    | CreateDebtTransaction;
 
 // For updating transactions (partial updates)
 /**
@@ -219,6 +269,8 @@ export type UpdateTransaction = Partial<
     fee?: number | undefined;
     projectId?: string | undefined;
     projectTransactionType?: ProjectTransactionType | undefined;
+    debtId?: string | undefined;
+    debtTransactionType?: DebtTransactionType | undefined;
 };
 
 // Transaction with related data for display
@@ -272,6 +324,14 @@ export interface TransactionWithRelations extends Omit<BaseTransaction, 'type'> 
               name: string;
           }
         | undefined;
+    debt?:
+        | {
+              id: string;
+              counterparty: string;
+              direction: DebtDirection;
+          }
+        | undefined;
+    debtTransactionType?: DebtTransactionType | undefined;
     // Investment-specific fields
     investment?:
         | {

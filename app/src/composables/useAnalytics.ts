@@ -33,6 +33,7 @@ import {
     toFlows,
     type AnalyticsContext,
 } from 'src/services/analytics';
+import { useDebtStore } from 'src/stores/debt';
 import { useAnalyticsFilters } from './useAnalyticsFilters';
 import { useCurrency } from './useCurrency';
 
@@ -83,6 +84,7 @@ export function useAnalytics() {
     const settingsStore = useSettingsStore();
     const exchangeRateStore = useExchangeRateStore();
     const gameStore = useGameStore();
+    const debtStore = useDebtStore();
     const { classifyTransfer } = useGameTransfers();
 
     /**
@@ -95,6 +97,7 @@ export function useAnalytics() {
         convert,
         walletCurrency,
         category: (id: string) => categoryStore.getCategoryById(id),
+        debtDirection: (id: string) => debtStore.getDirection(id),
         classifyGameTransfer: classifyTransfer,
     }));
 
@@ -364,6 +367,7 @@ export function useAnalytics() {
             categoryStore.loadAll(),
             masterCategoryStore.loadAll(),
             gameStore.loadAll(),
+            debtStore.loadAll(),
         ]);
         now.value = new Date();
     }

@@ -45,6 +45,7 @@ import {
     toFlows,
     type AnalyticsContext,
 } from 'src/services/analytics';
+import { useDebtStore } from 'src/stores/debt';
 import { buildAiReport } from 'src/services/ai-report';
 import { useBudgetStore } from 'src/stores/budget';
 import { useNetWorthStore } from 'src/stores/net-worth';
@@ -79,6 +80,7 @@ export function useAiReport() {
     const settingsStore = useSettingsStore();
     const exchangeRateStore = useExchangeRateStore();
     const gameStore = useGameStore();
+    const debtStore = useDebtStore();
     const budgetStore = useBudgetStore();
     const netWorthStore = useNetWorthStore();
     const recurringStore = useRecurringTransactionStore();
@@ -91,6 +93,7 @@ export function useAiReport() {
         convert,
         walletCurrency,
         category: (id: string) => categoryStore.getCategoryById(id),
+        debtDirection: (id: string) => debtStore.getDirection(id),
         classifyGameTransfer: classifyTransfer,
     }));
 
@@ -438,6 +441,7 @@ export function useAiReport() {
             categoryStore.loadAll(),
             masterCategoryStore.loadAll(),
             gameStore.loadAll(),
+            debtStore.loadAll(),
             budgetStore.loadAll(),
             netWorthStore.loadAll(),
             recurringStore.loadAll(),

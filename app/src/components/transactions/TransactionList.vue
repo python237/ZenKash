@@ -142,12 +142,13 @@ function canDuplicate(tx: TransactionWithRelations): boolean {
 
 /**
  * Checks if a transaction can be edited or deleted.
- * Investment and project transactions cannot be edited directly.
+ * Investment, project and debt movements are driven by their own screens, where
+ * the linked totals are kept in step — editing them here would desynchronize.
  * @param tx - The transaction to check
  * @returns True if the transaction can be edited/deleted, false otherwise
  */
 function canEdit(tx: TransactionWithRelations): boolean {
-    return tx.type !== 'investment' && tx.type !== 'project';
+    return tx.type !== 'investment' && tx.type !== 'project' && tx.type !== 'debt';
 }
 
 /**
@@ -275,11 +276,40 @@ function getTransactionIcon(tx: TransactionWithRelations): string {
             return 'swap_horiz';
         case 'project':
             return tx.projectTransactionType === 'injection' ? 'add_circle' : 'payments';
+        case 'debt':
+            return 'handshake';
         case 'investment':
             return tx.investmentTransactionType === 'buy' ? 'shopping_cart' : 'sell';
         default:
             return 'receipt';
     }
+}
+
+/**
+ * Whether a debt movement takes money out of the wallet: lending does, borrowing
+ * brings it in, and a repayment is always the opposite of its principal.
+ * @param tx - The debt transaction
+ * @returns True when the money leaves the wallet
+ */
+function debtGoesOut(tx: TransactionWithRelations): boolean {
+    if (!tx.debt) return false;
+    return tx.debtTransactionType === 'principal'
+        ? tx.debt.direction === 'lent'
+        : tx.debt.direction === 'borrowed';
+}
+
+/**
+ * Subtitle of a debt movement: who it involves and which way it goes.
+ * @param tx - The debt transaction
+ * @returns The localized subtitle
+ */
+function debtSubtitle(tx: TransactionWithRelations): string {
+    const who = tx.debt?.counterparty ?? '';
+    const label =
+        tx.debtTransactionType === 'repayment'
+            ? t('debts.addRepayment')
+            : t(`debts.directions.${tx.debt?.direction ?? 'lent'}`);
+    return who ? `${label} · ${who}` : label;
 }
 
 /**
@@ -299,6 +329,8 @@ function getTypeIndicatorClass(tx: TransactionWithRelations): string {
             return tx.projectTransactionType === 'injection'
                 ? 'type-project-injection'
                 : 'type-project-dividend';
+        case 'debt':
+            return debtGoesOut(tx) ? 'type-project-injection' : 'type-project-dividend';
         case 'investment':
             return tx.investmentTransactionType === 'buy'
                 ? 'type-investment-buy'
@@ -382,6 +414,8 @@ function getTransactionSubtitle(tx: TransactionWithRelations): string {
             return tx.projectTransactionType === 'injection'
                 ? t('transactions.injection')
                 : t('transactions.dividend');
+        case 'debt':
+            return debtSubtitle(tx);
         case 'investment':
             return tx.investmentTransactionType === 'buy'
                 ? `${t('investments.buy')} • ${tx.quantity} × ${formatPricePerUnit(tx)}`
@@ -407,6 +441,8 @@ function getAmountClass(tx: TransactionWithRelations): string {
             return 'text-blue';
         case 'project':
             return tx.projectTransactionType === 'injection' ? 'text-negative' : 'text-positive';
+        case 'debt':
+            return debtGoesOut(tx) ? 'text-negative' : 'text-positive';
         case 'investment':
             return tx.investmentTransactionType === 'buy' ? 'text-negative' : 'text-positive';
         default:
@@ -452,6 +488,8 @@ function getAmountPrefix(tx: TransactionWithRelations): string {
             return '-';
         case 'project':
             return tx.projectTransactionType === 'injection' ? '-' : '+';
+        case 'debt':
+            return debtGoesOut(tx) ? '-' : '+';
         case 'investment':
             return tx.investmentTransactionType === 'buy' ? '-' : '+';
         default:

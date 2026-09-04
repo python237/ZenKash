@@ -55,6 +55,8 @@ export default {
         recurring: 'Récurrences',
         netWorth: 'Patrimoine',
         goals: 'Objectifs',
+        cashFlow: 'Trésorerie',
+        debts: 'Prêts & dettes',
         settings: 'Paramètres',
         analytics: 'Analyse',
         management: 'Gestion',
@@ -99,6 +101,56 @@ export default {
         deleteConfirm: 'Voulez-vous vraiment supprimer cette transaction ?',
         incomeBreakdown: 'Répartition des revenus',
         expenseBreakdown: 'Répartition des dépenses',
+    },
+
+    // Loans and debts
+    debts: {
+        title: 'Prêts & dettes',
+        subtitle: "L'argent prêté et emprunté",
+        addDebt: 'Enregistrer un prêt',
+        editDebt: 'Modifier',
+        noDebts: 'Aucun prêt ni dette',
+        counterparty: 'Personne ou organisme',
+        principal: 'Montant',
+        principalLocked: 'Le montant initial ne se modifie pas : ajoute plutôt un remboursement.',
+        wallet: 'Portefeuille',
+        walletHint: "Le portefeuille d'où sort l'argent, ou dans lequel il entre",
+        walletMissing: 'Portefeuille lié supprimé',
+        dueDateOptional: 'Échéance (optionnel)',
+        repaid: 'Remboursé',
+        outstanding: 'Reste dû',
+        settled: 'Soldé',
+        overdue: 'En retard',
+        daysLeft: '{count} jour(s) restant(s)',
+        addRepayment: 'Remboursement',
+        totalReceivable: "Ce qu'on te doit",
+        totalPayable: 'Ce que tu dois',
+        openCount: '{count} en cours',
+        deleteConfirm: 'Supprimer ce prêt ? Les transactions associées sont conservées.',
+        directions: {
+            lent: 'Prêté',
+            borrowed: 'Emprunté',
+        },
+    },
+
+    // Cash flow forecast
+    cashFlow: {
+        title: 'Trésorerie',
+        subtitle: "Ce qu'il te reste, jour après jour",
+        today: "Aujourd'hui",
+        lowest: 'Point bas',
+        endOfHorizon: 'Dans {days} jours',
+        days: '{days} j',
+        projection: 'Projection',
+        includeDrift: 'Dépenses courantes',
+        driftNote:
+            'Inclut {amount}/mois de dépenses courantes, estimées sur tes 3 derniers mois complets.',
+        scheduledOnly: 'Basé uniquement sur tes récurrences : la projection est optimiste.',
+        atRisk: 'Portefeuilles à découvert',
+        goesNegative: '{wallet} passe sous zéro le {date} (creux {amount}).',
+        byWallet: 'Par portefeuille',
+        upcoming: 'Mouvements prévus',
+        noEvents: 'Aucune récurrence sur cette période',
     },
 
     // Wallets
@@ -368,6 +420,7 @@ export default {
             game: 'Jeux',
             project: 'Projets',
             fee: 'Frais de transfert',
+            debt: 'Prêts & dettes',
             unknown: 'Non catégorisé',
         },
         dimensions: {

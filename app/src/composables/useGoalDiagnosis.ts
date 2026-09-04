@@ -24,6 +24,7 @@ import {
 } from 'src/services/analytics';
 import { SAMPLE_MONTHS, diagnose } from 'src/services/goal-diagnosis';
 import { useSavingsGoalStore } from 'src/stores/savings-goal';
+import { useDebtStore } from 'src/stores/debt';
 import { useGameTransfers } from './useGameTransfers';
 import { useCurrency } from './useCurrency';
 
@@ -45,6 +46,7 @@ export function useGoalDiagnosis() {
     const settingsStore = useSettingsStore();
     const exchangeRateStore = useExchangeRateStore();
     const gameStore = useGameStore();
+    const debtStore = useDebtStore();
     const recurringStore = useRecurringTransactionStore();
 
     /** Reference "today", captured once so every figure agrees on the period. */
@@ -54,6 +56,7 @@ export function useGoalDiagnosis() {
         convert,
         walletCurrency,
         category: (id: string) => categoryStore.getCategoryById(id),
+        debtDirection: (id: string) => debtStore.getDirection(id),
         classifyGameTransfer: classifyTransfer,
     }));
 
@@ -156,6 +159,7 @@ export function useGoalDiagnosis() {
             categoryStore.loadAll(),
             transactionStore.loadAll(),
             gameStore.loadAll(),
+            debtStore.loadAll(),
             recurringStore.loadAll(),
         ]);
         now.value = new Date();

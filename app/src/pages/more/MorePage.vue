@@ -72,6 +72,34 @@
         <div class="section-title">{{ $t('more.planning') }}</div>
         <q-card flat class="menu-card">
             <q-list>
+                <q-item clickable v-ripple to="/debts" class="menu-item">
+                    <q-item-section avatar>
+                        <q-avatar color="amber-1" text-color="amber-9" icon="handshake" />
+                    </q-item-section>
+                    <q-item-section>
+                        <q-item-label>{{ $t('more.debts') }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                        <q-icon name="chevron_right" color="grey-5" />
+                    </q-item-section>
+                </q-item>
+
+                <q-separator inset="item" />
+
+                <q-item clickable v-ripple to="/cash-flow" class="menu-item">
+                    <q-item-section avatar>
+                        <q-avatar color="cyan-1" text-color="cyan-9" icon="waterfall_chart" />
+                    </q-item-section>
+                    <q-item-section>
+                        <q-item-label>{{ $t('more.cashFlow') }}</q-item-label>
+                    </q-item-section>
+                    <q-item-section side>
+                        <q-icon name="chevron_right" color="grey-5" />
+                    </q-item-section>
+                </q-item>
+
+                <q-separator inset="item" />
+
                 <q-item clickable v-ripple to="/net-worth" class="menu-item">
                     <q-item-section avatar>
                         <q-avatar color="green-1" text-color="green-9" icon="show_chart" />

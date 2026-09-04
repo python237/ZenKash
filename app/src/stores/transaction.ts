@@ -8,7 +8,9 @@ import type {
     TransactionWithRelations,
     TransactionType,
     ProjectTransactionType,
+    DebtTransactionType,
 } from 'src/types/transaction';
+import { useDebtStore } from 'src/stores/debt';
 import { execute, query } from 'src/services/database';
 import { useReminder } from 'src/composables/useReminder';
 
@@ -36,6 +38,8 @@ interface TransactionRow {
     fee: number | null;
     project_id: string | null;
     project_transaction_type: ProjectTransactionType | null;
+    debt_id: string | null;
+    debt_transaction_type: DebtTransactionType | null;
     description: string | null;
     created_at: string;
     updated_at: string;
@@ -87,6 +91,14 @@ function rowToTransaction(row: TransactionRow): Transaction {
                 type: 'project',
                 projectTransactionType: row.project_transaction_type!,
                 projectId: row.project_id!,
+                walletId: row.wallet_id!,
+            };
+        case 'debt':
+            return {
+                ...base,
+                type: 'debt',
+                debtTransactionType: row.debt_transaction_type!,
+                debtId: row.debt_id!,
                 walletId: row.wallet_id!,
             };
         default: {
@@ -259,15 +271,19 @@ export const useTransactionStore = defineStore('transaction', () => {
                 `INSERT INTO transactions (
           id, type, amount, date, category_id, wallet_id,
           from_wallet_id, to_wallet_id, fee, project_id,
-          project_transaction_type, description, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          project_transaction_type, debt_id, debt_transaction_type,
+          description, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     id,
                     data.type,
                     data.amount,
                     data.date.toISOString(),
                     data.type === 'income' || data.type === 'expense' ? data.categoryId : null,
-                    data.type === 'income' || data.type === 'expense' || data.type === 'project'
+                    data.type === 'income' ||
+                    data.type === 'expense' ||
+                    data.type === 'project' ||
+                    data.type === 'debt'
                         ? data.walletId
                         : null,
                     data.type === 'transfer' ? data.fromWalletId : null,
@@ -275,6 +291,8 @@ export const useTransactionStore = defineStore('transaction', () => {
                     data.type === 'transfer' ? (data.fee ?? null) : null,
                     data.type === 'project' ? data.projectId : null,
                     data.type === 'project' ? data.projectTransactionType : null,
+                    data.type === 'debt' ? data.debtId : null,
+                    data.type === 'debt' ? data.debtTransactionType : null,
                     data.description ?? null,
                     now.toISOString(),
                     now.toISOString(),
@@ -289,6 +307,16 @@ export const useTransactionStore = defineStore('transaction', () => {
                 await updateProjectTotals(
                     data.projectId,
                     data.projectTransactionType,
+                    data.amount,
+                    'add',
+                );
+            }
+
+            // Update debt totals if debt transaction
+            if (data.type === 'debt') {
+                await updateDebtTotals(
+                    data.debtId,
+                    data.debtTransactionType,
                     data.amount,
                     'add',
                 );
@@ -331,6 +359,15 @@ export const useTransactionStore = defineStore('transaction', () => {
                 await updateProjectTotals(
                     existing.projectId,
                     existing.projectTransactionType,
+                    existing.amount,
+                    'subtract',
+                );
+            }
+
+            if (existing.type === 'debt') {
+                await updateDebtTotals(
+                    existing.debtId,
+                    existing.debtTransactionType,
                     existing.amount,
                     'subtract',
                 );
@@ -394,6 +431,16 @@ export const useTransactionStore = defineStore('transaction', () => {
                 );
             }
 
+            // Update new debt totals if debt transaction
+            if (updated.type === 'debt') {
+                await updateDebtTotals(
+                    updated.debtId,
+                    updated.debtTransactionType,
+                    updated.amount,
+                    'add',
+                );
+            }
+
             // Update in memory
             const index = transactions.value.findIndex((t: Transaction) => t.id === id);
             if (index !== -1) {
@@ -426,6 +473,15 @@ export const useTransactionStore = defineStore('transaction', () => {
                 await updateProjectTotals(
                     existing.projectId,
                     existing.projectTransactionType,
+                    existing.amount,
+                    'subtract',
+                );
+            }
+
+            if (existing.type === 'debt') {
+                await updateDebtTotals(
+                    existing.debtId,
+                    existing.debtTransactionType,
                     existing.amount,
                     'subtract',
                 );
@@ -497,6 +553,21 @@ export const useTransactionStore = defineStore('transaction', () => {
                 }
                 break;
             }
+            case 'debt': {
+                const wallet = walletStore.getWalletById(data.walletId);
+                const direction = useDebtStore().getDirection(data.debtId);
+                if (wallet && direction) {
+                    // Lending sends money out, borrowing brings it in; a
+                    // repayment always moves the opposite way.
+                    const goesOut =
+                        data.debtTransactionType === 'principal'
+                            ? direction === 'lent'
+                            : direction === 'borrowed';
+                    const delta = (goesOut ? -1 : 1) * data.amount * multiplier;
+                    await walletStore.updateBalance(wallet.id, wallet.balance + delta);
+                }
+                break;
+            }
             case 'project': {
                 const wallet = walletStore.getWalletById(data.walletId);
                 if (wallet) {
@@ -537,6 +608,27 @@ export const useTransactionStore = defineStore('transaction', () => {
             `UPDATE projects SET ${column} = ${column} + ?, updated_at = ? WHERE id = ?`,
             [amount * multiplier, new Date().toISOString(), projectId],
         );
+    }
+
+    /**
+     * Keeps a debt's principal and repaid total in step with its transactions.
+     * @param debtId - The debt identifier
+     * @param type - Whether the movement is the principal or a repayment
+     * @param amount - The transaction amount
+     * @param action - Whether the movement is being applied or reverted
+     * @returns Promise resolving when the debt is updated
+     */
+    async function updateDebtTotals(
+        debtId: string,
+        type: DebtTransactionType,
+        amount: number,
+        action: 'add' | 'subtract',
+    ): Promise<void> {
+        const debtStore = useDebtStore();
+        const signed = action === 'add' ? amount : -amount;
+
+        if (type === 'repayment') await debtStore.adjustRepaid(debtId, signed);
+        else await debtStore.adjustPrincipal(debtId, signed);
     }
 
     /**
@@ -585,6 +677,14 @@ export const useTransactionStore = defineStore('transaction', () => {
                     type: 'project',
                     projectTransactionType: data.projectTransactionType,
                     projectId: data.projectId,
+                    walletId: data.walletId,
+                };
+            case 'debt':
+                return {
+                    ...base,
+                    type: 'debt',
+                    debtTransactionType: data.debtTransactionType,
+                    debtId: data.debtId,
                     walletId: data.walletId,
                 };
         }
@@ -643,6 +743,15 @@ export const useTransactionStore = defineStore('transaction', () => {
                     projectId: data.projectId ?? existing.projectId,
                     walletId: data.walletId ?? existing.walletId,
                 };
+            case 'debt':
+                return {
+                    ...base,
+                    type: 'debt',
+                    debtTransactionType:
+                        data.debtTransactionType ?? existing.debtTransactionType,
+                    debtId: data.debtId ?? existing.debtId,
+                    walletId: data.walletId ?? existing.walletId,
+                };
         }
     }
 
@@ -660,6 +769,7 @@ export const useTransactionStore = defineStore('transaction', () => {
         const categoryStore = useCategoryStore();
         const masterCategoryStore = useMasterCategoryStore();
         const projectStore = useProjectStore();
+        const debtStore = useDebtStore();
 
         const filtered = filters ? filterTransactions(filters) : transactions.value;
 
@@ -760,6 +870,32 @@ export const useTransactionStore = defineStore('transaction', () => {
                           }
                         : undefined,
                     project: project ? { id: project.id, name: project.name } : undefined,
+                };
+            }
+
+            if (t.type === 'debt') {
+                const wallet = walletStore.getWalletById(t.walletId);
+                const debt = debtStore.getById(t.debtId);
+
+                return {
+                    ...base,
+                    walletId: t.walletId,
+                    debtTransactionType: t.debtTransactionType,
+                    wallet: wallet
+                        ? {
+                              id: wallet.id,
+                              name: wallet.name,
+                              icon: wallet.icon,
+                              currency: wallet.currency,
+                          }
+                        : undefined,
+                    debt: debt
+                        ? {
+                              id: debt.id,
+                              counterparty: debt.counterparty,
+                              direction: debt.direction,
+                          }
+                        : undefined,
                 };
             }
 

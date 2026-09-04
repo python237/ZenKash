@@ -287,6 +287,20 @@ async function createTables(): Promise<void> {
       FOREIGN KEY (wallet_id) REFERENCES wallets(id)
     );
 
+    CREATE TABLE IF NOT EXISTS debts (
+      id TEXT PRIMARY KEY NOT NULL,
+      counterparty TEXT NOT NULL,
+      direction TEXT NOT NULL,
+      principal REAL NOT NULL,
+      total_repaid REAL NOT NULL DEFAULT 0,
+      wallet_id TEXT NOT NULL,
+      due_date TEXT,
+      description TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (wallet_id) REFERENCES wallets(id)
+    );
+
     CREATE TABLE IF NOT EXISTS savings_goals (
       id TEXT PRIMARY KEY NOT NULL,
       name TEXT NOT NULL,
@@ -318,6 +332,7 @@ async function createTables(): Promise<void> {
  * - Removing NOT NULL constraint from category_id in transactions
  * - Removing wallet_id from projects
  * - Enforcing one savings goal per wallet (unique index)
+ * - Adding debt columns to transactions
  */
 async function runMigrations(): Promise<void> {
     if (!db) return;
@@ -512,6 +527,25 @@ async function runMigrations(): Promise<void> {
         }
     } catch (error) {
         console.error('Projects wallet_id migration error:', error);
+    }
+
+    // Migration: link transactions to debts (money lent or borrowed)
+    try {
+        const info = await db.query('PRAGMA table_info(transactions)');
+        const columns = info.values || [];
+        const has = (name: string) =>
+            columns.some((col: { name: string }) => col.name === name);
+
+        if (!has('debt_id')) {
+            await db.execute('ALTER TABLE transactions ADD COLUMN debt_id TEXT');
+            console.log('Migration: Added debt_id column to transactions table');
+        }
+        if (!has('debt_transaction_type')) {
+            await db.execute('ALTER TABLE transactions ADD COLUMN debt_transaction_type TEXT');
+            console.log('Migration: Added debt_transaction_type column to transactions table');
+        }
+    } catch (error) {
+        console.error('Transactions debt columns migration error:', error);
     }
 
     // Migration: one savings goal per wallet.

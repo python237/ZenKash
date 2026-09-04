@@ -13,6 +13,7 @@
  */
 
 import type { CurrencyCode } from 'src/types/currency';
+import type { DebtDirection } from 'src/types/debt';
 import type { Transaction } from 'src/types/transaction';
 import type { GameTransferClassification } from 'src/composables/useGameTransfers';
 import type {
@@ -55,6 +56,13 @@ export interface AnalyticsContext {
      * @returns The wallet currency, or the default currency as a fallback
      */
     walletCurrency: (walletId?: string) => CurrencyCode;
+    /**
+     * Resolves the direction of a debt, which decides whether its movements go
+     * in or out.
+     * @param id - Debt identifier
+     * @returns The debt direction, or undefined when it was deleted
+     */
+    debtDirection: (id: string) => DebtDirection | undefined;
     /**
      * Resolves a category.
      * @param id - Category identifier
@@ -232,6 +240,41 @@ export function toFlows(transactions: Transaction[], ctx: AnalyticsContext): Nor
                 currency,
                 walletId: tx.walletId,
                 projectId: tx.projectId,
+            });
+            continue;
+        }
+
+        if (tx.type === 'debt') {
+            const direction = ctx.debtDirection(tx.debtId);
+            if (!direction) continue;
+
+            const currency = ctx.walletCurrency(tx.walletId);
+            const isPrincipal = tx.debtTransactionType === 'principal';
+            // Lending sends money out, borrowing brings it in; a repayment is
+            // always the opposite movement of its principal.
+            const goesOut = isPrincipal ? direction === 'lent' : direction === 'borrowed';
+
+            flows.push({
+                ...base,
+                id: tx.id,
+                kind: isPrincipal
+                    ? direction === 'lent'
+                        ? 'debtLent'
+                        : 'debtBorrowed'
+                    : direction === 'lent'
+                      ? 'debtRepaymentReceived'
+                      : 'debtRepaymentMade',
+                group: 'debt',
+                direction: goesOut ? 'out' : 'in',
+                // Money lent is reallocated, not consumed, and settling a debt
+                // is not consumption either — counting either as spending would
+                // inflate the expense figures and crush the savings rate.
+                nature: goesOut ? 'allocation' : 'return',
+                amount: ctx.convert(tx.amount, currency),
+                originalAmount: tx.amount,
+                currency,
+                walletId: tx.walletId,
+                debtId: tx.debtId,
             });
             continue;
         }

@@ -27,7 +27,7 @@ export const PERIOD_PRESETS: PeriodPreset[] = [
 ];
 
 /** Flow families offered in the filter sheet, in display order. */
-export const FLOW_GROUPS: FlowGroup[] = ['expense', 'income', 'game', 'project', 'fee'];
+export const FLOW_GROUPS: FlowGroup[] = ['expense', 'income', 'game', 'project', 'fee', 'debt'];
 
 /** Bucket sizes offered for the evolution and comparison views, in display order. */
 export const GRANULARITIES: Granularity[] = ['week', 'month', 'quarter'];
