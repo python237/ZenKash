@@ -126,7 +126,13 @@ export default {
         totalReceivable: "Ce qu'on te doit",
         totalPayable: 'Ce que tu dois',
         openCount: '{count} en cours',
-        deleteConfirm: 'Supprimer ce prêt ? Les transactions associées sont conservées.',
+        deleteConfirm: 'Voulez-vous vraiment supprimer ce prêt ?',
+        deleteTransactionsQuestion: 'Supprimer aussi les {count} transaction(s) associée(s) ?',
+        deleteTransactionsYesHint:
+            'Les mouvements seront supprimés et les soldes des portefeuilles remis en état.',
+        deleteTransactionsNoHint:
+            "Les mouvements sont conservés et les soldes inchangés, mais ils ne seront plus rattachés à un prêt et sortiront de l'analyse.",
+        deleteTransactionsRequired: 'Choisis une réponse pour pouvoir supprimer.',
         directions: {
             lent: 'Prêté',
             borrowed: 'Emprunté',
@@ -183,6 +189,12 @@ export default {
         noCategories: 'Aucune catégorie',
         deleteConfirm: 'Voulez-vous vraiment supprimer cette catégorie ?',
         deleteWarning: 'Les transactions associées ne seront pas supprimées.',
+        retired: 'Inactive',
+        retire: 'Désactiver',
+        retireConfirm:
+            'Cette catégorie est utilisée par {count} transaction(s) : elle ne peut pas être supprimée.',
+        retireWarning:
+            "Elle sera désactivée : elle continue d'étiqueter l'historique mais ne sera plus proposée pour de nouvelles transactions. Tu peux la réactiver à tout moment.",
         masterCategory: 'Grande catégorie',
         icon: 'Icône',
     },
@@ -190,11 +202,16 @@ export default {
     // Master Categories
     masterCategories: {
         title: 'Grandes Catégories',
+        subCategoryCount: '{count} sous-catégorie(s)',
         addMasterCategory: 'Ajouter une grande catégorie',
         editMasterCategory: 'Modifier la grande catégorie',
         noMasterCategories: 'Aucune grande catégorie',
         deleteConfirm: 'Voulez-vous vraiment supprimer cette grande catégorie ?',
         deleteWarning: 'Les catégories associées ne seront pas supprimées.',
+        retireConfirm:
+            'Cette grande catégorie contient {count} sous-catégorie(s) : elle ne peut pas être supprimée.',
+        retireWarning:
+            "Elle sera désactivée : ses sous-catégories et l'historique restent intacts, mais elle ne sera plus proposée pour de nouvelles catégories ni de nouveaux budgets.",
         icon: 'Icône',
         color: 'Couleur',
         selectIcon: 'Sélectionner une icône',

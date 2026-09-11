@@ -8,7 +8,12 @@
 
         <!-- Categories list -->
         <q-list v-else class="list-container">
-            <q-item v-for="category in categories" :key="category.id" class="category-item">
+            <q-item
+                v-for="category in categories"
+                :key="category.id"
+                class="category-item"
+                :class="{ 'category-item--retired': !category.isActive }"
+            >
                 <q-item-section avatar>
                     <q-avatar :style="avatarStyle(category)">
                         <q-icon :name="category.icon" color="white" />
@@ -16,7 +21,15 @@
                 </q-item-section>
 
                 <q-item-section>
-                    <q-item-label class="text-weight-medium">{{ category.name }}</q-item-label>
+                    <q-item-label class="text-weight-medium">
+                        {{ category.name }}
+                        <q-badge v-if="!category.isActive" color="grey-5" class="q-ml-xs">
+                            {{ t('categories.retired') }}
+                        </q-badge>
+                    </q-item-label>
+                    <q-item-label caption class="text-grey-6">
+                        {{ t('masterCategories.subCategoryCount', { count: countFor(category.id) }) }}
+                    </q-item-label>
                 </q-item-section>
 
                 <q-item-section side>
@@ -26,6 +39,13 @@
                             icon="edit"
                             color="grey-6"
                             @click="$emit('edit', category)"
+                        />
+                        <BtnIcon
+                            v-if="!category.isActive"
+                            dense
+                            icon="restart_alt"
+                            color="primary"
+                            @click="$emit('restore', category)"
                         />
                         <BtnIcon
                             dense
@@ -41,6 +61,7 @@
 </template>
 
 <script setup lang="ts">
+import type { Category } from 'src/types/category';
 import type { MasterCategory } from 'src/types/master-category';
 import BtnIcon from '../buttons/BtnIcon.vue';
 
@@ -52,7 +73,29 @@ defineProps<{
 defineEmits<{
     edit: [category: MasterCategory];
     delete: [category: MasterCategory];
+    restore: [category: MasterCategory];
 }>();
+
+const { t } = useI18n();
+const categoryStore = useCategoryStore();
+
+/** Sub-categories filed under a master category, retired ones included. */
+const countByMaster = computed(() => {
+    const counts = new Map<string, number>();
+    for (const category of categoryStore.categories as Category[]) {
+        counts.set(category.masterCategoryId, (counts.get(category.masterCategoryId) ?? 0) + 1);
+    }
+    return counts;
+});
+
+/**
+ * Number of sub-categories under a master category.
+ * @param masterCategoryId - The master category identifier
+ * @returns How many categories point at it
+ */
+function countFor(masterCategoryId: string): number {
+    return countByMaster.value.get(masterCategoryId) ?? 0;
+}
 
 // Color mapping for avatar background
 const colorMap: Record<string, string> = {
@@ -101,6 +144,10 @@ function avatarStyle(category: MasterCategory) {
 
 .list-container {
     padding: 8px 0;
+}
+
+.category-item--retired {
+    opacity: 0.55;
 }
 
 .category-item {

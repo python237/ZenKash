@@ -221,7 +221,10 @@ const categoryOptions = computed(() => {
     const masterIds = masterCategoryStore.masterCategories
         .filter((mc: MasterCategory) => mc.type === wantType)
         .map((mc: MasterCategory) => mc.id);
+    // Retired categories are not proposed for new rules, but an existing rule
+    // keeps showing the one it already points at.
     return categoryStore.categories
+        .filter((c: Category) => c.isActive || c.id === form.categoryId)
         .filter((c: Category) => masterIds.includes(c.masterCategoryId))
         .map((c: Category) => ({ value: c.id, label: c.name }));
 });

@@ -3,15 +3,25 @@
         <p class="text-body1">{{ message }}</p>
         <p v-if="subtitle" class="text-caption text-grey-7">{{ subtitle }}</p>
 
+        <!-- Extra content: a choice the confirmation depends on, for instance -->
+        <slot />
+
         <template #actions>
             <BtnLink :label="cancelLabel" @click="cancel" />
             <BtnError
                 v-if="variant === 'danger'"
                 :label="confirmLabel"
                 :loading="loading"
+                :disable="confirmDisable"
                 @click="confirm"
             />
-            <BtnPrimary v-else :label="confirmLabel" :loading="loading" @click="confirm" />
+            <BtnPrimary
+                v-else
+                :label="confirmLabel"
+                :loading="loading"
+                :disable="confirmDisable"
+                @click="confirm"
+            />
         </template>
     </ModalBase>
 </template>
@@ -33,6 +43,8 @@ const props = withDefaults(
         variant?: 'default' | 'danger';
         loading?: boolean;
         maxWidth?: string;
+        /** Blocks confirmation until the dialog's own content is answered */
+        confirmDisable?: boolean;
     }>(),
     {
         confirmLabel: 'Confirmer',
@@ -40,6 +52,7 @@ const props = withDefaults(
         variant: 'default',
         loading: false,
         maxWidth: '350px',
+        confirmDisable: false,
     },
 );
 

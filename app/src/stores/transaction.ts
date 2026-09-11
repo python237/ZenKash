@@ -154,6 +154,14 @@ export const useTransactionStore = defineStore('transaction', () => {
         });
 
     /**
+     * Retrieves all movements recorded against a debt (principal and repayments)
+     * @param debtId - The debt's unique identifier
+     * @returns Array of debt transactions
+     */
+    const getTransactionsByDebtId = (debtId: string): Transaction[] =>
+        transactions.value.filter((t: Transaction) => t.type === 'debt' && t.debtId === debtId);
+
+    /**
      * Retrieves all transactions associated with a specific project
      * @param projectId - The project's unique identifier
      * @returns Array of project transactions (injections and dividends)
@@ -912,6 +920,7 @@ export const useTransactionStore = defineStore('transaction', () => {
         getTransactionById,
         getTransactionsByWalletId,
         getTransactionsByCategoryId,
+        getTransactionsByDebtId,
         getTransactionsByProjectId,
         filterTransactions,
         getTransactionsWithRelations,

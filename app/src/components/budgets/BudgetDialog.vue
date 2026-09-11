@@ -93,8 +93,9 @@ const categoryOptions = computed(() => {
         .filter((mc: MasterCategory) => mc.type === CategoryType.Expense)
         .map((mc: MasterCategory) => mc.id);
 
-    // Get all categories that belong to expense master categories
+    // Expense categories still in use, plus the one an edited budget targets.
     return categoryStore.categories
+        .filter((c: Category) => c.isActive || c.id === form.categoryId)
         .filter((c: Category) => expenseMasterCategoryIds.includes(c.masterCategoryId))
         .map((c: Category) => ({
             value: c.id,

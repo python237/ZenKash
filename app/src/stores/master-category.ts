@@ -25,6 +25,7 @@ interface MasterCategoryRow {
     type: string;
     icon: string;
     color: string;
+    is_active: number;
     created_at: string;
     updated_at: string;
 }
@@ -41,6 +42,8 @@ function rowToCategory(row: MasterCategoryRow): MasterCategory {
         type: row.type as CategoryType,
         icon: row.icon,
         color: row.color,
+        // Rows written before the column existed default to active.
+        isActive: row.is_active !== 0,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
     };
@@ -65,6 +68,24 @@ export const useMasterCategoryStore = defineStore('masterCategory', () => {
     const expenseCategories = computed(() =>
         categories.value.filter((c: MasterCategory) => c.type === CategoryType.Expense),
     );
+
+    /**
+     * Master categories still offered when creating a category or a budget.
+     * Retired ones keep organizing the history but are never proposed again.
+     */
+    const activeMasterCategories = computed(() =>
+        categories.value.filter((c: MasterCategory) => c.isActive),
+    );
+
+    /**
+     * Retires a master category, or brings it back.
+     * @param id - The master category identifier
+     * @param isActive - Whether it should be offered for new entries
+     * @returns Promise resolving to the updated master category, or null if not found
+     */
+    async function setActive(id: string, isActive: boolean): Promise<MasterCategory | null> {
+        return update(id, { isActive });
+    }
 
     /**
      * Retrieves a master category by its unique identifier
@@ -110,19 +131,21 @@ export const useMasterCategoryStore = defineStore('masterCategory', () => {
             const category: MasterCategory = {
                 id: generateId(),
                 ...data,
+                isActive: true,
                 createdAt: now,
                 updatedAt: now,
             };
 
             await execute(
-                `INSERT INTO master_categories (id, name, type, icon, color, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO master_categories (id, name, type, icon, color, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                 [
                     category.id,
                     category.name,
                     category.type,
                     category.icon,
                     category.color,
+                    1,
                     category.createdAt.toISOString(),
                     category.updatedAt.toISOString(),
                 ],
@@ -153,19 +176,21 @@ export const useMasterCategoryStore = defineStore('masterCategory', () => {
                 type: data.type ?? existing.type,
                 icon: data.icon ?? existing.icon,
                 color: data.color ?? existing.color,
+                isActive: data.isActive ?? existing.isActive,
                 createdAt: existing.createdAt,
                 updatedAt: new Date(),
             };
 
             await execute(
                 `UPDATE master_categories 
-         SET name = ?, type = ?, icon = ?, color = ?, updated_at = ?
+         SET name = ?, type = ?, icon = ?, color = ?, is_active = ?, updated_at = ?
          WHERE id = ?`,
                 [
                     updated.name,
                     updated.type,
                     updated.icon,
                     updated.color,
+                    updated.isActive ? 1 : 0,
                     updated.updatedAt.toISOString(),
                     id,
                 ],
@@ -210,11 +235,13 @@ export const useMasterCategoryStore = defineStore('masterCategory', () => {
         // Getters
         incomeCategories,
         expenseCategories,
+        activeMasterCategories,
         getCategoryById,
         getMasterCategoryById,
         // Actions
         loadAll,
         create,
+        setActive,
         update,
         remove,
     };

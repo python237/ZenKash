@@ -12,6 +12,7 @@
                     :empty-message="$t('masterCategories.noMasterCategories')"
                     @edit="editCategory"
                     @delete="confirmDelete"
+                    @restore="restoreCategory"
                 />
             </q-tab-panel>
 
@@ -22,6 +23,7 @@
                     :empty-message="$t('masterCategories.noMasterCategories')"
                     @edit="editCategory"
                     @delete="confirmDelete"
+                    @restore="restoreCategory"
                 />
             </q-tab-panel>
         </q-tab-panels>
@@ -39,16 +41,25 @@
             @saved="onSaved"
         />
 
-        <!-- Delete confirmation -->
+        <!-- Holding sub-categories, it cannot be deleted: it is retired -->
         <ModalConfirm
             v-model="deleteDialogOpen"
             :title="$t('common.confirm')"
-            :message="$t('masterCategories.deleteConfirm')"
-            :subtitle="$t('masterCategories.deleteWarning')"
-            :confirm-label="$t('common.delete')"
+            :message="
+                isUsed
+                    ? $t('masterCategories.retireConfirm', { count: usageCount })
+                    : $t('masterCategories.deleteConfirm')
+            "
+            :subtitle="
+                isUsed
+                    ? $t('masterCategories.retireWarning')
+                    : $t('masterCategories.deleteWarning')
+            "
+            :confirm-label="isUsed ? $t('categories.retire') : $t('common.delete')"
             :cancel-label="$t('common.cancel')"
-            variant="danger"
+            :variant="isUsed ? 'default' : 'danger'"
             :loading="store.isLoading"
+            max-width="400px"
             @confirm="deleteCategory"
         />
     </q-page>
@@ -67,10 +78,12 @@ const { t } = useI18n();
 usePage({ title: t('masterCategories.title'), showHeader: true, showBack: true });
 
 const store = useMasterCategoryStore();
+const categoryStore = useCategoryStore();
 
 // Load data on mount
 onMounted(async () => {
-    await store.loadAll();
+    // Categories are loaded too: each master category shows how many it holds.
+    await Promise.all([store.loadAll(), categoryStore.loadAll()]);
 });
 
 // Active tab
@@ -123,6 +136,19 @@ function confirmDelete(category: MasterCategory) {
     deleteDialogOpen.value = true;
 }
 
+/** Sub-categories filed under the master category being removed. */
+const usageCount = computed(() =>
+    categoryToDelete.value
+        ? categoryStore.getCategoriesByMasterId(categoryToDelete.value.id).length
+        : 0,
+);
+
+/**
+ * A master category still holding sub-categories is never deleted: the foreign
+ * key forbids it, and those categories would lose their top level.
+ */
+const isUsed = computed(() => usageCount.value > 0);
+
 /**
  * Handles the master category deletion after user confirmation.
  * Removes the master category from the store and closes the dialog.
@@ -130,9 +156,21 @@ function confirmDelete(category: MasterCategory) {
  */
 async function deleteCategory() {
     if (!categoryToDelete.value) return;
-    await store.remove(categoryToDelete.value.id);
+
+    if (isUsed.value) await store.setActive(categoryToDelete.value.id, false);
+    else await store.remove(categoryToDelete.value.id);
+
     deleteDialogOpen.value = false;
     categoryToDelete.value = null;
+}
+
+/**
+ * Brings a retired master category back.
+ * @param {MasterCategory} category - The master category to restore
+ * @returns {Promise<void>}
+ */
+async function restoreCategory(category: MasterCategory) {
+    await store.setActive(category.id, true);
 }
 
 /**

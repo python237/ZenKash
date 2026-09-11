@@ -52,14 +52,40 @@
         <DebtDialog v-model="showDialog" :debt="selected" />
         <DebtRepaymentDialog v-model="showRepayment" :debt="toRepay" />
 
+        <!-- Deleting a debt is never silent about its money: the answer is required -->
         <ModalConfirm
             v-model="showDeleteConfirm"
             :title="t('common.delete')"
             :message="t('debts.deleteConfirm')"
             variant="danger"
             :confirm-label="t('common.delete')"
+            :confirm-disable="deleteTransactions === null"
+            :loading="isDeleting"
+            max-width="400px"
             @confirm="onDelete"
-        />
+        >
+            <div class="q-mt-md">
+                <div class="text-body2 text-weight-medium">
+                    {{ t('debts.deleteTransactionsQuestion', { count: linkedCount }) }}
+                </div>
+                <q-option-group
+                    v-model="deleteTransactions"
+                    :options="deleteOptions"
+                    type="radio"
+                    dense
+                    class="q-mt-xs"
+                />
+                <div class="text-caption text-grey-7 q-mt-xs">
+                    {{
+                        deleteTransactions === true
+                            ? t('debts.deleteTransactionsYesHint')
+                            : deleteTransactions === false
+                              ? t('debts.deleteTransactionsNoHint')
+                              : t('debts.deleteTransactionsRequired')
+                    }}
+                </div>
+            </div>
+        </ModalConfirm>
     </q-page>
 </template>
 
@@ -87,6 +113,9 @@ const showDeleteConfirm = ref(false);
 const selected = ref<Debt | null>(null);
 const toRepay = ref<DebtWithStats | null>(null);
 const toDelete = ref<Debt | null>(null);
+/** Null until the user answers: the delete button stays blocked. */
+const deleteTransactions = ref<boolean | null>(null);
+const isDeleting = ref(false);
 
 /** Debts with something still outstanding come first, overdue at the very top. */
 const debts = computed(() =>
@@ -144,24 +173,52 @@ function openRepay(debt: DebtWithStats): void {
     showRepayment.value = true;
 }
 
+/** Movements recorded against the debt being deleted. */
+const linkedCount = computed(() =>
+    toDelete.value ? transactionStore.getTransactionsByDebtId(toDelete.value.id).length : 0,
+);
+
+const deleteOptions = computed(() => [
+    { label: t('common.yes'), value: true },
+    { label: t('common.no'), value: false },
+]);
+
 /**
- * Opens the delete confirmation.
+ * Opens the delete confirmation, with the transaction question unanswered.
  * @param debt - The debt to delete
  */
 function openDelete(debt: DebtWithStats): void {
     toDelete.value = debtStore.getById(debt.id) ?? null;
+    deleteTransactions.value = null;
     showDeleteConfirm.value = true;
 }
 
 /**
- * Deletes the selected debt.
- * @returns Promise resolving when the debt is deleted
+ * Deletes the selected debt, and its movements when the user asked for it.
+ *
+ * Removing a movement goes through the transaction store so the wallet balance
+ * is reverted with it — deleting the row alone would leave the money moved with
+ * nothing to show for it. The debt goes last, so those reverts still find it.
+ * @returns Promise resolving when the deletion completes
  */
 async function onDelete(): Promise<void> {
-    if (!toDelete.value) return;
-    await debtStore.remove(toDelete.value.id);
-    toDelete.value = null;
-    showDeleteConfirm.value = false;
+    if (!toDelete.value || deleteTransactions.value === null) return;
+
+    isDeleting.value = true;
+    try {
+        if (deleteTransactions.value) {
+            const linked = transactionStore.getTransactionsByDebtId(toDelete.value.id);
+            for (const transaction of linked) {
+                await transactionStore.remove(transaction.id);
+            }
+        }
+
+        await debtStore.remove(toDelete.value.id);
+        toDelete.value = null;
+        showDeleteConfirm.value = false;
+    } finally {
+        isDeleting.value = false;
+    }
 }
 </script>
 

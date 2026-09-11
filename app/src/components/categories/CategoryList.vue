@@ -8,7 +8,12 @@
 
         <!-- Categories list -->
         <q-list v-else class="list-container">
-            <q-item v-for="category in categories" :key="category.id" class="category-item">
+            <q-item
+                v-for="category in categories"
+                :key="category.id"
+                class="category-item"
+                :class="{ 'category-item--retired': !category.isActive }"
+            >
                 <q-item-section avatar>
                     <q-avatar :style="avatarStyle(category)">
                         <q-icon :name="category.icon" color="white" size="20px" />
@@ -16,7 +21,12 @@
                 </q-item-section>
 
                 <q-item-section>
-                    <q-item-label class="text-weight-medium">{{ category.name }}</q-item-label>
+                    <q-item-label class="text-weight-medium">
+                        {{ category.name }}
+                        <q-badge v-if="!category.isActive" color="grey-5" class="q-ml-xs">
+                            {{ t('categories.retired') }}
+                        </q-badge>
+                    </q-item-label>
                     <q-item-label v-if="category.masterCategory" caption class="text-grey-6">
                         {{ category.masterCategory.name }}
                     </q-item-label>
@@ -29,6 +39,13 @@
                             icon="edit"
                             color="grey-6"
                             @click="$emit('edit', category)"
+                        />
+                        <BtnIcon
+                            v-if="!category.isActive"
+                            dense
+                            icon="restart_alt"
+                            color="primary"
+                            @click="$emit('restore', category)"
                         />
                         <BtnIcon
                             dense
@@ -55,7 +72,10 @@ defineProps<{
 defineEmits<{
     edit: [category: CategoryWithMaster];
     delete: [category: CategoryWithMaster];
+    restore: [category: CategoryWithMaster];
 }>();
+
+const { t } = useI18n();
 
 // Color mapping for avatar background
 const colorMap: Record<string, string> = {
@@ -106,6 +126,10 @@ function avatarStyle(category: CategoryWithMaster): { backgroundColor: string } 
 
 .list-container {
     padding: 8px 0;
+}
+
+.category-item--retired {
+    opacity: 0.55;
 }
 
 .category-item {

@@ -12,6 +12,7 @@
                     :empty-message="t('categories.noCategories')"
                     @edit="editCategory"
                     @delete="confirmDelete"
+                    @restore="restoreCategory"
                 />
             </q-tab-panel>
 
@@ -22,6 +23,7 @@
                     :empty-message="t('categories.noCategories')"
                     @edit="editCategory"
                     @delete="confirmDelete"
+                    @restore="restoreCategory"
                 />
             </q-tab-panel>
         </q-tab-panels>
@@ -39,16 +41,17 @@
             @saved="onSaved"
         />
 
-        <!-- Delete confirmation -->
+        <!-- A category used by a transaction cannot be deleted: it is retired -->
         <ModalConfirm
             v-model="deleteDialogOpen"
             :title="t('common.confirm')"
-            :message="t('categories.deleteConfirm')"
-            :subtitle="t('categories.deleteWarning')"
-            :confirm-label="t('common.delete')"
+            :message="isUsed ? t('categories.retireConfirm', { count: usageCount }) : t('categories.deleteConfirm')"
+            :subtitle="isUsed ? t('categories.retireWarning') : t('categories.deleteWarning')"
+            :confirm-label="isUsed ? t('categories.retire') : t('common.delete')"
             :cancel-label="t('common.cancel')"
-            variant="danger"
+            :variant="isUsed ? 'default' : 'danger'"
             :loading="categoryStore.isLoading"
+            max-width="400px"
             @confirm="deleteCategory"
         />
     </q-page>
@@ -69,10 +72,15 @@ usePage({ title: t('categories.title'), showHeader: true, showBack: true });
 
 const categoryStore = useCategoryStore();
 const masterCategoryStore = useMasterCategoryStore();
+const transactionStore = useTransactionStore();
 
 // Load data on mount
 onMounted(async () => {
-    await Promise.all([categoryStore.loadAll(), masterCategoryStore.loadAll()]);
+    await Promise.all([
+        categoryStore.loadAll(),
+        masterCategoryStore.loadAll(),
+        transactionStore.loadAll(),
+    ]);
 });
 
 // Active tab
@@ -85,10 +93,18 @@ const categoryTabs = computed(() => [
 ]);
 
 // Get master categories for current tab type
+// Only active master categories are offered, plus the one an edited category
+// already belongs to — dropping it would silently clear the field.
 const currentMasterCategories = computed(() => {
-    return activeTab.value === CategoryType.Expense
-        ? masterCategoryStore.expenseCategories
-        : masterCategoryStore.incomeCategories;
+    const pool =
+        activeTab.value === CategoryType.Expense
+            ? masterCategoryStore.expenseCategories
+            : masterCategoryStore.incomeCategories;
+
+    return pool.filter(
+        (mc: MasterCategory) =>
+            mc.isActive || mc.id === selectedCategory.value?.masterCategoryId,
+    );
 });
 
 // Categories with master category info
@@ -143,6 +159,19 @@ function editCategory(category: CategoryWithMaster) {
     dialogOpen.value = true;
 }
 
+/** Transactions already filed under the category being removed. */
+const usageCount = computed(() =>
+    categoryToDelete.value
+        ? transactionStore.getTransactionsByCategoryId(categoryToDelete.value.id).length
+        : 0,
+);
+
+/**
+ * A used category is never deleted: the foreign key forbids it, and the history
+ * would lose its label. It is retired instead.
+ */
+const isUsed = computed(() => usageCount.value > 0);
+
 /**
  * Opens the delete confirmation dialog for the selected category.
  * @param {CategoryWithMaster} category - The category to delete
@@ -154,13 +183,24 @@ function confirmDelete(category: CategoryWithMaster) {
 }
 
 /**
- * Handles the category deletion after user confirmation.
- * Removes the category from the store and closes the dialog.
+ * Brings a retired category back into the transaction form.
+ * @param {CategoryWithMaster} category - The category to restore
+ * @returns {Promise<void>}
+ */
+async function restoreCategory(category: CategoryWithMaster) {
+    await categoryStore.setActive(category.id, true);
+}
+
+/**
+ * Deletes the category, or retires it when transactions already use it.
  * @returns {Promise<void>}
  */
 async function deleteCategory() {
     if (!categoryToDelete.value) return;
-    await categoryStore.remove(categoryToDelete.value.id);
+
+    if (isUsed.value) await categoryStore.setActive(categoryToDelete.value.id, false);
+    else await categoryStore.remove(categoryToDelete.value.id);
+
     deleteDialogOpen.value = false;
     categoryToDelete.value = null;
 }

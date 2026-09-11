@@ -117,6 +117,7 @@ async function createTables(): Promise<void> {
       type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
       icon TEXT NOT NULL,
       color TEXT NOT NULL,
+      is_active INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -126,6 +127,7 @@ async function createTables(): Promise<void> {
       name TEXT NOT NULL,
       master_category_id TEXT NOT NULL,
       icon TEXT,
+      is_active INTEGER NOT NULL DEFAULT 1,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (master_category_id) REFERENCES master_categories(id)
@@ -157,7 +159,7 @@ async function createTables(): Promise<void> {
 
     CREATE TABLE IF NOT EXISTS transactions (
       id TEXT PRIMARY KEY NOT NULL,
-      type TEXT NOT NULL CHECK(type IN ('income', 'expense', 'transfer', 'project')),
+      type TEXT NOT NULL CHECK(type IN ('income', 'expense', 'transfer', 'project', 'debt')),
       amount REAL NOT NULL,
       date TEXT NOT NULL,
       category_id TEXT,
@@ -167,6 +169,8 @@ async function createTables(): Promise<void> {
       fee REAL,
       project_id TEXT,
       project_transaction_type TEXT CHECK(project_transaction_type IS NULL OR project_transaction_type IN ('injection', 'dividend')),
+      debt_id TEXT,
+      debt_transaction_type TEXT CHECK(debt_transaction_type IS NULL OR debt_transaction_type IN ('principal', 'repayment')),
       description TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
@@ -332,7 +336,8 @@ async function createTables(): Promise<void> {
  * - Removing NOT NULL constraint from category_id in transactions
  * - Removing wallet_id from projects
  * - Enforcing one savings goal per wallet (unique index)
- * - Adding debt columns to transactions
+ * - Rebuilding transactions so its type CHECK accepts debt movements
+ * - Adding is_active to categories and master categories
  */
 async function runMigrations(): Promise<void> {
     if (!db) return;
@@ -529,23 +534,110 @@ async function runMigrations(): Promise<void> {
         console.error('Projects wallet_id migration error:', error);
     }
 
-    // Migration: link transactions to debts (money lent or borrowed)
+    // Migration: master categories can be retired too. A master category holding
+    // sub-categories cannot be deleted — same foreign key, same lost labels.
     try {
-        const info = await db.query('PRAGMA table_info(transactions)');
+        const info = await db.query('PRAGMA table_info(master_categories)');
         const columns = info.values || [];
-        const has = (name: string) =>
-            columns.some((col: { name: string }) => col.name === name);
+        const hasIsActive = columns.some((col: { name: string }) => col.name === 'is_active');
 
-        if (!has('debt_id')) {
-            await db.execute('ALTER TABLE transactions ADD COLUMN debt_id TEXT');
-            console.log('Migration: Added debt_id column to transactions table');
-        }
-        if (!has('debt_transaction_type')) {
-            await db.execute('ALTER TABLE transactions ADD COLUMN debt_transaction_type TEXT');
-            console.log('Migration: Added debt_transaction_type column to transactions table');
+        if (!hasIsActive) {
+            await db.execute(
+                'ALTER TABLE master_categories ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1',
+            );
+            console.log('Migration: Added is_active column to master_categories table');
         }
     } catch (error) {
-        console.error('Transactions debt columns migration error:', error);
+        console.error('Master categories is_active migration error:', error);
+    }
+
+    // Migration: categories can be retired instead of deleted.
+    // A category used by a transaction cannot be removed — the foreign key
+    // forbids it, and the history would lose its label — so it is deactivated:
+    // it disappears from the transaction form and keeps labelling the past.
+    try {
+        const info = await db.query('PRAGMA table_info(categories)');
+        const columns = info.values || [];
+        const hasIsActive = columns.some((col: { name: string }) => col.name === 'is_active');
+
+        if (!hasIsActive) {
+            await db.execute(
+                'ALTER TABLE categories ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1',
+            );
+            console.log('Migration: Added is_active column to categories table');
+        }
+    } catch (error) {
+        console.error('Categories is_active migration error:', error);
+    }
+
+    // Migration: allow debt movements in transactions.
+    // The type column carries a CHECK constraint, and SQLite cannot alter one:
+    // the table has to be rebuilt, which is also where the debt columns land.
+    try {
+        const schemaRow = await db.query(
+            "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'transactions'",
+        );
+        const ddl = String((schemaRow.values?.[0] as { sql?: string })?.sql ?? '');
+
+        if (ddl && !ddl.includes("'debt'")) {
+            console.log('Migration: Recreating transactions table to accept debt movements');
+
+            await db.execute(`
+        CREATE TABLE IF NOT EXISTS transactions_debt_new (
+          id TEXT PRIMARY KEY NOT NULL,
+          type TEXT NOT NULL CHECK(type IN ('income', 'expense', 'transfer', 'project', 'debt')),
+          amount REAL NOT NULL,
+          date TEXT NOT NULL,
+          category_id TEXT,
+          wallet_id TEXT,
+          from_wallet_id TEXT,
+          to_wallet_id TEXT,
+          fee REAL,
+          project_id TEXT,
+          project_transaction_type TEXT CHECK(project_transaction_type IS NULL OR project_transaction_type IN ('injection', 'dividend')),
+          debt_id TEXT,
+          debt_transaction_type TEXT CHECK(debt_transaction_type IS NULL OR debt_transaction_type IN ('principal', 'repayment')),
+          description TEXT,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          FOREIGN KEY (category_id) REFERENCES categories(id),
+          FOREIGN KEY (wallet_id) REFERENCES wallets(id)
+        )
+      `);
+
+            // Only the columns every previous schema had: an older database may
+            // not carry the debt ones yet, and no debt row can exist anyway.
+            await db.execute(`
+        INSERT INTO transactions_debt_new
+          (id, type, amount, date, category_id, wallet_id, from_wallet_id, to_wallet_id,
+           fee, project_id, project_transaction_type, description, created_at, updated_at)
+        SELECT id, type, amount, date, category_id, wallet_id, from_wallet_id, to_wallet_id,
+               fee, project_id, project_transaction_type, description, created_at, updated_at
+        FROM transactions
+      `);
+
+            await db.execute('DROP TABLE transactions');
+            await db.execute('ALTER TABLE transactions_debt_new RENAME TO transactions');
+
+            console.log('Migration: Transactions table now accepts debt movements');
+        } else {
+            // The constraint is already right; make sure the columns are there.
+            const info = await db.query('PRAGMA table_info(transactions)');
+            const columns = info.values || [];
+            const has = (name: string) =>
+                columns.some((col: { name: string }) => col.name === name);
+
+            if (!has('debt_id')) {
+                await db.execute('ALTER TABLE transactions ADD COLUMN debt_id TEXT');
+                console.log('Migration: Added debt_id column to transactions table');
+            }
+            if (!has('debt_transaction_type')) {
+                await db.execute('ALTER TABLE transactions ADD COLUMN debt_transaction_type TEXT');
+                console.log('Migration: Added debt_transaction_type column to transactions table');
+            }
+        }
+    } catch (error) {
+        console.error('Transactions debt migration error:', error);
     }
 
     // Migration: one savings goal per wallet.

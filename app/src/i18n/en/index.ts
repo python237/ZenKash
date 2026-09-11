@@ -125,7 +125,13 @@ export default {
         totalReceivable: 'Owed to you',
         totalPayable: 'You owe',
         openCount: '{count} open',
-        deleteConfirm: 'Delete this loan? The related transactions are kept.',
+        deleteConfirm: 'Are you sure you want to delete this loan?',
+        deleteTransactionsQuestion: 'Also delete the {count} linked transaction(s)?',
+        deleteTransactionsYesHint:
+            'The movements are deleted and the wallet balances are restored.',
+        deleteTransactionsNoHint:
+            'The movements and balances are kept, but they will no longer belong to a loan and drop out of the analytics.',
+        deleteTransactionsRequired: 'Pick an answer to enable the deletion.',
         directions: {
             lent: 'Lent',
             borrowed: 'Borrowed',
@@ -182,6 +188,11 @@ export default {
         noCategories: 'No categories yet',
         deleteConfirm: 'Are you sure you want to delete this category?',
         deleteWarning: 'Associated transactions will not be deleted.',
+        retired: 'Inactive',
+        retire: 'Deactivate',
+        retireConfirm: 'This category is used by {count} transaction(s), so it cannot be deleted.',
+        retireWarning:
+            'It will be deactivated: it keeps labelling the history but is no longer offered for new transactions. You can bring it back at any time.',
         masterCategory: 'Master Category',
         icon: 'Icon',
     },
@@ -189,11 +200,16 @@ export default {
     // Master Categories
     masterCategories: {
         title: 'Master Categories',
+        subCategoryCount: '{count} sub-categories',
         addMasterCategory: 'Add Master Category',
         editMasterCategory: 'Edit Master Category',
         noMasterCategories: 'No master categories yet',
         deleteConfirm: 'Are you sure you want to delete this master category?',
         deleteWarning: 'Associated categories will not be deleted.',
+        retireConfirm:
+            'This master category holds {count} sub-categories, so it cannot be deleted.',
+        retireWarning:
+            'It will be deactivated: its sub-categories and the history stay intact, but it is no longer offered for new categories or budgets.',
         icon: 'Icon',
         color: 'Color',
         selectIcon: 'Select an icon',

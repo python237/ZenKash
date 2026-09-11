@@ -56,6 +56,10 @@
                 :error="errors.description"
             />
 
+            <div v-if="saveError" class="save-error text-caption">
+                <q-icon name="error" size="16px" /> {{ saveError }}
+            </div>
+
             <div class="row justify-end q-gutter-sm q-mt-md">
                 <BtnLink :label="t('common.cancel')" @click="close" />
                 <BtnPrimary :label="t('common.save')" type="submit" :loading="isLoading" />
@@ -121,6 +125,9 @@ const { form, errors, validate, reset } = useFormValidation(schema, {
     description: '',
 });
 
+/** Message shown when the save could not be completed. */
+const saveError = ref('');
+
 const isEditing = computed(() => !!props.debt);
 const isLoading = computed(() => debtStore.isLoading);
 
@@ -164,6 +171,7 @@ watch(
 watch(
     () => props.modelValue,
     (isOpen: boolean) => {
+        saveError.value = '';
         if (isOpen && !props.debt) reset();
     },
 );
@@ -182,6 +190,7 @@ function close(): void {
  */
 async function save(): Promise<void> {
     if (!validate()) return;
+    saveError.value = '';
 
     try {
         const dueDate = form.dueDate ? new Date(form.dueDate) : undefined;
@@ -204,16 +213,22 @@ async function save(): Promise<void> {
             });
 
             // The principal movement is a real transaction: it is what moves the
-            // wallet balance and what the analytics layer reads.
-            await transactionStore.create({
-                type: 'debt',
-                debtTransactionType: 'principal',
-                debtId: debt.id,
-                amount: form.principal,
-                date: new Date(),
-                walletId: form.walletId,
-                description: form.counterparty,
-            });
+            // wallet balance and what sets the debt's principal. If it fails, the
+            // debt must not survive on its own — it would sit in the list at 0.
+            try {
+                await transactionStore.create({
+                    type: 'debt',
+                    debtTransactionType: 'principal',
+                    debtId: debt.id,
+                    amount: form.principal,
+                    date: new Date(),
+                    walletId: form.walletId,
+                    description: form.counterparty,
+                });
+            } catch (error) {
+                await debtStore.remove(debt.id);
+                throw error;
+            }
 
             emit('saved', debt);
         }
@@ -221,6 +236,13 @@ async function save(): Promise<void> {
         close();
     } catch (error) {
         console.error('Failed to save debt:', error);
+        saveError.value = t('messages.error');
     }
 }
 </script>
+
+<style lang="scss" scoped>
+.save-error {
+    color: $negative;
+}
+</style>

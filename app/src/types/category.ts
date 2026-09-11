@@ -14,6 +14,14 @@ export interface Category {
     masterCategoryId: string;
     /** Icon identifier for visual representation */
     icon: string;
+    /**
+     * Whether the category is still offered when recording a transaction.
+     *
+     * A category already used by a transaction cannot be deleted — the history
+     * would lose its label — so it is retired instead: kept for the past,
+     * hidden from new entries.
+     */
+    isActive: boolean;
     /** Timestamp when the category was created */
     createdAt: Date;
     /** Timestamp when the category was last updated */
@@ -31,12 +39,16 @@ export interface CategoryWithMaster extends Category {
 
 /**
  * Data required to create a new category.
- * Excludes auto-generated fields (id, createdAt, updatedAt).
+ * Excludes auto-generated fields (id, createdAt, updatedAt); a new category is
+ * always active.
  */
-export type CreateCategory = Omit<Category, 'id' | 'createdAt' | 'updatedAt'>;
+export type CreateCategory = Omit<Category, 'id' | 'createdAt' | 'updatedAt' | 'isActive'>;
 
 /**
  * Data for updating an existing category.
  * All fields are optional to allow partial updates.
  */
-export type UpdateCategory = Partial<CreateCategory>;
+export type UpdateCategory = Partial<CreateCategory> & {
+    /** Retire the category, or bring it back */
+    isActive?: boolean;
+};

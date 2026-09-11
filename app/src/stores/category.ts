@@ -19,6 +19,7 @@ interface CategoryRow {
     name: string;
     master_category_id: string;
     icon: string | null;
+    is_active: number;
     created_at: string;
     updated_at: string;
 }
@@ -34,6 +35,8 @@ function rowToCategory(row: CategoryRow): Category {
         name: row.name,
         masterCategoryId: row.master_category_id,
         icon: row.icon ?? 'label',
+        // Rows written before the column existed default to active.
+        isActive: row.is_active !== 0,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
     };
@@ -59,6 +62,12 @@ export const useCategoryStore = defineStore('category', () => {
      * @returns The category if found, undefined otherwise
      */
     const getCategoryById = (id: string) => categories.value.find((c: Category) => c.id === id);
+
+    /**
+     * Categories still offered when recording a transaction. Retired ones keep
+     * labelling the history but are never proposed again.
+     */
+    const activeCategories = computed(() => categories.value.filter((c: Category) => c.isActive));
 
     /**
      * Loads all categories from the database into the store
@@ -89,18 +98,20 @@ export const useCategoryStore = defineStore('category', () => {
             const category: Category = {
                 id: generateId(),
                 ...data,
+                isActive: true,
                 createdAt: now,
                 updatedAt: now,
             };
 
             await execute(
-                `INSERT INTO categories (id, name, master_category_id, icon, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+                `INSERT INTO categories (id, name, master_category_id, icon, is_active, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
                 [
                     category.id,
                     category.name,
                     category.masterCategoryId,
                     category.icon,
+                    1,
                     category.createdAt.toISOString(),
                     category.updatedAt.toISOString(),
                 ],
@@ -130,18 +141,20 @@ export const useCategoryStore = defineStore('category', () => {
                 name: data.name ?? existing.name,
                 masterCategoryId: data.masterCategoryId ?? existing.masterCategoryId,
                 icon: data.icon ?? existing.icon,
+                isActive: data.isActive ?? existing.isActive,
                 createdAt: existing.createdAt,
                 updatedAt: new Date(),
             };
 
             await execute(
                 `UPDATE categories 
-         SET name = ?, master_category_id = ?, icon = ?, updated_at = ?
+         SET name = ?, master_category_id = ?, icon = ?, is_active = ?, updated_at = ?
          WHERE id = ?`,
                 [
                     updated.name,
                     updated.masterCategoryId,
                     updated.icon,
+                    updated.isActive ? 1 : 0,
                     updated.updatedAt.toISOString(),
                     id,
                 ],
@@ -155,6 +168,16 @@ export const useCategoryStore = defineStore('category', () => {
         } finally {
             isLoading.value = false;
         }
+    }
+
+    /**
+     * Retires a category, or brings it back.
+     * @param id - The category identifier
+     * @param isActive - Whether it should be offered for new transactions
+     * @returns Promise resolving to the updated category, or null if not found
+     */
+    async function setActive(id: string, isActive: boolean): Promise<Category | null> {
+        return update(id, { isActive });
     }
 
     /**
@@ -183,11 +206,13 @@ export const useCategoryStore = defineStore('category', () => {
         isInitialized,
         // Getters
         getCategoriesByMasterId,
+        activeCategories,
         getCategoryById,
         // Actions
         loadAll,
         create,
         update,
+        setActive,
         remove,
     };
 });

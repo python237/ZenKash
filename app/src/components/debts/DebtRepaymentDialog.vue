@@ -23,6 +23,10 @@
 
             <InputDate v-model="form.date" :label="t('common.date')" />
 
+            <div v-if="saveError" class="save-error text-caption">
+                <q-icon name="error" size="16px" /> {{ saveError }}
+            </div>
+
             <div class="row justify-end q-gutter-sm q-mt-md">
                 <BtnLink :label="t('common.cancel')" @click="close" />
                 <BtnPrimary :label="t('common.save')" type="submit" :loading="isLoading" />
@@ -75,6 +79,9 @@ const { form, errors, validate, reset } = useFormValidation(schema, {
     date: toDateInput(new Date()),
 });
 
+/** Message shown when the repayment could not be recorded. */
+const saveError = ref('');
+
 const isLoading = computed(() => transactionStore.isLoading);
 
 const currencySymbol = computed(() =>
@@ -84,6 +91,7 @@ const currencySymbol = computed(() =>
 watch(
     () => props.modelValue,
     (isOpen: boolean) => {
+        saveError.value = '';
         // A repayment defaults to what is left: settling in full is the common case.
         if (isOpen) reset({ amount: props.debt?.outstanding ?? 0, date: toDateInput(new Date()) });
     },
@@ -103,6 +111,7 @@ function close(): void {
  */
 async function save(): Promise<void> {
     if (!props.debt || !validate()) return;
+    saveError.value = '';
 
     try {
         await transactionStore.create({
@@ -119,6 +128,13 @@ async function save(): Promise<void> {
         close();
     } catch (error) {
         console.error('Failed to record repayment:', error);
+        saveError.value = t('messages.error');
     }
 }
 </script>
+
+<style lang="scss" scoped>
+.save-error {
+    color: $negative;
+}
+</style>

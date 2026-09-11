@@ -405,7 +405,9 @@ const toWalletOptions = computed(() => {
     return walletOptions.value.filter((w) => w.value !== form.fromWalletId);
 });
 
-// Category options (filtered by transaction type)
+// Category options (filtered by transaction type).
+// Retired categories are not proposed, except the one an edited transaction
+// already carries — dropping it would silently clear the field.
 const categoryOptions = computed(() => {
     const categoryType = form.type === 'income' ? CategoryType.Income : CategoryType.Expense;
     const filteredMasterCategories = masterCategoryStore.masterCategories.filter(
@@ -413,6 +415,7 @@ const categoryOptions = computed(() => {
     );
 
     return categoryStore.categories
+        .filter((c) => c.isActive || c.id === form.categoryId)
         .filter((c) =>
             filteredMasterCategories.some((mc: MasterCategory) => mc.id === c.masterCategoryId),
         )

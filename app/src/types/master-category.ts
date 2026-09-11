@@ -26,6 +26,12 @@ export interface MasterCategory {
     icon: string;
     /** Color code for visual distinction (hex or named color) */
     color: string;
+    /**
+     * Whether the master category is still offered when creating a category or
+     * a budget. One holding sub-categories cannot be deleted — the hierarchy
+     * would lose its top level — so it is retired instead.
+     */
+    isActive: boolean;
     /** Timestamp when the master category was created */
     createdAt: Date;
     /** Timestamp when the master category was last updated */
@@ -36,10 +42,16 @@ export interface MasterCategory {
  * Data required to create a new master category.
  * Excludes auto-generated fields (id, createdAt, updatedAt).
  */
-export type CreateMasterCategory = Omit<MasterCategory, 'id' | 'createdAt' | 'updatedAt'>;
+export type CreateMasterCategory = Omit<
+    MasterCategory,
+    'id' | 'createdAt' | 'updatedAt' | 'isActive'
+>;
 
 /**
  * Data for updating an existing master category.
  * All fields are optional to allow partial updates.
  */
-export type UpdateMasterCategory = Partial<CreateMasterCategory>;
+export type UpdateMasterCategory = Partial<CreateMasterCategory> & {
+    /** Retire the master category, or bring it back */
+    isActive?: boolean;
+};
