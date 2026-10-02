@@ -48,6 +48,11 @@
                     :label="t('debts.addRepayment')"
                     @click="$emit('repay')"
                 />
+                <BtnLink
+                    v-else-if="debt.totalRepaid > 0"
+                    :label="t('debts.undoRepayment')"
+                    @click="$emit('undo')"
+                />
             </div>
 
             <div v-if="debt.dueDate" class="text-caption q-mt-xs" :class="dueClass">
@@ -74,6 +79,7 @@ defineEmits<{
     click: [];
     delete: [];
     repay: [];
+    undo: [];
 }>();
 
 const { t, locale } = useI18n();

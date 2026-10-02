@@ -42,6 +42,7 @@
                 @click="openEdit(debt)"
                 @delete="openDelete(debt)"
                 @repay="openRepay(debt)"
+                @undo="openUndo(debt)"
             />
         </div>
 
@@ -51,6 +52,17 @@
 
         <DebtDialog v-model="showDialog" :debt="selected" />
         <DebtRepaymentDialog v-model="showRepayment" :debt="toRepay" />
+
+        <ModalConfirm
+            v-model="showUndoConfirm"
+            :title="t('debts.undoRepayment')"
+            :message="undoMessage"
+            :subtitle="t('debts.undoRepaymentHint')"
+            :confirm-label="t('debts.undoRepayment')"
+            :loading="isUndoing"
+            max-width="400px"
+            @confirm="onUndo"
+        />
 
         <!-- Deleting a debt is never silent about its money: the answer is required -->
         <ModalConfirm
@@ -91,6 +103,7 @@
 
 <script setup lang="ts">
 import type { Debt, DebtWithStats } from 'src/types/debt';
+import type { Transaction } from 'src/types/transaction';
 import { useDebtStore } from 'src/stores/debt';
 import DebtCard from 'src/components/debts/DebtCard.vue';
 import DebtDialog from 'src/components/debts/DebtDialog.vue';
@@ -98,7 +111,7 @@ import DebtRepaymentDialog from 'src/components/debts/DebtRepaymentDialog.vue';
 import ModalConfirm from 'src/components/modals/ModalConfirm.vue';
 import BtnFab from 'src/components/buttons/BtnFab.vue';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 usePage({ title: t('debts.title'), showHeader: true, showBack: true });
 
 const debtStore = useDebtStore();
@@ -116,6 +129,9 @@ const toDelete = ref<Debt | null>(null);
 /** Null until the user answers: the delete button stays blocked. */
 const deleteTransactions = ref<boolean | null>(null);
 const isDeleting = ref(false);
+const showUndoConfirm = ref(false);
+const toUndo = ref<DebtWithStats | null>(null);
+const isUndoing = ref(false);
 
 /** Debts with something still outstanding come first, overdue at the very top. */
 const debts = computed(() =>
@@ -171,6 +187,60 @@ function openEdit(debt: DebtWithStats): void {
 function openRepay(debt: DebtWithStats): void {
     toRepay.value = debt;
     showRepayment.value = true;
+}
+
+/**
+ * Most recent repayment of a debt: the one undone first.
+ * @param debtId - The debt identifier
+ * @returns The latest repayment transaction, if any
+ */
+function lastRepayment(debtId: string): Transaction | undefined {
+    return transactionStore
+        .getTransactionsByDebtId(debtId)
+        .filter((tx) => tx.type === 'debt' && tx.debtTransactionType === 'repayment')
+        .sort(
+            (a, b) =>
+                b.date.getTime() - a.date.getTime() ||
+                b.createdAt.getTime() - a.createdAt.getTime(),
+        )[0];
+}
+
+const undoMessage = computed(() => {
+    const repayment = toUndo.value ? lastRepayment(toUndo.value.id) : undefined;
+    if (!toUndo.value || !repayment) return '';
+    return t('debts.undoRepaymentConfirm', {
+        amount: formatCurrency(repayment.amount, toUndo.value.currency),
+        date: new Intl.DateTimeFormat(locale.value, { dateStyle: 'medium' }).format(repayment.date),
+    });
+});
+
+/**
+ * Opens the confirmation to undo the last repayment of a settled debt.
+ * @param debt - The settled debt
+ */
+function openUndo(debt: DebtWithStats): void {
+    toUndo.value = debt;
+    showUndoConfirm.value = true;
+}
+
+/**
+ * Removes the last repayment. Going through the transaction store reverts the
+ * wallet balance and the repaid total together, so the debt reopens with the
+ * money back where it was.
+ * @returns Promise resolving when the repayment is removed
+ */
+async function onUndo(): Promise<void> {
+    const repayment = toUndo.value ? lastRepayment(toUndo.value.id) : undefined;
+    if (!repayment) return;
+
+    isUndoing.value = true;
+    try {
+        await transactionStore.remove(repayment.id);
+        toUndo.value = null;
+        showUndoConfirm.value = false;
+    } finally {
+        isUndoing.value = false;
+    }
 }
 
 /** Movements recorded against the debt being deleted. */

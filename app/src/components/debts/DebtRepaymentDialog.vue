@@ -21,6 +21,19 @@
                 :error="errors.amount"
             />
 
+            <q-select
+                v-model="form.walletId"
+                :options="walletOptions"
+                :label="t('debts.wallet')"
+                :hint="t(`debts.repaymentWalletHint.${debt.direction}`)"
+                outlined
+                dense
+                emit-value
+                map-options
+                :error="!!errors.walletId"
+                :error-message="errors.walletId"
+            />
+
             <InputDate v-model="form.date" :label="t('common.date')" />
 
             <div v-if="saveError" class="save-error text-caption">
@@ -38,6 +51,7 @@
 <script setup lang="ts">
 import { z } from 'zod/v4';
 import type { DebtWithStats } from 'src/types/debt';
+import type { Wallet } from 'src/types/wallet';
 import { CURRENCIES } from 'src/types/currency';
 import ModalBase from '../modals/ModalBase.vue';
 import InputNumber from '../inputs/InputNumber.vue';
@@ -59,10 +73,12 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { formatCurrency } = useCurrency();
 const transactionStore = useTransactionStore();
+const walletStore = useWalletStore();
 
 const schema = z.object({
     amount: z.number().positive(t('validation.positiveNumber')),
     date: z.string().min(1, t('validation.required')),
+    walletId: z.string().min(1, t('validation.required')),
 });
 
 /**
@@ -74,15 +90,40 @@ function toDateInput(d: Date): string {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/**
+ * Turns the picked day into a timestamp carrying the current time, like the
+ * other money dialogs: `new Date('YYYY-MM-DD')` would land on midnight UTC.
+ * @param dateString - The picked day, as YYYY-MM-DD
+ * @returns The day at the current local time
+ */
+function withCurrentTime(dateString: string): Date {
+    const [year = 0, month = 1, day = 1] = dateString.split('-').map(Number);
+    const now = new Date();
+    return new Date(year, month - 1, day, now.getHours(), now.getMinutes(), now.getSeconds());
+}
+
 const { form, errors, validate, reset } = useFormValidation(schema, {
     amount: 0,
     date: toDateInput(new Date()),
+    walletId: '',
 });
 
 /** Message shown when the repayment could not be recorded. */
 const saveError = ref('');
 
 const isLoading = computed(() => transactionStore.isLoading);
+
+/**
+ * Wallets able to carry the repayment. Only those in the debt's currency: the
+ * repaid total is summed with the principal, so a foreign amount would corrupt it.
+ */
+const walletOptions = computed(() =>
+    props.debt
+        ? walletStore.nonGameWallets
+              .filter((w: Wallet) => w.currency === props.debt!.currency)
+              .map((w: Wallet) => ({ value: w.id, label: w.name }))
+        : [],
+);
 
 const currencySymbol = computed(() =>
     props.debt ? (CURRENCIES[props.debt.currency]?.symbol ?? props.debt.currency) : '',
@@ -93,7 +134,15 @@ watch(
     (isOpen: boolean) => {
         saveError.value = '';
         // A repayment defaults to what is left: settling in full is the common case.
-        if (isOpen) reset({ amount: props.debt?.outstanding ?? 0, date: toDateInput(new Date()) });
+        // The debt's own wallet is the natural default, when it can still be used.
+        if (isOpen) {
+            const debtWallet = props.debt?.walletId ?? '';
+            reset({
+                amount: props.debt?.outstanding ?? 0,
+                date: toDateInput(new Date()),
+                walletId: walletOptions.value.some((o) => o.value === debtWallet) ? debtWallet : '',
+            });
+        }
     },
 );
 
@@ -119,8 +168,8 @@ async function save(): Promise<void> {
             debtTransactionType: 'repayment',
             debtId: props.debt.id,
             amount: form.amount,
-            date: new Date(form.date),
-            walletId: props.debt.walletId,
+            date: withCurrentTime(form.date),
+            walletId: form.walletId,
             description: props.debt.counterparty,
         });
 

@@ -15,6 +15,18 @@
             <!-- Actions -->
             <div class="actions-section q-mt-lg">
                 <q-list bordered class="rounded-borders">
+                    <q-item clickable v-ripple @click="openHistory">
+                        <q-item-section avatar>
+                            <q-icon name="history" color="grey-7" />
+                        </q-item-section>
+                        <q-item-section>{{ t('wallets.history.title') }}</q-item-section>
+                        <q-item-section side>
+                            <q-icon name="chevron_right" color="grey-5" />
+                        </q-item-section>
+                    </q-item>
+
+                    <q-separator />
+
                     <q-item clickable v-ripple @click="openEdit">
                         <q-item-section avatar>
                             <q-icon name="edit" color="grey-7" />
@@ -100,6 +112,14 @@ const showDialog = ref(false);
 const showDeleteConfirm = ref(false);
 
 // Actions
+/**
+ * Opens the wallet's operation history.
+ * @returns {void}
+ */
+function openHistory(): void {
+    void router.push({ name: 'wallet-history', params: { id: walletId.value } });
+}
+
 /**
  * Opens the wallet edit dialog.
  * @returns {void}
