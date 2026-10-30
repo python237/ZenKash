@@ -21,7 +21,7 @@
 </template>
 
 <script setup lang="ts">
-import { maskAmount } from 'src/composables/usePrivacy';
+import { displayAmount } from 'src/composables/usePrivacy';
 import type { InvestmentItem } from 'src/types/investment';
 import { CURRENCIES } from 'src/types/currency';
 import { useInvestmentStore } from 'src/stores/investment';
@@ -67,7 +67,7 @@ const typeTone = computed(() => {
 const currency = computed(() => CURRENCIES[props.investment.currency]);
 
 const formattedRate = computed(() => {
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat('fr-FR', {
             style: 'currency',
             currency: props.investment.currency,
@@ -79,7 +79,7 @@ const formattedRate = computed(() => {
 
 const formattedValue = computed(() => {
     const value = props.investment.quantity * props.investment.currentRate;
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat('fr-FR', {
             style: 'currency',
             currency: props.investment.currency,

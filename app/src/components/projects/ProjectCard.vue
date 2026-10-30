@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { maskAmount } from 'src/composables/usePrivacy';
+import { displayAmount } from 'src/composables/usePrivacy';
 import type { ProjectWithStats } from 'src/types/project';
 import { CURRENCIES, CurrencyCode } from 'src/types/currency';
 
@@ -81,7 +81,7 @@ const recoveryLabel = computed(() =>
 
 // Formatting
 const formattedInvested = computed(() => {
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat('fr-FR', {
             style: 'currency',
             currency: currencyCode.value,
@@ -92,7 +92,7 @@ const formattedInvested = computed(() => {
 });
 
 const formattedDividends = computed(() => {
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat('fr-FR', {
             style: 'currency',
             currency: currencyCode.value,

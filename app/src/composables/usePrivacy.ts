@@ -7,18 +7,19 @@
  */
 
 import { useSettingsStore } from 'src/stores/settings';
+import { normalizeSpaces } from 'src/services/number-format';
 
 /** Placeholder displayed instead of an amount */
 export const AMOUNT_MASK = '•••••';
 
 /**
- * Returns the masked placeholder when amounts are hidden, the text otherwise.
- * Call it from any formatter that renders money.
+ * Final step of every money formatter: masks the amount when amounts are
+ * hidden, and makes thousands separators visible ("1 000 000").
  * @param text - The formatted amount
  * @returns The text to display
  */
-export function maskAmount(text: string): string {
-    return useSettingsStore().amountsHidden ? AMOUNT_MASK : text;
+export function displayAmount(text: string): string {
+    return useSettingsStore().amountsHidden ? AMOUNT_MASK : normalizeSpaces(text);
 }
 
 /**

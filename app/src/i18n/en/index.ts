@@ -618,6 +618,11 @@ export default {
 
     // Savings goals
     goals: {
+        statusFilter: 'Filter by status',
+        filterOpen: 'Not reached',
+        filterReached: 'Reached',
+        noOpenGoals: 'No goals in progress',
+        noReachedGoals: 'No goals reached yet',
         title: 'Goals',
         subtitle: 'Save toward your targets',
         addGoal: 'Add Goal',

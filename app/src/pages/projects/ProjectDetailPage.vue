@@ -171,7 +171,7 @@
 </template>
 
 <script setup lang="ts">
-import { maskAmount } from 'src/composables/usePrivacy';
+import { displayAmount } from 'src/composables/usePrivacy';
 import { toneStyle } from 'src/services/tone';
 import type { ProjectWithStats } from 'src/types/project';
 import type { TransactionWithRelations } from 'src/types/transaction';
@@ -253,7 +253,7 @@ const netGainClass = computed(() => {
  * @returns {string} The formatted currency string
  */
 function formatAmount(amount: number): string {
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat(locale.value, {
             style: 'currency',
             currency: currencyCode.value,

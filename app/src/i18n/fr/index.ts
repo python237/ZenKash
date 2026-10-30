@@ -621,6 +621,11 @@ export default {
 
     // Savings goals
     goals: {
+        statusFilter: 'Filtrer par statut',
+        filterOpen: 'Non atteints',
+        filterReached: 'Atteints',
+        noOpenGoals: 'Aucun objectif en cours',
+        noReachedGoals: 'Aucun objectif atteint',
         title: 'Objectifs',
         subtitle: 'Épargne vers tes objectifs',
         addGoal: 'Ajouter un objectif',

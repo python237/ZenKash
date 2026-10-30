@@ -78,6 +78,7 @@
 </template>
 
 <script setup lang="ts">
+import { normalizeSpaces } from 'src/services/number-format';
 import type { ExchangeRate, CurrencyCode } from 'src/types/currency';
 import { useSettingsStore } from 'src/stores/settings';
 import { useExchangeRateStore } from 'src/stores/exchange-rate';
@@ -129,7 +130,9 @@ function tileColor(index: number): string {
  * @returns {string} The formatted rate
  */
 function formatRate(value: number): string {
-    return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 6 }).format(value);
+    return normalizeSpaces(
+        new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 6 }).format(value),
+    );
 }
 
 // Format date

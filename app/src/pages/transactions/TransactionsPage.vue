@@ -99,7 +99,7 @@
 </template>
 
 <script setup lang="ts">
-import { maskAmount } from 'src/composables/usePrivacy';
+import { displayAmount } from 'src/composables/usePrivacy';
 import type {
     Transaction,
     TransactionType,
@@ -351,7 +351,7 @@ const currencyLabel = computed(() => {
  * @returns {string} The formatted number string
  */
 function formatAmount(amount: number): string {
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat(locale.value, {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,

@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { maskAmount } from 'src/composables/usePrivacy';
+import { displayAmount } from 'src/composables/usePrivacy';
 import type { BudgetWithStats } from 'src/types/budget';
 import { CURRENCIES, CurrencyCode } from 'src/types/currency';
 import { toneStyle } from 'src/services/tone';
@@ -100,7 +100,7 @@ const statusText = computed(() => {
 
 // Formatting
 const formattedAmount = computed(() => {
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat('fr-FR', {
             style: 'currency',
             currency: currencyCode.value,
@@ -111,7 +111,7 @@ const formattedAmount = computed(() => {
 });
 
 const formattedSpent = computed(() => {
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat('fr-FR', {
             style: 'currency',
             currency: currencyCode.value,
@@ -123,7 +123,7 @@ const formattedSpent = computed(() => {
 
 const formattedRemaining = computed(() => {
     const value = Math.abs(props.budget.remaining);
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat('fr-FR', {
             style: 'currency',
             currency: currencyCode.value,

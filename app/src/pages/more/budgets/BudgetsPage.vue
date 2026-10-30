@@ -120,7 +120,7 @@
 </template>
 
 <script setup lang="ts">
-import { maskAmount } from 'src/composables/usePrivacy';
+import { displayAmount } from 'src/composables/usePrivacy';
 import type { Budget, BudgetWithStats } from 'src/types/budget';
 import { CURRENCIES, CurrencyCode } from 'src/types/currency';
 import { useBudgetStore } from 'src/stores/budget';
@@ -245,7 +245,7 @@ const progressLevel = computed(() => {
 
 // Formatting
 const formattedTotalBudgeted = computed(() => {
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat(locale.value, {
             style: 'currency',
             currency: defaultCurrency.value,
@@ -256,7 +256,7 @@ const formattedTotalBudgeted = computed(() => {
 });
 
 const formattedTotalSpent = computed(() => {
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat(locale.value, {
             style: 'currency',
             currency: defaultCurrency.value,

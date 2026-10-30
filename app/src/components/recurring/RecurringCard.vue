@@ -37,7 +37,7 @@
 </template>
 
 <script setup lang="ts">
-import { maskAmount } from 'src/composables/usePrivacy';
+import { displayAmount } from 'src/composables/usePrivacy';
 import type { RecurringTransaction } from 'src/types/recurring-transaction';
 import { CURRENCIES, type CurrencyCode } from 'src/types/currency';
 import BtnIcon from '../buttons/BtnIcon.vue';
@@ -69,7 +69,7 @@ const walletName = computed(() => walletStore.getWalletById(props.recurring.wall
 
 const formattedAmount = computed(() => {
     const info = CURRENCIES[props.currency];
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat(locale.value, {
             style: 'currency',
             currency: props.currency,

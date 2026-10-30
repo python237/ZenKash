@@ -25,7 +25,7 @@
 </template>
 
 <script setup lang="ts">
-import { maskAmount } from 'src/composables/usePrivacy';
+import { displayAmount } from 'src/composables/usePrivacy';
 import type { GameWithStats } from 'src/types/game';
 import { CURRENCIES, CurrencyCode } from 'src/types/currency';
 
@@ -67,7 +67,7 @@ const tileTone = computed(() => {
  * @returns The formatted currency string
  */
 function formatAmount(amount: number): string {
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat(locale.value, {
             style: 'currency',
             currency: currencyCode.value,

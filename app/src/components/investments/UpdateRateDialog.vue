@@ -40,6 +40,7 @@
 </template>
 
 <script setup lang="ts">
+import { normalizeSpaces } from 'src/services/number-format';
 import type { InvestmentItem } from 'src/types/investment';
 import { CURRENCIES } from 'src/types/currency';
 import ModalBase from '../modals/ModalBase.vue';
@@ -76,10 +77,12 @@ const currencySymbol = computed(() => {
 // Formatted current rate
 const formattedCurrentRate = computed(() => {
     if (!props.investment) return '0';
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: props.investment.currency,
-    }).format(props.investment.currentRate);
+    return normalizeSpaces(
+        new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: props.investment.currency,
+        }).format(props.investment.currentRate),
+    );
 });
 
 // Rate change calculation

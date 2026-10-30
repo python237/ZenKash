@@ -14,6 +14,27 @@
             </button>
         </div>
 
+        <!-- Status filter -->
+        <div
+            v-if="goals.length > 0"
+            class="chips"
+            role="tablist"
+            :aria-label="t('goals.statusFilter')"
+        >
+            <button
+                v-for="option in statusOptions"
+                :key="option.value"
+                type="button"
+                role="tab"
+                class="chip"
+                :class="{ 'chip--active': statusFilter === option.value }"
+                :aria-selected="statusFilter === option.value"
+                @click="statusFilter = option.value"
+            >
+                {{ option.label }}
+            </button>
+        </div>
+
         <!-- Empty state -->
         <div v-if="goals.length === 0" class="zk-empty">
             <span class="zk-empty__icon">
@@ -22,10 +43,16 @@
             <span class="zk-empty__title">{{ t('goals.noGoals') }}</span>
         </div>
 
+        <div v-else-if="visibleGoals.length === 0" class="zk-empty">
+            <span class="zk-empty__title">
+                {{ statusFilter === 'open' ? t('goals.noOpenGoals') : t('goals.noReachedGoals') }}
+            </span>
+        </div>
+
         <!-- List -->
         <div v-else class="goal-list">
             <GoalCard
-                v-for="goal in goals"
+                v-for="goal in visibleGoals"
                 :key="goal.id"
                 :goal="goal"
                 @click="openEdit(goal)"
@@ -75,6 +102,17 @@ const selected = ref<SavingsGoal | null>(null);
 const toDelete = ref<SavingsGoal | null>(null);
 
 const goals = computed(() => goalStore.goalsWithStats);
+
+// Status filter chips, same pattern as loans & debts
+const statusFilter = ref<'open' | 'reached'>('open');
+const statusOptions = computed((): { value: 'open' | 'reached'; label: string }[] => [
+    { value: 'open', label: t('goals.filterOpen') },
+    { value: 'reached', label: t('goals.filterReached') },
+]);
+
+const visibleGoals = computed(() =>
+    goals.value.filter((goal) => goal.isReached === (statusFilter.value === 'reached')),
+);
 
 onMounted(async () => {
     await Promise.all([settingsStore.loadSettings(), goalStore.loadAll(), walletStore.loadAll()]);
@@ -179,6 +217,30 @@ async function onDelete(): Promise<void> {
         .entry-tile__subtitle {
             color: $hero-muted;
         }
+    }
+}
+
+.chips {
+    display: flex;
+    gap: 8px;
+}
+
+.chip {
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid $border-color;
+    background: $bg-card;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: $text-primary;
+    cursor: pointer;
+
+    &--active {
+        background: $text-primary;
+        border-color: $text-primary;
+        color: #ffffff;
     }
 }
 

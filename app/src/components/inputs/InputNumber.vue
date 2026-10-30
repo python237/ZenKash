@@ -1,12 +1,12 @@
 <template>
     <q-input
-        :model-value="modelValue"
+        ref="inputRef"
+        :model-value="text"
         :label="label"
         :placeholder="placeholder"
-        type="number"
-        :step="step"
-        :min="min"
-        :max="max"
+        type="text"
+        inputmode="decimal"
+        autocomplete="off"
         :disable="disable"
         :readonly="readonly"
         :error="!!error"
@@ -34,7 +34,10 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import type { QInput } from 'quasar';
+import { formatInputNumber, parseInputNumber } from 'src/services/number-format';
+
+const props = defineProps<{
     modelValue: number;
     label?: string;
     placeholder?: string;
@@ -55,13 +58,48 @@ const emit = defineEmits<{
     blur: [];
 }>();
 
+const inputRef = ref<QInput | null>(null);
+
+// Displayed text, with thousands grouped ("1 000 000")
+const text = ref(formatInputNumber(props.modelValue));
+
+// Re-format when the value changes from outside (form reset, edit, ...)
+watch(
+    () => props.modelValue,
+    (value: number) => {
+        const current = parseInputNumber(text.value, allowNegative.value).value;
+        if (current !== value) text.value = formatInputNumber(value);
+    },
+);
+
+const allowNegative = computed(() => props.min === undefined || props.min < 0);
+
 /**
- * Handles input value changes and emits the parsed numeric value
- * @param value - The raw input value (string, number, or null)
+ * Handles typing: re-groups the digits, keeps the caret after the same digit,
+ * and emits the parsed numeric value.
+ * @param value - The raw input value
  */
 function onInput(value: string | number | null): void {
-    const num = typeof value === 'string' ? parseFloat(value) : (value ?? 0);
-    emit('update:modelValue', isNaN(num) ? 0 : num);
+    const raw = String(value ?? '');
+    const native = inputRef.value?.getNativeElement() as HTMLInputElement | undefined;
+    const caret = native?.selectionStart ?? raw.length;
+    // Characters that matter (digits, separator, sign) before the caret
+    const significantBefore = raw.slice(0, caret).replace(/[^\d,.-]/g, '').length;
+
+    const parsed = parseInputNumber(raw, allowNegative.value);
+    text.value = parsed.text;
+    emit('update:modelValue', parsed.value);
+
+    void nextTick(() => {
+        if (!native || document.activeElement !== native) return;
+        let seen = 0;
+        let position = 0;
+        while (position < parsed.text.length && seen < significantBefore) {
+            if (/[\d,-]/.test(parsed.text.charAt(position))) seen++;
+            position++;
+        }
+        native.setSelectionRange(position, position);
+    });
 }
 </script>
 
@@ -91,15 +129,8 @@ function onInput(value: string | number | null): void {
         color: $text-secondary;
     }
 
-    // Hide number input spinners
-    :deep(input[type='number']::-webkit-outer-spin-button),
-    :deep(input[type='number']::-webkit-inner-spin-button) {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-
-    :deep(input[type='number']) {
-        -moz-appearance: textfield;
+    :deep(.q-field__native) {
+        font-variant-numeric: tabular-nums;
     }
 }
 </style>

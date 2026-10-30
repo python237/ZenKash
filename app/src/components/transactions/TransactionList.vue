@@ -89,7 +89,7 @@
 </template>
 
 <script setup lang="ts">
-import { maskAmount } from 'src/composables/usePrivacy';
+import { displayAmount } from 'src/composables/usePrivacy';
 import type { TransactionWithRelations } from 'src/types/transaction';
 import { CURRENCIES } from 'src/types/currency';
 import ModalConfirm from '../modals/ModalConfirm.vue';
@@ -441,7 +441,7 @@ function formatTransactionAmount(tx: TransactionWithRelations): string {
     const currencyInfo = CURRENCIES[currency];
     const prefix = getAmountPrefix(tx);
 
-    const formatted = maskAmount(
+    const formatted = displayAmount(
         new Intl.NumberFormat(locale.value, {
             style: 'currency',
             currency,
@@ -484,7 +484,7 @@ function formatPricePerUnit(tx: TransactionWithRelations): string {
     if (!tx.pricePerUnit) return '';
     const currency = tx.investment?.currency ?? settingsStore.defaultCurrency ?? 'XOF';
 
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat(locale.value, {
             style: 'currency',
             currency,
@@ -504,7 +504,7 @@ function formatFee(tx: TransactionWithRelations): string {
     const currency = tx.fromWallet?.currency ?? settingsStore.defaultCurrency ?? 'XOF';
     const currencyInfo = CURRENCIES[currency];
 
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat(locale.value, {
             style: 'currency',
             currency,

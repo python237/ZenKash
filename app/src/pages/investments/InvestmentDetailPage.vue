@@ -194,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { maskAmount } from 'src/composables/usePrivacy';
+import { displayAmount } from 'src/composables/usePrivacy';
 import { toneStyle } from 'src/services/tone';
 import type { InvestmentTransactionType, RateHistory } from 'src/types/investment';
 import { CURRENCIES } from 'src/types/currency';
@@ -284,7 +284,7 @@ const currency = computed(() => {
  */
 function formatAmount(amount: number): string {
     if (!investment.value) return '0';
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat('fr-FR', {
             style: 'currency',
             currency: investment.value.currency,

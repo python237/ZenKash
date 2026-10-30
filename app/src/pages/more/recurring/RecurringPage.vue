@@ -46,7 +46,7 @@
 </template>
 
 <script setup lang="ts">
-import { maskAmount } from 'src/composables/usePrivacy';
+import { displayAmount } from 'src/composables/usePrivacy';
 import type { RecurringTransaction } from 'src/types/recurring-transaction';
 import type { Wallet } from 'src/types/wallet';
 import { CURRENCIES, CurrencyCode } from 'src/types/currency';
@@ -86,7 +86,7 @@ const currencyInfo = computed(() => CURRENCIES[defaultCurrency.value]);
  * @returns The formatted currency string
  */
 function formatCurrency(amount: number): string {
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat(locale.value, {
             style: 'currency',
             currency: defaultCurrency.value,

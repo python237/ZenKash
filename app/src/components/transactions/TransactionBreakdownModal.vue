@@ -121,7 +121,7 @@
 </template>
 
 <script setup lang="ts">
-import { maskAmount } from 'src/composables/usePrivacy';
+import { displayAmount } from 'src/composables/usePrivacy';
 import { toneOf, toneStyle } from 'src/services/tone';
 import { CHART_COLORS } from 'src/services/chart';
 import { Pie } from 'vue-chartjs';
@@ -475,7 +475,7 @@ const pieChartOptions: ChartOptions<'pie'> = {
  * @returns The formatted currency string
  */
 function formatCurrency(amount: number): string {
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat(locale.value, {
             style: 'currency',
             currency: props.defaultCurrency,

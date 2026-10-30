@@ -81,6 +81,7 @@
 </template>
 
 <script setup lang="ts">
+import { normalizeSpaces } from 'src/services/number-format';
 import { z } from 'zod/v4';
 import type {
     InvestmentItem,
@@ -174,10 +175,12 @@ const availableBalance = computed(() => {
 
 const formattedAvailableBalance = computed(() => {
     if (!props.investment) return '0';
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: props.investment.currency,
-    }).format(availableBalance.value);
+    return normalizeSpaces(
+        new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: props.investment.currency,
+        }).format(availableBalance.value),
+    );
 });
 
 // Available quantity for selling
@@ -194,10 +197,12 @@ const total = computed(() => form.quantity * form.pricePerUnit);
 
 const formattedTotal = computed(() => {
     if (!props.investment) return '0';
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: props.investment.currency,
-    }).format(total.value);
+    return normalizeSpaces(
+        new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: props.investment.currency,
+        }).format(total.value),
+    );
 });
 
 // Reset form when dialog opens

@@ -63,7 +63,7 @@
 </template>
 
 <script setup lang="ts">
-import { maskAmount } from 'src/composables/usePrivacy';
+import { displayAmount } from 'src/composables/usePrivacy';
 import WalletDialog from 'src/components/wallets/WalletDialog.vue';
 import ModalConfirm from 'src/components/modals/ModalConfirm.vue';
 import TransactionList from 'src/components/transactions/TransactionList.vue';
@@ -102,7 +102,7 @@ const formattedBalance = computed(() => {
     const currency = CURRENCIES[currencyCode];
     const decimals = currency?.decimals ?? 0;
 
-    return maskAmount(
+    return displayAmount(
         new Intl.NumberFormat('fr-FR', {
             style: 'currency',
             currency: currencyCode,
