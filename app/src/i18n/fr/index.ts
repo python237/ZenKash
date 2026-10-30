@@ -495,7 +495,7 @@ export default {
         includeAmountsHint: 'Désactivé : seules les parts et les taux sont envoyés, aucun montant.',
         anonymizeLabels: 'Anonymiser les libellés',
         anonymizeLabelsHint:
-            'Remplace les noms de catégories par « Grande catégorie 1, 2, 3… ». Aucun libellé de transaction n\'est jamais inclus.',
+            "Remplace les noms de catégories par « Grande catégorie 1, 2, 3… ». Aucun libellé de transaction n'est jamais inclus.",
         largeExpenseThreshold: 'Seuil des grosses dépenses',
         largeExpenseThresholdHint: 'Les dépenses au-dessus sont listées une par une',
         preview: 'Texte envoyé (modifiable)',
@@ -517,6 +517,9 @@ export default {
         liquid: 'Liquidités',
         investments: 'Investissements',
         games: 'Jeux',
+        receivables: 'Prêts à récupérer',
+        payables: 'Dettes en cours',
+        includesBorrowed: 'Dont {amount} emprunté à rembourser',
         breakdown: 'Répartition',
         evolution: 'Évolution',
         history: 'Historique',
@@ -626,12 +629,14 @@ export default {
                     "Capacité mesurée sur {months} mois complet(s) : {amount}/mois d'épargne nette (médiane, de {low} à {high}).",
                 capacity_provisional:
                     'Seulement {months} mois complet(s) disponibles sur {target} : un mois exceptionnel pèse encore sur la médiane, le diagnostic est provisoire.',
-                commitments: '{amount} de charges récurrentes tombent dans les {days} prochains jours.',
+                commitments:
+                    '{amount} de charges récurrentes tombent dans les {days} prochains jours.',
                 cushion: 'Ton solde liquide couvre {months} mois de dépenses.',
                 cushion_unknown:
                     'Pas assez de dépenses enregistrées pour évaluer ton coussin de sécurité.',
                 unreachable_goals: "{count} objectif(s) hors d'atteinte à ton rythme actuel.",
-                spare_capacity: '{amount}/mois restent libres une fois toutes les échéances tenues.',
+                spare_capacity:
+                    '{amount}/mois restent libres une fois toutes les échéances tenues.',
             },
         },
         allocation: {
@@ -684,7 +689,8 @@ export default {
                     'Réserve {reserved} pour tenir les échéances, le reste accélère un objectif proche de sa cible.',
                 strategy_snowball:
                     'Priorité aux objectifs les plus proches de leur cible — {completed} clôturé(s).',
-                strategy_deadline: "Suit le calendrier : l'échéance la plus proche est servie en premier.",
+                strategy_deadline:
+                    "Suit le calendrier : l'échéance la plus proche est servie en premier.",
                 strategy_at_risk:
                     "Couvre d'abord le plus gros effort mensuel — {protected} objectif(s) protégé(s).",
                 pace_not_covered:

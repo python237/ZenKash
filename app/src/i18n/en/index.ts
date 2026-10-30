@@ -515,6 +515,9 @@ export default {
         liquid: 'Liquidity',
         investments: 'Investments',
         games: 'Games',
+        receivables: 'Loans to collect',
+        payables: 'Outstanding debts',
+        includesBorrowed: 'Includes {amount} borrowed, still to repay',
         breakdown: 'Breakdown',
         evolution: 'Evolution',
         history: 'History',
@@ -643,8 +646,7 @@ export default {
             recommendedStrategy: 'Recommended method',
             paceNotCovered: 'Does not cover the required monthly pace',
             stillBehind: 'Still behind after this allocation: {goals}',
-            sharedWalletWarning:
-                '{count} goal(s) share their wallet: their figures overlap.',
+            sharedWalletWarning: '{count} goal(s) share their wallet: their figures overlap.',
             tabs: {
                 general: 'General',
             },
@@ -679,15 +681,16 @@ export default {
             reasons: {
                 strategy_balanced:
                     'Reserves {reserved} to hold the deadlines, the rest speeds up a goal close to its target.',
-                strategy_snowball:
-                    'Goals closest to their target come first — {completed} closed.',
+                strategy_snowball: 'Goals closest to their target come first — {completed} closed.',
                 strategy_deadline: 'Follows the calendar: the nearest due date is served first.',
                 strategy_at_risk:
                     'Covers the heaviest monthly effort first — {protected} goal(s) protected.',
                 pace_not_covered:
                     '{shortfall} short of holding the {count} deadlines this month: the slipping goals come first.',
-                no_deadlines: 'None of the {count} goals has a deadline: closing some is the best use.',
-                closes_goals: 'This amount closes {count} goal(s) without putting the others behind.',
+                no_deadlines:
+                    'None of the {count} goals has a deadline: closing some is the best use.',
+                closes_goals:
+                    'This amount closes {count} goal(s) without putting the others behind.',
                 deadline_near: 'A deadline lands in {months} month(s): the calendar wins.',
                 all_on_track:
                     'Everything is on pace: {reserved} holds the schedule, {leftover} speeds things up.',

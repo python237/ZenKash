@@ -232,7 +232,11 @@ const trendOptions = computed<ChartOptions<'line'>>(() => ({
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-        legend: { display: true, position: 'bottom', labels: { boxWidth: 12, usePointStyle: true } },
+        legend: {
+            display: true,
+            position: 'bottom',
+            labels: { boxWidth: 12, usePointStyle: true },
+        },
         tooltip: {
             callbacks: {
                 label: (context) =>

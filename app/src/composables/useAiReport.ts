@@ -268,7 +268,9 @@ export function useAiReport() {
     function collect(options: AiReportOptions): AiReportData {
         const now = new Date();
         const range = {
-            start: startOfMonth(new Date(now.getFullYear(), now.getMonth() - (options.window - 1), 1)),
+            start: startOfMonth(
+                new Date(now.getFullYear(), now.getMonth() - (options.window - 1), 1),
+            ),
             end: endOfMonth(now),
         };
 
@@ -319,12 +321,10 @@ export function useAiReport() {
         const incomeTotalCount = incomeFlows.length;
         const incomes = incomeFlows.slice(0, INCOME_LIMIT).map(toEntry);
 
-        const netWorth = netWorthStore
-            .series(options.window)
-            .map((snapshot: NetWorthSnapshot) => ({
-                label: monthLabel(snapshot.date),
-                total: snapshot.total,
-            }));
+        const netWorth = netWorthStore.series(options.window).map((snapshot: NetWorthSnapshot) => ({
+            label: monthLabel(snapshot.date),
+            total: snapshot.total,
+        }));
 
         return {
             currency: defaultCurrency.value,
@@ -404,7 +404,11 @@ export function useAiReport() {
     async function share(text: string): Promise<DeliveryResult> {
         if (Capacitor.isNativePlatform()) {
             try {
-                await Share.share({ title: t('aiReport.title'), text, dialogTitle: t('aiReport.shareWith') });
+                await Share.share({
+                    title: t('aiReport.title'),
+                    text,
+                    dialogTitle: t('aiReport.shareWith'),
+                });
                 return 'shared';
             } catch {
                 // The plugin also throws when the user dismisses the sheet, so a

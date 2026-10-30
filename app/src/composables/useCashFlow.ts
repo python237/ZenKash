@@ -15,12 +15,7 @@
 import type { CashFlowInput, ForecastEvent, ForecastWallet } from 'src/types/cash-flow';
 import type { RecurringOccurrence, RecurringTransaction } from 'src/types/recurring-transaction';
 import type { Wallet } from 'src/types/wallet';
-import {
-    endOfMonth,
-    startOfMonth,
-    toFlows,
-    type AnalyticsContext,
-} from 'src/services/analytics';
+import { endOfMonth, startOfMonth, toFlows, type AnalyticsContext } from 'src/services/analytics';
 import { forecast } from 'src/services/cash-flow';
 import { useDebtStore } from 'src/stores/debt';
 import { useGameTransfers } from './useGameTransfers';
@@ -168,8 +163,7 @@ export function useCashFlow() {
     const monthlyDrift = computed(() =>
         wallets.value.reduce(
             (sum: number, wallet: ForecastWallet) =>
-                sum +
-                convert((dailyDrift.value[wallet.id] ?? 0) * DAYS_PER_MONTH, wallet.currency),
+                sum + convert((dailyDrift.value[wallet.id] ?? 0) * DAYS_PER_MONTH, wallet.currency),
             0,
         ),
     );

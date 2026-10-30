@@ -107,15 +107,8 @@ defineProps<{
 const { t, locale } = useI18n();
 const masterCategoryStore = useMasterCategoryStore();
 const { filters, drillIntoMasterCategory, clearDrill } = useAnalyticsFilters();
-const {
-    summary,
-    outflowDelta,
-    breakdownRows,
-    flowsByKey,
-    topOutflows,
-    isEmpty,
-    labelOf,
-} = useAnalytics();
+const { summary, outflowDelta, breakdownRows, flowsByKey, topOutflows, isEmpty, labelOf } =
+    useAnalytics();
 const { formatCurrency } = useCurrency();
 
 const showFlows = ref(false);

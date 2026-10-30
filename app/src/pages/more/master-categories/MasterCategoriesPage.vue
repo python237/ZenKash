@@ -51,9 +51,7 @@
                     : $t('masterCategories.deleteConfirm')
             "
             :subtitle="
-                isUsed
-                    ? $t('masterCategories.retireWarning')
-                    : $t('masterCategories.deleteWarning')
+                isUsed ? $t('masterCategories.retireWarning') : $t('masterCategories.deleteWarning')
             "
             :confirm-label="isUsed ? $t('categories.retire') : $t('common.delete')"
             :cancel-label="$t('common.cancel')"

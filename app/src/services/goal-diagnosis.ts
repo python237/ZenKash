@@ -107,7 +107,9 @@ function addMonths(date: Date, months: number): Date {
     const day = shifted.getDate();
     shifted.setDate(1);
     shifted.setMonth(shifted.getMonth() + months);
-    shifted.setDate(Math.min(day, new Date(shifted.getFullYear(), shifted.getMonth() + 1, 0).getDate()));
+    shifted.setDate(
+        Math.min(day, new Date(shifted.getFullYear(), shifted.getMonth() + 1, 0).getDate()),
+    );
     return shifted;
 }
 

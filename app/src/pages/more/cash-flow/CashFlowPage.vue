@@ -12,12 +12,7 @@
                 color="grey-2"
                 text-color="grey-8"
             />
-            <q-toggle
-                v-model="includeDrift"
-                dense
-                size="sm"
-                :label="t('cashFlow.includeDrift')"
-            />
+            <q-toggle v-model="includeDrift" dense size="sm" :label="t('cashFlow.includeDrift')" />
         </div>
 
         <!-- Headline: today, the low point, the end of the horizon -->
@@ -47,7 +42,11 @@
                         </div>
                         <div
                             class="text-subtitle2 text-weight-medium"
-                            :class="total.endBalance < total.startBalance ? 'text-warning' : 'text-positive'"
+                            :class="
+                                total.endBalance < total.startBalance
+                                    ? 'text-warning'
+                                    : 'text-positive'
+                            "
                         >
                             {{ formatCurrency(total.endBalance) }}
                         </div>
@@ -88,11 +87,13 @@
                     </div>
                 </div>
                 <div v-for="wallet in atRisk" :key="wallet.walletId" class="text-body2 q-mb-xs">
-                    {{ t('cashFlow.goesNegative', {
-                        wallet: walletName(wallet.walletId),
-                        date: formatDay(wallet.firstNegative!),
-                        amount: formatCurrency(wallet.lowest.balance, wallet.currency),
-                    }) }}
+                    {{
+                        t('cashFlow.goesNegative', {
+                            wallet: walletName(wallet.walletId),
+                            date: formatDay(wallet.firstNegative!),
+                            amount: formatCurrency(wallet.lowest.balance, wallet.currency),
+                        })
+                    }}
                 </div>
             </q-card-section>
         </q-card>
@@ -118,7 +119,12 @@
                             {{ formatCurrency(wallet.endBalance, wallet.currency) }}
                         </div>
                         <div class="text-caption text-grey-6">
-                            {{ formatSignedCurrency(wallet.endBalance - wallet.startBalance, wallet.currency) }}
+                            {{
+                                formatSignedCurrency(
+                                    wallet.endBalance - wallet.startBalance,
+                                    wallet.currency,
+                                )
+                            }}
                         </div>
                     </q-item-section>
                 </q-item>

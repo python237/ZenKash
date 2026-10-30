@@ -263,6 +263,8 @@ async function createTables(): Promise<void> {
       liquid REAL NOT NULL,
       investments REAL NOT NULL,
       games REAL NOT NULL,
+      receivables REAL NOT NULL DEFAULT 0,
+      payables REAL NOT NULL DEFAULT 0,
       total REAL NOT NULL,
       currency TEXT NOT NULL,
       created_at TEXT NOT NULL,
@@ -638,6 +640,29 @@ async function runMigrations(): Promise<void> {
         }
     } catch (error) {
         console.error('Transactions debt migration error:', error);
+    }
+
+    // Migration: add debt columns to net_worth_snapshots.
+    // Borrowed money sits in the wallets, so net worth must subtract what is still
+    // owed and add back what others still owe. Past snapshots keep 0 for both.
+    try {
+        const snapshotsInfo = await db.query('PRAGMA table_info(net_worth_snapshots)');
+        const snapshotsColumns = snapshotsInfo.values || [];
+
+        if (!snapshotsColumns.some((col: { name: string }) => col.name === 'receivables')) {
+            await db.execute(
+                'ALTER TABLE net_worth_snapshots ADD COLUMN receivables REAL NOT NULL DEFAULT 0',
+            );
+            console.log('Migration: Added receivables column to net_worth_snapshots table');
+        }
+        if (!snapshotsColumns.some((col: { name: string }) => col.name === 'payables')) {
+            await db.execute(
+                'ALTER TABLE net_worth_snapshots ADD COLUMN payables REAL NOT NULL DEFAULT 0',
+            );
+            console.log('Migration: Added payables column to net_worth_snapshots table');
+        }
+    } catch (error) {
+        console.error('Net worth snapshots debt migration error:', error);
     }
 
     // Migration: one savings goal per wallet.

@@ -142,9 +142,7 @@ export function useGoalDiagnosis() {
     }));
 
     /** The financial read on every open goal. */
-    const diagnosis = computed(() =>
-        diagnose(goalStore.goalsWithStats, input.value, { convert }),
-    );
+    const diagnosis = computed(() => diagnose(goalStore.goalsWithStats, input.value, { convert }));
 
     /**
      * Loads every store the diagnosis reads from.

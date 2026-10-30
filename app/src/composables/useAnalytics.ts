@@ -268,7 +268,9 @@ export function useAnalytics() {
     );
 
     /** Label of each series key. */
-    const nameByKey = computed(() => new Map(breakdownRows.value.map((row) => [row.key, row.name])));
+    const nameByKey = computed(
+        () => new Map(breakdownRows.value.map((row) => [row.key, row.name])),
+    );
 
     /**
      * Maps a flow to its series key, folding everything outside the top keys

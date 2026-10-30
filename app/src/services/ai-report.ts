@@ -124,8 +124,7 @@ const LABELS: Record<ReportLanguage, ReportLabels> = {
         currencyNote: 'Devise : {currency}. Tous les montants sont convertis dans cette devise.',
         percentOnlyNote:
             'Les montants absolus sont volontairement omis : seules les parts et les taux sont fournis.',
-        noDescriptions:
-            "Aucun libellé de transaction n'est inclus dans cet extrait.",
+        noDescriptions: "Aucun libellé de transaction n'est inclus dans cet extrait.",
         period: 'Période',
         overview: "Vue d'ensemble",
         income: 'Revenus',
@@ -271,7 +270,8 @@ export function buildAiReport(
      * @returns The rendered line, without its bullet
      */
     const renderEntry = (entry: ReportEntry): string => {
-        const context = entry.category && entry.category !== entry.label ? ` — ${entry.category}` : '';
+        const context =
+            entry.category && entry.category !== entry.label ? ` — ${entry.category}` : '';
         return `${entry.date} · ${entry.label}${context} : ${value(entry.amount, data.totals.inflow)}`;
     };
 

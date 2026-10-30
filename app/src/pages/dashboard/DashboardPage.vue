@@ -33,6 +33,13 @@
                 <div class="text-caption text-grey-5 q-mt-xs">
                     {{ walletStore.wallets.length }} {{ t('wallets.title').toLowerCase() }}
                 </div>
+                <div v-if="outstandingPayables > 0" class="text-caption text-red-4 q-mt-xs">
+                    {{
+                        t('netWorth.includesBorrowed', {
+                            amount: formatCurrency(outstandingPayables),
+                        })
+                    }}
+                </div>
             </q-card-section>
         </q-card>
 
@@ -331,6 +338,7 @@ const settingsStore = useSettingsStore();
 const exchangeRateStore = useExchangeRateStore();
 const gameStore = useGameStore();
 const netWorthStore = useNetWorthStore();
+const debtStore = useDebtStore();
 
 // Game transfer classification (deposits = expense, withdrawals = income)
 const { classifyTransfer } = useGameTransfers();
@@ -405,6 +413,11 @@ const globalBalance = computed(() => {
 });
 
 const formattedGlobalBalance = computed(() => formatCurrency(globalBalance.value));
+
+// Borrowed money still owed: it sits in the wallets but is not the user's own
+const outstandingPayables = computed(() =>
+    debtStore.payables.reduce((sum, debt) => sum + convert(debt.outstanding, debt.currency), 0),
+);
 
 // Net worth (from latest snapshot, or live computation as fallback)
 const netWorthTotal = computed(
@@ -711,6 +724,7 @@ onMounted(async () => {
         budgetStore.loadAll(),
         gameStore.loadAll(),
         netWorthStore.loadAll(),
+        debtStore.loadAll(),
     ]);
     // Keep the current-month net worth snapshot in sync
     await netWorthStore.captureCurrent();

@@ -322,12 +322,7 @@ export const useTransactionStore = defineStore('transaction', () => {
 
             // Update debt totals if debt transaction
             if (data.type === 'debt') {
-                await updateDebtTotals(
-                    data.debtId,
-                    data.debtTransactionType,
-                    data.amount,
-                    'add',
-                );
+                await updateDebtTotals(data.debtId, data.debtTransactionType, data.amount, 'add');
             }
 
             // Create transaction object
@@ -755,8 +750,7 @@ export const useTransactionStore = defineStore('transaction', () => {
                 return {
                     ...base,
                     type: 'debt',
-                    debtTransactionType:
-                        data.debtTransactionType ?? existing.debtTransactionType,
+                    debtTransactionType: data.debtTransactionType ?? existing.debtTransactionType,
                     debtId: data.debtId ?? existing.debtId,
                     walletId: data.walletId ?? existing.walletId,
                 };

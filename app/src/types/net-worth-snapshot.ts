@@ -11,7 +11,11 @@ export interface NetWorthComponents {
     investments: number;
     /** Sum of game-platform wallet balances (funds parked on betting platforms) */
     games: number;
-    /** Total net worth (liquid + investments + games) */
+    /** Outstanding amounts others still owe you (money lent, not yet repaid) */
+    receivables: number;
+    /** Outstanding amounts you still owe (money borrowed, not yet repaid) */
+    payables: number;
+    /** Total net worth (liquid + investments + games + receivables − payables) */
     total: number;
 }
 

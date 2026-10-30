@@ -45,7 +45,11 @@
                         {{ formatCurrency(Math.abs(diagnosis.gap), currency) }}
                     </div>
                     <div class="text-caption text-grey-6">
-                        {{ diagnosis.gap > 0 ? t('goals.diagnosis.short') : t('goals.diagnosis.spare') }}
+                        {{
+                            diagnosis.gap > 0
+                                ? t('goals.diagnosis.short')
+                                : t('goals.diagnosis.spare')
+                        }}
                     </div>
                 </q-card>
             </div>
@@ -122,10 +126,7 @@
                         {{ t('goals.diagnosis.noProgress') }}
                     </div>
                 </div>
-                <div
-                    v-else-if="entry.feasibleDate"
-                    class="text-caption text-grey-7 q-mt-xs"
-                >
+                <div v-else-if="entry.feasibleDate" class="text-caption text-grey-7 q-mt-xs">
                     {{ t('goals.diagnosis.reachableOn', { date: formatDate(entry.feasibleDate) }) }}
                 </div>
             </q-card-section>
@@ -169,9 +170,7 @@ onMounted(async () => {
 
 const namesById = computed(
     () =>
-        new Map(
-            goalStore.goalsWithStats.map((goal: SavingsGoalWithStats) => [goal.id, goal.name]),
-        ),
+        new Map(goalStore.goalsWithStats.map((goal: SavingsGoalWithStats) => [goal.id, goal.name])),
 );
 
 /**

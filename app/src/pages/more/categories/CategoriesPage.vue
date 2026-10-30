@@ -45,7 +45,11 @@
         <ModalConfirm
             v-model="deleteDialogOpen"
             :title="t('common.confirm')"
-            :message="isUsed ? t('categories.retireConfirm', { count: usageCount }) : t('categories.deleteConfirm')"
+            :message="
+                isUsed
+                    ? t('categories.retireConfirm', { count: usageCount })
+                    : t('categories.deleteConfirm')
+            "
             :subtitle="isUsed ? t('categories.retireWarning') : t('categories.deleteWarning')"
             :confirm-label="isUsed ? t('categories.retire') : t('common.delete')"
             :cancel-label="t('common.cancel')"
@@ -102,8 +106,7 @@ const currentMasterCategories = computed(() => {
             : masterCategoryStore.incomeCategories;
 
     return pool.filter(
-        (mc: MasterCategory) =>
-            mc.isActive || mc.id === selectedCategory.value?.masterCategoryId,
+        (mc: MasterCategory) => mc.isActive || mc.id === selectedCategory.value?.masterCategoryId,
     );
 });
 

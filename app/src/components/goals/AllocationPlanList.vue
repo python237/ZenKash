@@ -3,7 +3,9 @@
         <!-- What the strategy optimizes for, and what it did -->
         <q-card-section class="q-pb-sm">
             <div class="row items-center q-gutter-xs q-mb-xs">
-                <div class="text-subtitle1 text-weight-medium">{{ strategyLabel(plan.strategy) }}</div>
+                <div class="text-subtitle1 text-weight-medium">
+                    {{ strategyLabel(plan.strategy) }}
+                </div>
                 <q-badge v-if="recommended" color="primary" rounded>
                     {{ t('goals.allocation.recommended') }}
                 </q-badge>
@@ -41,7 +43,11 @@
         <q-list v-if="plan.lines.length > 0" separator>
             <q-item v-for="(line, index) in plan.lines" :key="line.goalId">
                 <q-item-section avatar>
-                    <q-avatar :color="line.completes ? 'positive' : 'primary'" text-color="white" size="32px">
+                    <q-avatar
+                        :color="line.completes ? 'positive' : 'primary'"
+                        text-color="white"
+                        size="32px"
+                    >
                         {{ index + 1 }}
                     </q-avatar>
                 </q-item-section>

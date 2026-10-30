@@ -43,7 +43,8 @@
                     <div class="row items-center justify-between q-mb-xs">
                         <span class="text-body2">{{ item.label }}</span>
                         <span class="text-body2 text-weight-medium">
-                            {{ formatCurrency(item.value) }} · {{ formatPercent(item.percent) }}
+                            {{ item.negative ? '−' : '' }}{{ formatCurrency(item.value) }} ·
+                            {{ formatPercent(item.percent) }}
                         </span>
                     </div>
                     <q-linear-progress
@@ -82,6 +83,10 @@
                                 {{ t('netWorth.liquid') }} {{ formatCurrency(snapshot.liquid) }} ·
                                 {{ t('netWorth.investments') }}
                                 {{ formatCurrency(snapshot.investments) }}
+                                <template v-if="snapshot.payables > 0">
+                                    · {{ t('netWorth.payables') }}
+                                    {{ formatCurrency(snapshot.payables) }}
+                                </template>
                             </q-item-label>
                         </q-item-section>
                         <q-item-section side>
@@ -125,6 +130,7 @@ const walletStore = useWalletStore();
 const investmentStore = useInvestmentStore();
 const exchangeRateStore = useExchangeRateStore();
 const settingsStore = useSettingsStore();
+const debtStore = useDebtStore();
 
 // Currency formatting and conversion (shared with every other money screen)
 const { formatCurrency, formatSignedCurrency, formatPercent: formatPercentValue } = useCurrency();
@@ -157,6 +163,8 @@ const current = computed<NetWorthComponents>(() => {
             liquid: latest.liquid,
             investments: latest.investments,
             games: latest.games,
+            receivables: latest.receivables,
+            payables: latest.payables,
             total: latest.total,
         };
     }
@@ -168,32 +176,36 @@ const deltaClass = computed(() =>
     (delta.value?.amount ?? 0) >= 0 ? 'text-green-4' : 'text-red-4',
 );
 
-// Breakdown bars
+// Breakdown bars. Shares are relative to gross assets: debts make the net
+// total smaller than the sum of its parts, so it is not a usable denominator.
 const breakdown = computed(() => {
-    const total = current.value.total || 1;
+    const { liquid, investments, games, receivables, payables } = current.value;
+    const assets = liquid + investments + games + receivables || 1;
     return [
-        {
-            key: 'liquid',
-            label: t('netWorth.liquid'),
-            value: current.value.liquid,
-            percent: (current.value.liquid / total) * 100,
-            color: 'primary',
-        },
+        { key: 'liquid', label: t('netWorth.liquid'), value: liquid, color: 'primary' },
         {
             key: 'investments',
             label: t('netWorth.investments'),
-            value: current.value.investments,
-            percent: (current.value.investments / total) * 100,
+            value: investments,
             color: 'teal',
         },
+        { key: 'games', label: t('netWorth.games'), value: games, color: 'deep-orange' },
         {
-            key: 'games',
-            label: t('netWorth.games'),
-            value: current.value.games,
-            percent: (current.value.games / total) * 100,
-            color: 'deep-orange',
+            key: 'receivables',
+            label: t('netWorth.receivables'),
+            value: receivables,
+            color: 'blue-grey',
         },
-    ].filter((b) => b.value !== 0);
+        {
+            key: 'payables',
+            label: t('netWorth.payables'),
+            value: payables,
+            color: 'negative',
+            negative: true,
+        },
+    ]
+        .filter((b) => b.value !== 0)
+        .map((b) => ({ ...b, percent: (b.value / assets) * 100 }));
 });
 
 // Chart
@@ -252,6 +264,7 @@ onMounted(async () => {
         investmentStore.loadAll(),
         exchangeRateStore.loadAll(),
         netWorthStore.loadAll(),
+        debtStore.loadAll(),
     ]);
     // Refresh the current month snapshot when opening the page
     await netWorthStore.captureCurrent();

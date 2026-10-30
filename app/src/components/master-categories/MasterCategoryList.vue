@@ -28,7 +28,9 @@
                         </q-badge>
                     </q-item-label>
                     <q-item-label caption class="text-grey-6">
-                        {{ t('masterCategories.subCategoryCount', { count: countFor(category.id) }) }}
+                        {{
+                            t('masterCategories.subCategoryCount', { count: countFor(category.id) })
+                        }}
                     </q-item-label>
                 </q-item-section>
 

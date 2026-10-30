@@ -225,9 +225,7 @@ const detailed = ref(true);
 const flows = computed(() => selectIn(range.value, { groups: COMPARISON_GROUPS }));
 
 /** Flows of the previous period, used for the comparison chips. */
-const previousFlows = computed(() =>
-    selectIn(previousRange.value, { groups: COMPARISON_GROUPS }),
-);
+const previousFlows = computed(() => selectIn(previousRange.value, { groups: COMPARISON_GROUPS }));
 
 const summary = computed(() => summarize(flows.value, range.value));
 const previousSummary = computed(() => summarize(previousFlows.value, previousRange.value));
@@ -361,7 +359,9 @@ function rowsFor(direction: 'in' | 'out', color: string): BreakdownRow[] {
 
     return buckets.map((bucket) => {
         const masterCategory =
-            bucket.key === 'other' ? undefined : masterCategoryStore.getMasterCategoryById(bucket.key);
+            bucket.key === 'other'
+                ? undefined
+                : masterCategoryStore.getMasterCategoryById(bucket.key);
         return {
             ...bucket,
             name: masterCategory?.name ?? t('analytics.other'),

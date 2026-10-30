@@ -416,7 +416,10 @@ export function recommend(
             strategy: AllocationStrategy.AtRisk,
             explanation: {
                 code: AllocationReason.PaceNotCovered,
-                params: { shortfall: roundTo(totalPace - available, decimals), count: dated.length },
+                params: {
+                    shortfall: roundTo(totalPace - available, decimals),
+                    count: dated.length,
+                },
             },
         };
     }

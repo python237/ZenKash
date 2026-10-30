@@ -9,7 +9,7 @@
   <circle cx="40" cy="40" r="35" fill="url(#logoGradient)"/>
   <path d="M22 22 L58 22 L58 27 L32 53 L58 53 L58 58 L22 58 L22 53 L48 27 L22 27 Z" fill="white"/>
   <!-- Text: Zenkash -->
-  <text x="90" y="52" font-family="Inter, -apple-system, sans-serif" font-size="32" font-weight="600" fill="#1e293b">
+  <text x="90" y="52" font-family="Plus Jakarta Sans, -apple-system, sans-serif" font-size="32" font-weight="600" fill="#1e293b">
     <tspan>Zen</tspan><tspan fill="#0d9488">kash</tspan>
   </text>
 </svg>

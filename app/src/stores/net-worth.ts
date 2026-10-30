@@ -7,6 +7,7 @@ import type {
 import { CurrencyCode } from 'src/types/currency';
 import type { Wallet } from 'src/types/wallet';
 import type { InvestmentItem } from 'src/types/investment';
+import type { DebtWithStats } from 'src/types/debt';
 import { execute, query } from 'src/services/database';
 
 /**
@@ -37,6 +38,8 @@ interface NetWorthRow {
     liquid: number;
     investments: number;
     games: number;
+    receivables: number;
+    payables: number;
     total: number;
     currency: string;
     created_at: string;
@@ -56,6 +59,8 @@ function rowToSnapshot(row: NetWorthRow): NetWorthSnapshot {
         liquid: row.liquid,
         investments: row.investments,
         games: row.games,
+        receivables: row.receivables ?? 0,
+        payables: row.payables ?? 0,
         total: row.total,
         currency: row.currency as CurrencyCode,
         createdAt: new Date(row.created_at),
@@ -105,6 +110,7 @@ export const useNetWorthStore = defineStore('netWorth', () => {
         const investmentStore = useInvestmentStore();
         const exchangeRateStore = useExchangeRateStore();
         const settingsStore = useSettingsStore();
+        const debtStore = useDebtStore();
 
         const defaultCurrency = settingsStore.defaultCurrency ?? CurrencyCode.XOF;
 
@@ -134,7 +140,29 @@ export const useNetWorthStore = defineStore('netWorth', () => {
             0,
         );
 
-        return { liquid, investments, games, total: liquid + investments + games };
+        // Debts: borrowed money already sits in the wallets, lent money already left them
+        const sumOutstanding = (debts: DebtWithStats[]): number =>
+            debts.reduce(
+                (sum: number, d: DebtWithStats) =>
+                    sum +
+                    exchangeRateStore.convertWithDefault(
+                        d.outstanding,
+                        d.currency,
+                        defaultCurrency,
+                    ),
+                0,
+            );
+        const receivables = sumOutstanding(debtStore.receivables);
+        const payables = sumOutstanding(debtStore.payables);
+
+        return {
+            liquid,
+            investments,
+            games,
+            receivables,
+            payables,
+            total: liquid + investments + games + receivables - payables,
+        };
     }
 
     /**
@@ -181,6 +209,8 @@ export const useNetWorthStore = defineStore('netWorth', () => {
                 liquid: components.liquid,
                 investments: components.investments,
                 games: components.games,
+                receivables: components.receivables,
+                payables: components.payables,
                 total: components.total,
                 currency: settingsStore.defaultCurrency ?? CurrencyCode.XOF,
                 createdAt,
@@ -189,13 +219,15 @@ export const useNetWorthStore = defineStore('netWorth', () => {
 
             await execute(
                 `INSERT INTO net_worth_snapshots
-                    (id, period, date, liquid, investments, games, total, currency, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (id, period, date, liquid, investments, games, receivables, payables, total, currency, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                  ON CONFLICT(period) DO UPDATE SET
                     date = excluded.date,
                     liquid = excluded.liquid,
                     investments = excluded.investments,
                     games = excluded.games,
+                    receivables = excluded.receivables,
+                    payables = excluded.payables,
                     total = excluded.total,
                     currency = excluded.currency,
                     updated_at = excluded.updated_at`,
@@ -206,6 +238,8 @@ export const useNetWorthStore = defineStore('netWorth', () => {
                     snapshot.liquid,
                     snapshot.investments,
                     snapshot.games,
+                    snapshot.receivables,
+                    snapshot.payables,
                     snapshot.total,
                     snapshot.currency,
                     snapshot.createdAt.toISOString(),
