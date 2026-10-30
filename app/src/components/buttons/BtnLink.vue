@@ -28,7 +28,8 @@ defineEmits<{
 
 <style lang="scss" scoped>
 .btn-link {
-    font-weight: 500;
+    border-radius: $radius-control;
+    font-weight: 700;
     padding: 4px 12px;
 }
 </style>

@@ -1,57 +1,25 @@
 <template>
-    <q-page class="q-pa-md">
-        <!-- Diagnosis first: is the plan reachable at all? -->
-        <q-card
-            v-if="goals.length > 0"
-            flat
-            bordered
-            class="allocation-entry q-mb-sm"
-            @click="openDiagnostic"
-        >
-            <q-card-section class="row items-center q-py-sm">
-                <q-avatar color="teal-7" text-color="white" size="36px" class="q-mr-md">
-                    <q-icon name="monitor_heart" size="18px" />
-                </q-avatar>
-                <div class="col">
-                    <div class="text-subtitle2 text-weight-medium">
-                        {{ t('goals.diagnosis.title') }}
-                    </div>
-                    <div class="text-caption text-grey-6">
-                        {{ t('goals.diagnosis.subtitle') }}
-                    </div>
-                </div>
-                <q-icon name="chevron_right" color="grey-6" />
-            </q-card-section>
-        </q-card>
-
-        <!-- Smart allocation entry point -->
-        <q-card
-            v-if="goals.length > 0"
-            flat
-            bordered
-            class="allocation-entry q-mb-md"
-            @click="openAllocation"
-        >
-            <q-card-section class="row items-center q-py-sm">
-                <q-avatar color="primary" text-color="white" size="36px" class="q-mr-md">
-                    <q-icon name="auto_awesome" size="18px" />
-                </q-avatar>
-                <div class="col">
-                    <div class="text-subtitle2 text-weight-medium">
-                        {{ t('goals.allocation.title') }}
-                    </div>
-                    <div class="text-caption text-grey-6">
-                        {{ t('goals.allocation.subtitle') }}
-                    </div>
-                </div>
-                <q-icon name="chevron_right" color="grey-6" />
-            </q-card-section>
-        </q-card>
+    <q-page class="zk-page">
+        <!-- Diagnosis first (is the plan reachable at all?), then smart allocation -->
+        <div v-if="goals.length > 0" class="entry-grid">
+            <button type="button" class="entry-tile entry-tile--dark" @click="openDiagnostic">
+                <q-icon name="o_monitor_heart" size="22px" class="entry-tile__icon" />
+                <span class="entry-tile__title">{{ t('goals.diagnosis.title') }}</span>
+                <span class="entry-tile__subtitle">{{ t('goals.diagnosis.subtitle') }}</span>
+            </button>
+            <button type="button" class="entry-tile" @click="openAllocation">
+                <q-icon name="o_auto_awesome" size="22px" class="entry-tile__icon" />
+                <span class="entry-tile__title">{{ t('goals.allocation.title') }}</span>
+                <span class="entry-tile__subtitle">{{ t('goals.allocation.subtitle') }}</span>
+            </button>
+        </div>
 
         <!-- Empty state -->
-        <div v-if="goals.length === 0" class="empty-state">
-            <q-icon name="flag" size="64px" color="grey-4" />
-            <div class="text-grey-6 q-mt-md">{{ t('goals.noGoals') }}</div>
+        <div v-if="goals.length === 0" class="zk-empty">
+            <span class="zk-empty__icon">
+                <q-icon name="o_flag" size="30px" />
+            </span>
+            <span class="zk-empty__title">{{ t('goals.noGoals') }}</span>
         </div>
 
         <!-- List -->
@@ -60,16 +28,10 @@
                 v-for="goal in goals"
                 :key="goal.id"
                 :goal="goal"
-                class="q-mb-sm"
                 @click="openEdit(goal)"
                 @delete="openDelete(goal)"
             />
         </div>
-
-        <!-- Add FAB -->
-        <q-page-sticky position="bottom-right" :offset="[18, 18]">
-            <BtnFab icon="add" @click="openCreate" />
-        </q-page-sticky>
 
         <!-- Create/Edit Dialog -->
         <GoalDialog v-model="showDialog" :goal="selected" />
@@ -92,10 +54,14 @@ import { useSavingsGoalStore } from 'src/stores/savings-goal';
 import GoalCard from 'src/components/goals/GoalCard.vue';
 import GoalDialog from 'src/components/goals/GoalDialog.vue';
 import ModalConfirm from 'src/components/modals/ModalConfirm.vue';
-import BtnFab from 'src/components/buttons/BtnFab.vue';
 
 const { t } = useI18n();
-usePage({ title: t('goals.title'), showHeader: true, showBack: true });
+usePage({
+    title: t('goals.title'),
+    showHeader: true,
+    showBack: true,
+    actions: [{ icon: 'add', label: t('common.add'), onClick: () => openCreate() }],
+});
 
 const router = useRouter();
 const goalStore = useSavingsGoalStore();
@@ -167,22 +133,58 @@ async function onDelete(): Promise<void> {
 </script>
 
 <style lang="scss" scoped>
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 24px;
-    text-align: center;
+.entry-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
 }
 
-.allocation-entry {
-    border-radius: 12px;
+.entry-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 16px;
+    border: 0;
+    border-radius: 20px;
+    background: $bg-card;
+    color: $text-primary;
+    font-family: inherit;
+    text-align: left;
     cursor: pointer;
+
+    &__icon {
+        color: $primary;
+    }
+
+    &__title {
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    &__subtitle {
+        font-size: 12px;
+        line-height: 1.4;
+        color: $text-secondary;
+    }
+
+    &--dark {
+        background: $hero-bg;
+        color: #ffffff;
+
+        .entry-tile__icon {
+            color: $hero-accent;
+        }
+
+        .entry-tile__subtitle {
+            color: $hero-muted;
+        }
+    }
 }
 
 .goal-list {
     display: flex;
     flex-direction: column;
+    gap: 10px;
 }
 </style>

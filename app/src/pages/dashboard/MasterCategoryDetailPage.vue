@@ -30,11 +30,10 @@
             <q-card-section class="q-pa-md">
                 <div class="row items-center">
                     <q-avatar
+                        :style="toneStyle(masterCategory.color)"
                         v-if="masterCategory?.color"
-                        :style="{ backgroundColor: masterCategory.color }"
-                        text-color="white"
                         size="48px"
-                        class="q-mr-md"
+                        class="zk-avatar q-mr-md"
                     >
                         <q-icon :name="masterCategory?.icon ?? 'category'" size="24px" />
                     </q-avatar>
@@ -110,9 +109,9 @@
                     <q-item v-for="item in categoryDistribution" :key="item.id">
                         <q-item-section avatar>
                             <q-avatar
-                                :style="{ backgroundColor: item.chartColor }"
-                                text-color="white"
+                                :style="toneStyle(item.chartColor)"
                                 size="40px"
+                                class="zk-avatar"
                             >
                                 <q-icon :name="item.icon ?? 'label'" size="20px" />
                             </q-avatar>
@@ -137,6 +136,7 @@
 </template>
 
 <script setup lang="ts">
+import { toneStyle } from 'src/services/tone';
 import { Pie } from 'vue-chartjs';
 import {
     Chart as ChartJS,
@@ -178,12 +178,10 @@ const masterCategory = computed(
 );
 
 // Page title
-watchEffect(() => {
-    usePage({
-        title: masterCategory.value?.name ?? t('report.expenseDistribution'),
-        showHeader: true,
-        showBack: true,
-    });
+usePage({
+    title: () => masterCategory.value?.name ?? t('report.expenseDistribution'),
+    showHeader: true,
+    showBack: true,
 });
 
 // State

@@ -1,12 +1,13 @@
 <template>
-    <q-page class="q-pa-md">
+    <q-page class="zk-page">
+        <!-- Total available, converted into the default currency -->
+        <div v-if="wallets.length > 0" class="wallets-total">
+            <span class="zk-caption">{{ t('report.availableBalance') }}</span>
+            <span class="zk-amount zk-amount--lg">{{ formatCurrency(totalBalance) }}</span>
+        </div>
+
         <!-- Wallet List -->
         <WalletGrid :wallets="wallets" @select="goToDetail" />
-
-        <!-- Add FAB -->
-        <q-page-sticky position="bottom-right" :offset="[18, 18]">
-            <BtnFab icon="add" @click="openCreate" />
-        </q-page-sticky>
 
         <!-- Create Dialog -->
         <WalletDialog v-model="showDialog" @saved="onSaved" />
@@ -17,11 +18,15 @@
 import type { Wallet } from 'src/types/wallet';
 import WalletGrid from 'src/components/wallets/WalletGrid.vue';
 import WalletDialog from 'src/components/wallets/WalletDialog.vue';
-import BtnFab from 'src/components/buttons/BtnFab.vue';
 
 const { t } = useI18n();
 const router = useRouter();
-usePage({ title: t('wallets.title'), showHeader: true, showBack: true });
+usePage({
+    title: t('wallets.title'),
+    showHeader: true,
+    showBack: true,
+    actions: [{ icon: 'add', label: t('common.add'), onClick: () => openCreate() }],
+});
 
 const store = useWalletStore();
 
@@ -30,6 +35,13 @@ const showDialog = ref(false);
 
 // Load wallets (game wallets are managed from the Games section, hidden here)
 const wallets = computed(() => store.nonGameWallets);
+
+const { formatCurrency, convert } = useCurrency();
+
+/** Sum of the listed wallets, converted into the default currency. */
+const totalBalance = computed(() =>
+    wallets.value.reduce((sum, wallet) => sum + convert(wallet.balance, wallet.currency), 0),
+);
 
 onMounted(() => {
     void store.loadAll();
@@ -64,3 +76,12 @@ function onSaved(): void {
     // Wallet was saved - list will update automatically
 }
 </script>
+
+<style lang="scss" scoped>
+.wallets-total {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 4px;
+}
+</style>

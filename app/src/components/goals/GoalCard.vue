@@ -1,81 +1,73 @@
 <template>
-    <q-card class="goal-card" flat bordered>
-        <q-card-section class="q-pa-md">
-            <!-- Header -->
-            <div class="row items-center q-mb-sm">
-                <q-avatar :color="avatarColor" text-color="white" size="40px" class="q-mr-md">
-                    <q-icon :name="goal.icon ?? 'flag'" size="20px" />
-                </q-avatar>
-                <div class="col clickable" @click="$emit('click')">
-                    <div class="text-subtitle1 text-weight-medium">{{ goal.name }}</div>
-                    <div v-if="!goal.walletExists" class="text-caption text-negative">
-                        {{ t('goals.walletMissing') }}
-                    </div>
-                    <div v-else class="text-caption text-grey-6">
-                        {{ formatAmount(goal.currentAmount) }} /
-                        {{ formatAmount(goal.targetAmount) }}
-                    </div>
-                    <div v-if="goal.sharesWallet" class="text-caption text-warning">
-                        {{ t('goals.sharedWallet') }}
-                    </div>
-                </div>
-                <BtnIcon dense icon="delete" color="negative" @click="$emit('delete')" />
-            </div>
-
-            <!-- Completion rate -->
-            <div class="row items-center justify-between q-mb-xs">
-                <span class="text-caption text-grey-6">{{ t('goals.completionRate') }}</span>
-                <span class="text-caption text-weight-medium" :class="`text-${progressColor}`">
-                    {{ formatPercent(goal.percent) }}
+    <article class="goal-card">
+        <!-- Header -->
+        <div class="goal-card__head">
+            <span
+                class="zk-tile zk-tile--lg"
+                :class="goal.isReached ? 'zk-tile--green' : ''"
+                :style="tileStyle"
+            >
+                <q-icon :name="goal.icon ?? 'flag'" size="22px" />
+            </span>
+            <button type="button" class="goal-card__body" @click="$emit('click')">
+                <span class="goal-card__name">{{ goal.name }}</span>
+                <span v-if="!goal.walletExists" class="goal-card__meta text-negative">
+                    {{ t('goals.walletMissing') }}
                 </span>
-            </div>
-
-            <!-- Progress -->
-            <q-linear-progress
-                :value="goal.percent / 100"
-                :color="progressColor"
-                track-color="grey-3"
-                rounded
-                size="8px"
+                <span v-else-if="goal.isReached" class="goal-card__meta">
+                    {{ t('goals.reached') }} · {{ formatAmount(goal.targetAmount) }}
+                </span>
+                <span v-else class="goal-card__meta">
+                    {{ formatAmount(goal.currentAmount) }} /
+                    {{ formatAmount(goal.targetAmount) }}
+                </span>
+                <span v-if="goal.sharesWallet" class="goal-card__meta goal-card__meta--warn">
+                    {{ t('goals.sharedWallet') }}
+                </span>
+            </button>
+            <span v-if="pill" class="zk-pill" :class="`zk-pill--${pill.tone}`">
+                {{ pill.label }}
+            </span>
+            <BtnIcon
+                icon="o_delete"
+                color="negative"
+                :aria-label="t('common.delete')"
+                @click="$emit('delete')"
             />
+        </div>
 
-            <!-- Footer -->
-            <div class="row items-center justify-between q-mt-sm">
-                <div class="text-caption text-grey-7">
-                    <template v-if="goal.isReached">{{ t('goals.reached') }} 🎉</template>
-                    <template v-else>
-                        {{ t('goals.remaining') }}: {{ formatAmount(goal.remaining) }}
-                    </template>
-                </div>
-                <div v-if="goal.deadline" class="text-caption row items-center q-gutter-xs">
-                    <q-badge
-                        v-if="goal.onTrack !== null && !goal.isReached"
-                        :color="badgeColor"
-                        outline
-                    >
-                        {{ goal.onTrack ? t('goals.onTrack') : t('goals.behind') }}
-                    </q-badge>
-                    <span
-                        v-if="!goal.isReached && goal.requiredMonthly !== null"
-                        class="text-grey-7"
-                    >
-                        {{ t('goals.requiredMonthly') }}
-                        {{ formatAmount(goal.requiredMonthly) }}{{ t('goals.perMonth') }}
-                    </span>
-                </div>
+        <!-- Completion rate -->
+        <div v-if="!goal.isReached" class="goal-card__progress">
+            <div class="goal-card__row">
+                <span>{{ t('goals.completionRate') }}</span>
+                <span class="goal-card__strong">{{ formatPercent(goal.percent) }}</span>
             </div>
-            <div v-if="goal.deadline" class="text-caption text-grey-6 q-mt-xs">
-                <q-icon name="event" size="14px" /> {{ formattedDeadline }}
-                <span v-if="goal.monthsLeft !== null">
+            <div class="zk-progress">
+                <div :style="progressStyle" />
+            </div>
+        </div>
+
+        <!-- Footer: deadline and monthly effort -->
+        <div v-if="goal.deadline || !goal.isReached" class="goal-card__row goal-card__foot">
+            <span v-if="goal.deadline">
+                {{ formattedDeadline }}
+                <template v-if="goal.monthsLeft !== null">
                     · {{ t('goals.monthsLeft', { count: goal.monthsLeft }) }}
-                </span>
-            </div>
-        </q-card-section>
-    </q-card>
+                </template>
+            </span>
+            <span v-else-if="!goal.isReached">
+                {{ t('goals.remaining') }} {{ formatAmount(goal.remaining) }}
+            </span>
+            <span v-if="!goal.isReached && goal.requiredMonthly !== null" class="goal-card__strong">
+                {{ formatAmount(goal.requiredMonthly) }}{{ t('goals.perMonth') }}
+            </span>
+        </div>
+    </article>
 </template>
 
 <script setup lang="ts">
 import type { SavingsGoalWithStats } from 'src/types/savings-goal';
+import { toneStyle } from 'src/services/tone';
 import BtnIcon from '../buttons/BtnIcon.vue';
 
 const props = defineProps<{
@@ -90,15 +82,22 @@ defineEmits<{
 const { t, locale } = useI18n();
 const { formatCurrency, formatPercent } = useCurrency();
 
-const avatarColor = computed(() => (props.goal.isReached ? 'positive' : 'pink-5'));
+/** Goals in progress get a calm pink tile; reached ones turn green. */
+const tileStyle = computed(() => (props.goal.isReached ? undefined : toneStyle('pink')));
 
-const progressColor = computed(() => {
-    if (props.goal.isReached) return 'positive';
-    if (props.goal.onTrack === false) return 'warning';
-    return 'primary';
+/** Status pill: on track (green) or behind (orange), only when a deadline is set. */
+const pill = computed((): { label: string; tone: string } | null => {
+    if (props.goal.isReached || !props.goal.deadline || props.goal.onTrack === null) return null;
+    return props.goal.onTrack
+        ? { label: t('goals.onTrack'), tone: 'green' }
+        : { label: t('goals.behind'), tone: 'orange' };
 });
 
-const badgeColor = computed(() => (props.goal.onTrack ? 'positive' : 'warning'));
+/** Progress fill: amber when the goal is behind schedule. */
+const progressStyle = computed(() => ({
+    width: `${Math.min(Math.max(props.goal.percent, 0), 100)}%`,
+    background: props.goal.onTrack === false ? '#d97a2b' : undefined,
+}));
 
 /**
  * Formats an amount in the goal's own currency (the linked wallet's), not the
@@ -122,6 +121,78 @@ const formattedDeadline = computed(() => {
 
 <style lang="scss" scoped>
 .goal-card {
-    border-radius: 12px;
+    background: $bg-card;
+    border-radius: $radius-card;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    &__body {
+        flex: 1;
+        min-width: 0;
+        min-height: 44px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        font-family: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    &__name {
+        font-size: 15px;
+        font-weight: 700;
+        color: $text-primary;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__meta {
+        font-size: 12px;
+        color: $text-secondary;
+
+        &--warn {
+            color: $amber;
+            font-weight: 600;
+        }
+    }
+
+    &__progress {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    &__row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 12px;
+        color: $text-secondary;
+    }
+
+    &__foot {
+        padding-top: 10px;
+        border-top: 1px solid $border-light;
+    }
+
+    &__strong {
+        font-weight: 700;
+        color: $text-primary;
+    }
 }
 </style>

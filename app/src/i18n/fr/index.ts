@@ -1,6 +1,8 @@
 export default {
     // Common
     common: {
+        notFound: 'Introuvable',
+        seeAll: 'Tout voir',
         save: 'Enregistrer',
         cancel: 'Annuler',
         delete: 'Supprimer',
@@ -24,6 +26,8 @@ export default {
         actions: 'Actions',
         all: 'Tous',
         apply: 'Appliquer',
+        options: 'Options',
+        restore: 'Réactiver',
     },
 
     // Validation
@@ -38,6 +42,9 @@ export default {
 
     // Navigation
     nav: {
+        home: 'Accueil',
+        netWorth: 'Patrimoine',
+        main: 'Navigation principale',
         report: 'Rapport',
         transactions: 'Transactions',
         investments: 'Investissements',
@@ -68,6 +75,10 @@ export default {
 
     // Transactions
     transactions: {
+        searchPlaceholder: 'Rechercher une transaction',
+        filterLabel: 'Filtrer par type',
+        inflows: 'Entrées',
+        outflows: 'Sorties',
         title: 'Transactions',
         income: 'Revenu',
         expense: 'Dépense',
@@ -98,13 +109,28 @@ export default {
         deleteTitle: 'Supprimer la transaction',
         deleteMessage:
             'Cette transaction sera supprimée et les soldes des portefeuilles seront ajustés.',
-        deleteConfirm: 'Voulez-vous vraiment supprimer cette transaction ?',
+        deleteConfirm: 'Veux-tu vraiment supprimer cette transaction ?',
         incomeBreakdown: 'Répartition des revenus',
         expenseBreakdown: 'Répartition des dépenses',
     },
 
     // Loans and debts
     debts: {
+        direction: 'Sens',
+        counterpartyPlaceholder: 'Nom',
+        directionChoice: {
+            lent: 'J’ai prêté',
+            borrowed: 'J’ai emprunté',
+        },
+        directionHint: {
+            lent: 'L’argent sort de ton portefeuille et comptera comme créance dans ton patrimoine.',
+            borrowed:
+                'L’argent entre dans ton portefeuille et comptera comme dette dans ton patrimoine.',
+        },
+        walletLabel: {
+            lent: 'Sort de',
+            borrowed: 'Arrive sur',
+        },
         title: 'Prêts & dettes',
         subtitle: "L'argent prêté et emprunté",
         addDebt: 'Enregistrer un prêt',
@@ -122,6 +148,12 @@ export default {
         settled: 'Soldé',
         overdue: 'En retard',
         daysLeft: '{count} jour(s) restant(s)',
+        daysLeftShort: 'J−{count}',
+        dueOn: 'Échéance {date}',
+        repayAction: {
+            lent: 'Encaisser',
+            borrowed: 'Rembourser',
+        },
         addRepayment: 'Remboursement',
         repaymentWalletHint: {
             lent: 'Le portefeuille sur lequel tu as été remboursé',
@@ -131,10 +163,15 @@ export default {
         undoRepaymentConfirm: 'Le dernier remboursement ({amount}, le {date}) sera supprimé.',
         undoRepaymentHint:
             'Le solde du portefeuille est remis en état et le prêt redevient en cours.',
-        totalReceivable: "Ce qu'on te doit",
-        totalPayable: 'Ce que tu dois',
+        totalReceivable: 'On te doit',
+        totalPayable: 'Tu dois',
+        statusFilter: 'Filtrer par statut',
+        filterOpen: 'En cours',
+        filterSettled: 'Soldés',
+        noOpenDebts: 'Aucun prêt en cours',
+        noSettledDebts: 'Aucun prêt soldé',
         openCount: '{count} en cours',
-        deleteConfirm: 'Voulez-vous vraiment supprimer ce prêt ?',
+        deleteConfirm: 'Veux-tu vraiment supprimer ce prêt ?',
         deleteTransactionsQuestion: 'Supprimer aussi les {count} transaction(s) associée(s) ?',
         deleteTransactionsYesHint:
             'Les mouvements seront supprimés et les soldes des portefeuilles remis en état.',
@@ -169,6 +206,7 @@ export default {
 
     // Wallets
     wallets: {
+        latestOperations: 'Dernières opérations',
         title: 'Portefeuilles',
         balance: 'Solde',
         initialBalance: 'Solde initial',
@@ -176,7 +214,7 @@ export default {
         addWallet: 'Ajouter un portefeuille',
         editWallet: 'Modifier le portefeuille',
         noWallets: 'Aucun portefeuille',
-        deleteConfirm: 'Voulez-vous vraiment supprimer ce portefeuille ?',
+        deleteConfirm: 'Veux-tu vraiment supprimer ce portefeuille ?',
         deleteWarning: 'Les transactions associées ne seront pas supprimées.',
         icon: 'Icône',
         history: {
@@ -223,7 +261,7 @@ export default {
         addCategory: 'Ajouter une catégorie',
         editCategory: 'Modifier la catégorie',
         noCategories: 'Aucune catégorie',
-        deleteConfirm: 'Voulez-vous vraiment supprimer cette catégorie ?',
+        deleteConfirm: 'Veux-tu vraiment supprimer cette catégorie ?',
         deleteWarning: 'Les transactions associées ne seront pas supprimées.',
         retired: 'Inactive',
         retire: 'Désactiver',
@@ -233,6 +271,8 @@ export default {
             "Elle sera désactivée : elle continue d'étiqueter l'historique mais ne sera plus proposée pour de nouvelles transactions. Tu peux la réactiver à tout moment.",
         masterCategory: 'Grande catégorie',
         icon: 'Icône',
+        searchPlaceholder: 'Rechercher une catégorie',
+        noResults: 'Aucune catégorie ne correspond à ta recherche',
     },
 
     // Master Categories
@@ -242,7 +282,7 @@ export default {
         addMasterCategory: 'Ajouter une grande catégorie',
         editMasterCategory: 'Modifier la grande catégorie',
         noMasterCategories: 'Aucune grande catégorie',
-        deleteConfirm: 'Voulez-vous vraiment supprimer cette grande catégorie ?',
+        deleteConfirm: 'Veux-tu vraiment supprimer cette grande catégorie ?',
         deleteWarning: 'Les catégories associées ne seront pas supprimées.',
         retireConfirm:
             'Cette grande catégorie contient {count} sous-catégorie(s) : elle ne peut pas être supprimée.',
@@ -272,8 +312,9 @@ export default {
         totalBudgeted: 'Total budgété',
         byCategory: 'Par catégorie',
         byMasterCategory: 'Par grande catégorie',
-        deleteConfirm: 'Voulez-vous vraiment supprimer ce budget ?',
+        deleteConfirm: 'Veux-tu vraiment supprimer ce budget ?',
         exceededWarning: '{count} budget(s) dépassé(s)',
+        ofTotal: 'sur {amount}',
     },
 
     // Investments
@@ -309,7 +350,7 @@ export default {
         noHistory: 'Pas assez de données pour le graphique',
         items: 'actifs',
         units: 'unités',
-        deleteConfirm: 'Voulez-vous vraiment supprimer cet investissement ?',
+        deleteConfirm: 'Veux-tu vraiment supprimer cet investissement ?',
         notFound: 'Investissement non trouvé',
         types: {
             stock: 'Action',
@@ -330,11 +371,14 @@ export default {
         returnOnInvestment: 'Retour sur investissement',
         netGain: 'Gain net',
         projectCount: 'projets',
+        dividends: 'Dividendes',
+        paidBack: 'rentabilisé',
+        recovered: '{percent} récupéré',
         invested: 'Investi',
         history: 'Historique des transactions',
         noTransactions: 'Aucune transaction',
         transactionCount: 'Transactions',
-        deleteConfirm: 'Voulez-vous vraiment supprimer ce projet ?',
+        deleteConfirm: 'Veux-tu vraiment supprimer ce projet ?',
     },
 
     // Games (betting platforms)
@@ -347,7 +391,7 @@ export default {
         noGames: 'Aucun jeu',
         walletCreatedHint: 'Un portefeuille dédié sera créé automatiquement pour ce jeu.',
         excludedHint:
-            "Le solde des jeux n'est pas comptabilisé dans vos bilans : l'argent peut y être bloqué.",
+            "Le solde des jeux n'est pas comptabilisé dans tes bilans : l'argent peut y être bloqué.",
         balance: 'Solde disponible',
         netResult: 'Résultat net',
         totalStaked: 'Total misé',
@@ -360,7 +404,7 @@ export default {
         netReceived: 'Montant reçu : {amount}',
         withdrawFeeTooHigh: 'Les frais doivent être inférieurs au montant retiré',
         deleteConfirm:
-            'Voulez-vous vraiment supprimer ce jeu ? Son portefeuille et ses paris seront supprimés.',
+            'Veux-tu vraiment supprimer ce jeu ? Son portefeuille et ses paris seront supprimés.',
     },
 
     // Bets
@@ -375,11 +419,22 @@ export default {
         pending: 'En cours',
         won: 'Gagné',
         lost: 'Perdu',
-        deleteConfirm: 'Voulez-vous vraiment supprimer ce pari ? Le solde du jeu sera ajusté.',
+        deleteConfirm: 'Veux-tu vraiment supprimer ce pari ? Le solde du jeu sera ajusté.',
     },
 
     // Report / Dashboard
     report: {
+        greetingName: 'Bonjour, {name}',
+        hideAmounts: 'Masquer les montants',
+        showAmounts: 'Afficher les montants',
+        greeting: 'Bonjour',
+        availableBalance: 'Solde disponible',
+        walletsCount: '{count} compte | {count} comptes',
+        quickActions: 'Actions rapides',
+        previousMonth: 'Mois précédent',
+        nextMonth: 'Mois suivant',
+        quickLoan: 'Prêt',
+        recent: 'Récents',
         title: 'Rapport',
         selectMonth: 'Sélectionner le mois',
         totalBalance: 'Solde total',
@@ -405,7 +460,7 @@ export default {
     // Analytics
     analytics: {
         title: 'Analyse',
-        subtitle: 'Filtrez et décortiquez vos dépenses',
+        subtitle: 'Filtre et décortique tes dépenses',
         filters: 'Filtres',
         included: 'Flux inclus',
         groupBy: 'Regrouper par',
@@ -511,8 +566,9 @@ export default {
 
     // Net Worth
     netWorth: {
+        sections: 'Sections du patrimoine',
         title: 'Patrimoine',
-        subtitle: 'Suivez l’évolution de votre patrimoine dans le temps',
+        subtitle: 'Suis l’évolution de ton patrimoine dans le temps',
         total: 'Patrimoine total',
         liquid: 'Liquidités',
         investments: 'Investissements',
@@ -528,13 +584,13 @@ export default {
         noData: 'Pas encore assez de données',
         noHistory: 'Aucun instantané pour le moment',
         vsPrevious: 'vs mois précédent',
-        deleteConfirm: 'Voulez-vous vraiment supprimer cet instantané ?',
+        deleteConfirm: 'Veux-tu vraiment supprimer cet instantané ?',
     },
 
     // Recurring transactions
     recurring: {
         title: 'Récurrences',
-        subtitle: 'Automatisez vos revenus et dépenses fixes',
+        subtitle: 'Automatise tes revenus et dépenses fixes',
         addRecurring: 'Ajouter une récurrence',
         editRecurring: 'Modifier la récurrence',
         noRecurring: 'Aucune transaction récurrente',
@@ -557,7 +613,7 @@ export default {
         upcoming: 'À venir',
         projectedMonthEnd: 'Solde projeté fin de mois',
         projectedHint: 'Solde actuel plus les revenus et dépenses récurrents à venir',
-        deleteConfirm: 'Voulez-vous vraiment supprimer cette transaction récurrente ?',
+        deleteConfirm: 'Veux-tu vraiment supprimer cette transaction récurrente ?',
         everyWeek: 'Toutes les {count} semaine(s)',
         everyMonth: 'Tous les {count} mois',
         everyYear: 'Tous les {count} an(s)',
@@ -566,7 +622,7 @@ export default {
     // Savings goals
     goals: {
         title: 'Objectifs',
-        subtitle: 'Épargnez vers vos objectifs',
+        subtitle: 'Épargne vers tes objectifs',
         addGoal: 'Ajouter un objectif',
         editGoal: "Modifier l'objectif",
         noGoals: 'Aucun objectif',
@@ -590,7 +646,7 @@ export default {
         walletTaken: 'Ce portefeuille est déjà lié à un objectif',
         sharedWallet: 'Portefeuille partagé avec un autre objectif',
         walletMissing: 'Portefeuille lié supprimé',
-        deleteConfirm: 'Voulez-vous vraiment supprimer cet objectif ?',
+        deleteConfirm: 'Veux-tu vraiment supprimer cet objectif ?',
         diagnosis: {
             title: 'Diagnostic financier',
             subtitle: 'Tes objectifs sont-ils tenables ?',
@@ -708,6 +764,8 @@ export default {
 
     // Settings
     settings: {
+        profile: 'Profil',
+        firstName: 'Prénom',
         title: 'Paramètres',
         language: 'Langue',
         currency: 'Devise',
@@ -732,6 +790,10 @@ export default {
         alarmPermissionRequired: 'Permission alarme exacte requise',
         openAlarmSettings: 'Ouvrir les paramètres',
         securityData: 'Sécurité & données',
+        ratesDefined: 'Aucun taux défini | {count} taux défini | {count} taux définis',
+        exchangeRatesHint:
+            'Les taux convertissent vers ta devise par défaut ({currency}) pour les totaux et le patrimoine.',
+        updatedOn: 'Mis à jour le {date}',
     },
 
     // App lock
@@ -741,13 +803,16 @@ export default {
         setPin: 'Définir le PIN',
         changePin: 'Modifier le PIN',
         disable: 'Désactiver le verrouillage',
-        disableHint: 'Saisissez votre PIN pour désactiver le verrouillage',
-        enterPin: 'Saisissez votre PIN',
-        enterCurrentPin: 'Saisissez le PIN actuel',
-        newPin: 'Saisissez un nouveau PIN',
-        confirmPin: 'Confirmez votre PIN',
+        disableHint: 'Saisis ton PIN pour désactiver le verrouillage',
+        enterPin: 'Saisis ton PIN',
+        enterCurrentPin: 'Saisis le PIN actuel',
+        newPin: 'Saisis un nouveau PIN',
+        confirmPin: 'Confirme ton PIN',
         wrongPin: 'PIN incorrect',
         pinMismatch: 'Les PIN ne correspondent pas',
+        lockedSubtitle: 'Zenkash est verrouillé',
+        deleteDigit: 'Effacer',
+        digitsEntered: '{count} chiffres sur {total} saisis',
     },
 
     // Backup
@@ -758,8 +823,8 @@ export default {
         importTitle: 'Importer une sauvegarde',
         exportCaption: 'Fichier de sauvegarde chiffré',
         importCaption: 'Restaurer depuis un fichier de sauvegarde',
-        exportHint: 'Vos données sont exportées dans un fichier chiffré par mot de passe.',
-        importHint: 'Sélectionnez un fichier de sauvegarde Zenkash et saisissez son mot de passe.',
+        exportHint: 'Tes données sont exportées dans un fichier chiffré par mot de passe.',
+        importHint: 'Sélectionne un fichier de sauvegarde Zenkash et saisis son mot de passe.',
         importWarning: "L'import remplace toutes les données actuelles.",
         password: 'Mot de passe',
         confirmPassword: 'Confirmer le mot de passe',
@@ -770,16 +835,41 @@ export default {
         invalidFile: 'Fichier de sauvegarde invalide',
     },
 
+    // Notification history
+    notifications: {
+        title: 'Notifications',
+        empty: 'Aucune notification',
+        emptyHint: 'Les rappels du soir et les récurrences apparaîtront ici.',
+        clear: 'Tout effacer',
+        clearTitle: 'Effacer les notifications',
+        clearMessage: 'Tout l’historique des notifications sera supprimé.',
+        dailyReminderTitle: 'Rappel du soir',
+        dailyReminderText:
+            'Aucune transaction enregistrée aujourd’hui : pense à saisir tes dépenses.',
+        recurringPostedTitle: 'Récurrence enregistrée',
+        recurringPostedText:
+            '{label} · {amount} ajouté automatiquement | {label} · {amount} ajouté automatiquement ({count} fois)',
+        recurringDueTitle: 'Récurrence à saisir',
+        recurringDueText: '{label} · {amount} est arrivé à échéance.',
+    },
+
     // Onboarding
     onboarding: {
-        welcomeTitle: 'Bienvenue sur Zenkash',
+        firstNameTitle: 'Comment t’appelles-tu ?',
+        firstNameHint:
+            'Ton prénom sert uniquement à te saluer dans l’app. Il reste sur ton téléphone.',
+        firstNamePlaceholder: 'Prénom',
+        continue: 'Continuer',
+        welcomeTitle: 'Ton argent,\nenfin au calme.',
         welcomeSubtitle:
-            'Gérez vos finances personnelles, vos investissements et vos projets en toute simplicité.',
+            'Dépenses, investissements, projets et prêts : tout ton patrimoine, au même endroit, sans stress.',
+        welcomePrivacy: 'Tes données restent sur ton téléphone.',
         getStarted: 'Commencer',
-        currencyTitle: 'Choisissez votre devise',
-        currencyDescription:
-            'Cette devise sera utilisée par défaut pour tous vos calculs et rapports.',
+        currencyTitle: 'Quelle est ta devise ?',
+        currencyDescription: 'Tous tes totaux et ton patrimoine seront calculés dans cette devise.',
         currencyWarning: 'Ce choix est définitif et ne pourra pas être modifié.',
+        otherCurrencies: 'Autres devises ({count})',
+        stepProgress: 'Étape {current} sur {total}',
     },
 
     // Messages
@@ -787,7 +877,7 @@ export default {
         saved: 'Enregistré avec succès',
         deleted: 'Supprimé avec succès',
         error: 'Une erreur est survenue',
-        confirmDelete: 'Êtes-vous sûr de vouloir supprimer cet élément ?',
+        confirmDelete: 'Veux-tu vraiment supprimer cet élément ?',
     },
 
     // Currencies

@@ -126,40 +126,557 @@ body {
 // GLOBAL OVERRIDES
 // ============================================
 
+body {
+    color: $text-primary;
+    background-color: $bg-page;
+    font-variant-numeric: tabular-nums;
+}
+
 // Page background
 .q-page {
     background-color: $bg-page;
 }
 
-// Cards with subtle shadow
+// Default page gutter (legacy q-pa-md pages)
+.q-page.q-pa-md {
+    padding: 8px 20px 32px;
+}
+
+// Cards: flat white surfaces, large radius, no shadow
 .q-card {
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-radius: $radius-card;
+    box-shadow: none;
+    border: 0;
+}
+
+.q-card--bordered {
     border: 1px solid $border-light;
 }
 
 // Buttons
 .q-btn {
-    border-radius: 8px;
+    border-radius: $radius-control;
     text-transform: none;
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.q-btn--round {
+    border-radius: 50%;
+}
+
+.q-btn--fab {
+    border-radius: $radius-tile;
+}
+
+// Inputs: outlined fields with soft border and large radius
+.q-field--outlined {
+    .q-field__control {
+        border-radius: 16px;
+
+        &:before {
+            border-color: $border-color;
+        }
+    }
+
+    &:not(.q-field--dense) .q-field__control {
+        min-height: 52px;
+    }
+
+    &.q-field--dense .q-field__control {
+        border-radius: $radius-control;
+    }
+}
+
+.q-field__label {
+    color: $text-secondary;
     font-weight: 500;
 }
 
-// Inputs
-.q-field {
-    .q-field__control {
-        border-radius: 8px;
-    }
+.q-field__native,
+.q-field__input {
+    font-weight: 600;
+    color: $text-primary;
 }
 
 // Lists
 .q-item {
-    border-radius: 8px;
+    border-radius: $radius-control;
+}
+
+.q-item__label--caption {
+    color: $text-secondary;
+}
+
+// Progress bars, chips and badges: pill-shaped
+.q-linear-progress {
+    border-radius: 999px;
+}
+
+.q-linear-progress__track {
+    opacity: 1 !important;
+    background: $grey-soft;
+}
+
+.q-linear-progress__model {
+    border-radius: 999px;
+}
+
+.q-chip {
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.q-badge {
+    border-radius: 999px;
+    font-weight: 700;
+    padding: 3px 8px;
+}
+
+.q-tab {
+    text-transform: none;
+}
+
+.q-separator {
+    background: $border-light;
+}
+
+// Map the most used Quasar greys onto the palette
+.text-grey-5 {
+    color: $text-muted !important;
+}
+
+.text-grey-6,
+.text-grey-7 {
+    color: $text-secondary !important;
+}
+
+.text-grey-8,
+.text-grey-9,
+.text-dark {
+    color: $grey-ink !important;
+}
+
+// Headline numbers rendered with Quasar typography classes
+.text-h4,
+.text-h5 {
+    font-weight: 800 !important;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+}
+
+.text-h6 {
+    font-weight: 700 !important;
+    letter-spacing: -0.02em;
+}
+
+// Dark summary cards become the hero style
+.q-card.bg-dark {
+    background: $hero-bg !important;
+    border-radius: 24px;
+
+    .text-grey-5,
+    .text-grey-6 {
+        color: $hero-muted !important;
+    }
+}
+
+// Soft squircle avatars (see services/tone.ts)
+.q-avatar.zk-avatar {
+    border-radius: 12px;
+
+    .q-avatar__content {
+        border-radius: 12px;
+    }
+}
+
+// Calm remap of the Quasar palette still used by legacy markup:
+// base colors become the deep tone, "-1" shades the soft tint.
+$zk-palette: (
+    'teal': (
+        #0b6e5f,
+        #d5ece6,
+    ),
+    'green': (
+        #2e7d32,
+        #dff0df,
+    ),
+    'light-green': (
+        #4f7a12,
+        #e8f2d8,
+    ),
+    'blue': (
+        #2f4a9a,
+        #e3e8f6,
+    ),
+    'light-blue': (
+        #1d5f8c,
+        #ddedf7,
+    ),
+    'indigo': (
+        #4338a0,
+        #e6e5f7,
+    ),
+    'purple': (
+        #5b3fa0,
+        #ece6f8,
+    ),
+    'deep-purple': (
+        #5b3fa0,
+        #ece6f8,
+    ),
+    'pink': (
+        #a3306b,
+        #f8e3ee,
+    ),
+    'red': (
+        #a8322d,
+        #f9e1df,
+    ),
+    'orange': (
+        #a63e14,
+        #fbe6da,
+    ),
+    'deep-orange': (
+        #a63e14,
+        #fbe6da,
+    ),
+    'amber': (
+        #8a5a00,
+        #f6ecd3,
+    ),
+    'cyan': (
+        #0e6a80,
+        #dbeff4,
+    ),
+);
+
+@each $name, $pair in $zk-palette {
+    $fg: nth($pair, 1);
+    $soft: nth($pair, 2);
+
+    .bg-#{$name} {
+        background: $fg !important;
+    }
+
+    .text-#{$name} {
+        color: $fg !important;
+    }
+
+    .bg-#{$name}-1 {
+        background: $soft !important;
+    }
+
+    @each $shade in (7, 8, 9) {
+        .text-#{$name}-#{$shade} {
+            color: $fg !important;
+        }
+    }
+}
+
+.bg-primary-1 {
+    background: $primary-soft !important;
 }
 
 // ============================================
-// UTILITY CLASSES
+// DESIGN SYSTEM UTILITIES (zk-*)
 // ============================================
+
+// Page container for top-level and sub pages
+.zk-page {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 8px 20px 32px;
+}
+
+// White surface card
+.zk-card {
+    background: $bg-card;
+    border-radius: $radius-card;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+// Dark hero card (main balances)
+.zk-hero {
+    background: $hero-bg;
+    color: #ffffff;
+    border-radius: 24px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+
+    .zk-hero__label {
+        font-size: 13px;
+        font-weight: 500;
+        color: $hero-muted;
+    }
+
+    .zk-hero__divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.1);
+    }
+}
+
+// Section header: title + optional link
+.zk-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.zk-section-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: $text-primary;
+}
+
+.zk-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: $primary;
+    cursor: pointer;
+    text-decoration: none;
+    background: none;
+    border: 0;
+    padding: 4px 0;
+    font-family: inherit;
+}
+
+.zk-caption {
+    font-size: 12px;
+    font-weight: 500;
+    color: $text-secondary;
+}
+
+// Amounts
+.zk-amount {
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+}
+
+.zk-amount--xl {
+    font-size: 36px;
+}
+
+.zk-amount--lg {
+    font-size: 30px;
+}
+
+.zk-amount--md {
+    font-size: 18px;
+}
+
+.zk-amount__currency {
+    font-size: 0.56em;
+    font-weight: 600;
+    color: $text-secondary;
+    letter-spacing: 0;
+}
+
+.zk-hero .zk-amount__currency {
+    color: $hero-muted;
+}
+
+// List row (transaction-like)
+.zk-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: $bg-card;
+    border-radius: $radius-tile;
+    padding: 12px 14px;
+    min-height: 64px;
+}
+
+.zk-row__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.zk-row__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: $text-primary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.zk-row__subtitle {
+    font-size: 12px;
+    color: $text-secondary;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+// Icon tile (soft background + tinted icon)
+.zk-tile {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    background: $grey-soft;
+    color: $grey-ink;
+
+    &--sm {
+        width: 36px;
+        height: 36px;
+        border-radius: 11px;
+    }
+
+    &--lg {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+    }
+
+    &--green {
+        background: $primary-soft;
+        color: $primary;
+    }
+
+    &--orange {
+        background: $negative-soft;
+        color: $negative;
+    }
+
+    &--blue {
+        background: $info-soft;
+        color: $info;
+    }
+
+    &--amber {
+        background: $amber-soft;
+        color: $amber;
+    }
+
+    &--violet {
+        background: $violet-soft;
+        color: $violet;
+    }
+}
+
+// Status pill
+.zk-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: $grey-soft;
+    color: $grey-ink;
+    white-space: nowrap;
+
+    &--green {
+        background: $primary-soft;
+        color: $primary;
+    }
+
+    &--orange {
+        background: $negative-soft;
+        color: $negative;
+    }
+
+    &--blue {
+        background: $info-soft;
+        color: $info;
+    }
+
+    &--amber {
+        background: $amber-soft;
+        color: $amber;
+    }
+}
+
+// Progress track
+.zk-progress {
+    height: 6px;
+    border-radius: 999px;
+    background: $grey-soft;
+    overflow: hidden;
+
+    > div {
+        height: 100%;
+        border-radius: 999px;
+        background: $primary;
+    }
+}
+
+// Segmented control (used by TabNav pills variant)
+.zk-segmented {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    gap: 4px;
+    padding: 4px;
+    border-radius: $radius-control;
+    background: $grey-soft;
+}
+
+// Primary call to action (full width)
+.zk-cta {
+    width: 100%;
+    min-height: 52px;
+    border-radius: $radius-tile !important;
+    font-size: 15px;
+    font-weight: 800 !important;
+}
+
+// Empty state
+.zk-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    padding: 40px 24px;
+    color: $text-secondary;
+
+    .zk-empty__icon {
+        width: 64px;
+        height: 64px;
+        border-radius: 20px;
+        background: $bg-card;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: $text-muted;
+    }
+
+    .zk-empty__title {
+        font-size: 15px;
+        font-weight: 700;
+        color: $text-primary;
+    }
+}
+
+// Visually hidden, still read by screen readers
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
 
 // Money colors
 .text-income,
@@ -215,13 +732,17 @@ body {
 
 // Style the menu dropdown
 .q-menu {
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+    border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(18, 26, 23, 0.16);
     border: 1px solid $border-light;
     overflow: hidden;
 }
 
-// Dialog backdrop blur
+// Dialog backdrop
+.q-dialog__backdrop.fixed-full {
+    background: rgba(18, 26, 23, 0.45);
+}
+
 .q-dialog__backdrop {
     backdrop-filter: blur(4px);
     -webkit-backdrop-filter: blur(4px);
@@ -231,7 +752,7 @@ body {
 .menu-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(18, 26, 23, 0.25);
     backdrop-filter: blur(6px);
     -webkit-backdrop-filter: blur(6px);
     z-index: 5999; // Just below q-menu (6000)
@@ -267,7 +788,7 @@ body {
 
         &.q-manual-focusable--focused,
         &--active {
-            background-color: rgba($primary, 0.1);
+            background-color: $primary-soft;
         }
     }
 }

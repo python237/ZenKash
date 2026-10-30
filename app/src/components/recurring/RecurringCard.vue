@@ -1,51 +1,43 @@
 <template>
-    <q-card
-        class="recurring-card"
-        :class="{ 'recurring-card--inactive': !recurring.isActive }"
-        flat
-        bordered
-    >
-        <q-card-section class="q-pa-md">
-            <div class="row items-center no-wrap">
-                <q-avatar :color="avatarColor" text-color="white" size="40px" class="q-mr-md">
-                    <q-icon :name="typeIcon" size="20px" />
-                </q-avatar>
+    <article class="recurring-card" :class="{ 'recurring-card--inactive': !recurring.isActive }">
+        <div class="recurring-card__head">
+            <span class="zk-tile" :class="isIncome ? 'zk-tile--green' : 'zk-tile--orange'">
+                <q-icon :name="typeIcon" size="20px" />
+            </span>
 
-                <div class="col clickable" @click="$emit('click')">
-                    <div class="text-subtitle2 text-weight-medium">{{ categoryName }}</div>
-                    <div class="text-caption text-grey-6">
-                        {{ frequencyLabel }} · {{ walletName }}
-                    </div>
-                </div>
+            <button type="button" class="recurring-card__body" @click="$emit('click')">
+                <span class="recurring-card__name">{{ categoryName }}</span>
+                <span class="recurring-card__meta">{{ frequencyLabel }} · {{ walletName }}</span>
+            </button>
 
-                <div class="text-right q-mr-sm clickable" @click="$emit('click')">
-                    <div class="text-subtitle2 text-weight-bold" :class="amountClass">
-                        {{ amountSign }}{{ formattedAmount }}
-                    </div>
-                    <div class="text-caption text-grey-6">
-                        {{ t('recurring.nextOccurrence') }}: {{ formattedNextRun }}
-                    </div>
-                </div>
+            <q-toggle
+                :model-value="recurring.isActive"
+                color="primary"
+                :aria-label="recurring.isActive ? t('recurring.active') : t('recurring.inactive')"
+                @update:model-value="$emit('toggle', $event)"
+            />
+        </div>
 
-                <q-toggle
-                    :model-value="recurring.isActive"
-                    color="primary"
-                    dense
-                    @update:model-value="$emit('toggle', $event)"
-                />
-            </div>
-
-            <div class="row items-center justify-between q-mt-sm">
-                <q-badge :color="recurring.autoPost ? 'primary' : 'grey-5'" outline>
-                    {{ recurring.autoPost ? t('recurring.autoPost') : t('recurring.reminderOnly') }}
-                </q-badge>
-                <BtnIcon dense icon="delete" color="negative" @click="$emit('delete')" />
-            </div>
-        </q-card-section>
-    </q-card>
+        <div class="recurring-card__foot">
+            <button type="button" class="recurring-card__next" @click="$emit('click')">
+                {{ t('recurring.nextOccurrence') }} {{ formattedNextRun }} ·
+                {{ recurring.autoPost ? t('recurring.autoPost') : t('recurring.reminderOnly') }}
+            </button>
+            <span class="recurring-card__amount" :class="amountClass">
+                {{ amountSign }}{{ formattedAmount }}
+            </span>
+            <BtnIcon
+                icon="o_delete"
+                color="negative"
+                :aria-label="t('common.delete')"
+                @click="$emit('delete')"
+            />
+        </div>
+    </article>
 </template>
 
 <script setup lang="ts">
+import { maskAmount } from 'src/composables/usePrivacy';
 import type { RecurringTransaction } from 'src/types/recurring-transaction';
 import { CURRENCIES, type CurrencyCode } from 'src/types/currency';
 import BtnIcon from '../buttons/BtnIcon.vue';
@@ -67,9 +59,8 @@ const walletStore = useWalletStore();
 
 const isIncome = computed(() => props.recurring.type === 'income');
 const typeIcon = computed(() => (isIncome.value ? 'arrow_downward' : 'arrow_upward'));
-const avatarColor = computed(() => (isIncome.value ? 'positive' : 'negative'));
 const amountClass = computed(() => (isIncome.value ? 'text-positive' : 'text-negative'));
-const amountSign = computed(() => (isIncome.value ? '+' : '-'));
+const amountSign = computed(() => (isIncome.value ? '+' : '−'));
 
 const categoryName = computed(
     () => categoryStore.getCategoryById(props.recurring.categoryId)?.name ?? '—',
@@ -78,12 +69,14 @@ const walletName = computed(() => walletStore.getWalletById(props.recurring.wall
 
 const formattedAmount = computed(() => {
     const info = CURRENCIES[props.currency];
-    return new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency: props.currency,
-        minimumFractionDigits: info?.decimals ?? 0,
-        maximumFractionDigits: info?.decimals ?? 0,
-    }).format(props.recurring.amount);
+    return maskAmount(
+        new Intl.NumberFormat(locale.value, {
+            style: 'currency',
+            currency: props.currency,
+            minimumFractionDigits: info?.decimals ?? 0,
+            maximumFractionDigits: info?.decimals ?? 0,
+        }).format(props.recurring.amount),
+    );
 });
 
 const formattedNextRun = computed(() =>
@@ -109,10 +102,82 @@ const frequencyLabel = computed(() => {
 
 <style lang="scss" scoped>
 .recurring-card {
-    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px 16px;
+    border-radius: 20px;
+    background: $bg-card;
 
     &--inactive {
         opacity: 0.6;
+    }
+
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    &__body {
+        flex: 1;
+        min-width: 0;
+        min-height: 44px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2px;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: inherit;
+        font-family: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    &__name {
+        font-size: 14px;
+        font-weight: 700;
+        color: $text-primary;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__meta {
+        font-size: 12px;
+        color: $text-secondary;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__foot {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding-top: 6px;
+        border-top: 1px solid $border-light;
+    }
+
+    &__next {
+        flex: 1;
+        min-width: 0;
+        padding: 0;
+        border: 0;
+        background: none;
+        font-family: inherit;
+        font-size: 12px;
+        color: $text-secondary;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    &__amount {
+        flex-shrink: 0;
+        font-size: 14px;
+        font-weight: 700;
     }
 }
 </style>

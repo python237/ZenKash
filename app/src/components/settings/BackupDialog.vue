@@ -6,16 +6,14 @@
         max-width="420px"
     >
         <div class="column q-gutter-md">
-            <div class="text-body2 text-grey-7">
+            <div class="backup-hint">
                 {{ isExport ? t('backup.exportHint') : t('backup.importHint') }}
             </div>
 
-            <q-banner v-if="!isExport" dense class="bg-orange-1 text-orange-9 rounded-borders">
-                <template #avatar>
-                    <q-icon name="warning" color="orange" />
-                </template>
-                {{ t('backup.importWarning') }}
-            </q-banner>
+            <div v-if="!isExport" class="backup-warning" role="alert">
+                <q-icon name="o_warning" size="20px" />
+                <span>{{ t('backup.importWarning') }}</span>
+            </div>
 
             <InputSingle
                 v-model="password"
@@ -34,17 +32,17 @@
                 :error="confirmError"
             />
 
-            <div v-if="statusError" class="text-negative text-caption">{{ statusError }}</div>
-
-            <div class="row justify-end q-gutter-sm q-mt-sm">
-                <BtnLink :label="t('common.cancel')" @click="close" />
-                <BtnPrimary
-                    :label="isExport ? t('backup.export') : t('backup.chooseAndImport')"
-                    :loading="busy"
-                    @click="submit"
-                />
-            </div>
+            <div v-if="statusError" class="backup-error" role="alert">{{ statusError }}</div>
         </div>
+
+        <template #actions>
+            <BtnLink :label="t('common.cancel')" @click="close" />
+            <BtnPrimary
+                :label="isExport ? t('backup.export') : t('backup.chooseAndImport')"
+                :loading="busy"
+                @click="submit"
+            />
+        </template>
     </ModalBase>
 </template>
 
@@ -152,3 +150,30 @@ async function submit(): Promise<void> {
     }
 }
 </script>
+
+<style lang="scss" scoped>
+.backup-hint {
+    font-size: 14px;
+    line-height: 1.5;
+    color: $text-secondary;
+}
+
+.backup-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: $radius-control;
+    background: $negative-soft;
+    color: $negative;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.backup-error {
+    font-size: 13px;
+    font-weight: 600;
+    color: $negative;
+}
+</style>

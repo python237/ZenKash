@@ -1,22 +1,20 @@
 <template>
-    <q-page class="q-pa-md">
+    <q-page class="zk-page">
         <!-- Projected month-end balance -->
-        <q-card v-if="items.length > 0" class="projected-card bg-dark text-white q-mb-md" flat>
-            <q-card-section class="q-pa-md">
-                <div class="text-caption text-grey-5">{{ t('recurring.projectedMonthEnd') }}</div>
-                <div class="text-h5 text-weight-bold q-mt-xs">
-                    {{ formatCurrency(projectedBalance) }}
-                </div>
-                <div class="text-caption text-grey-5 q-mt-xs">
-                    {{ t('recurring.projectedHint') }}
-                </div>
-            </q-card-section>
-        </q-card>
+        <section v-if="items.length > 0" class="zk-hero projected-hero">
+            <span class="zk-hero__label">{{ t('recurring.projectedMonthEnd') }}</span>
+            <span class="zk-amount zk-amount--lg">{{ formatCurrency(projectedBalance) }}</span>
+            <span class="zk-hero__label projected-hero__hint">
+                {{ t('recurring.projectedHint') }}
+            </span>
+        </section>
 
         <!-- Empty state -->
-        <div v-if="items.length === 0" class="empty-state">
-            <q-icon name="autorenew" size="64px" color="grey-4" />
-            <div class="text-grey-6 q-mt-md">{{ t('recurring.noRecurring') }}</div>
+        <div v-if="items.length === 0" class="zk-empty">
+            <span class="zk-empty__icon">
+                <q-icon name="autorenew" size="30px" />
+            </span>
+            <span class="zk-empty__title">{{ t('recurring.noRecurring') }}</span>
         </div>
 
         <!-- List -->
@@ -26,17 +24,11 @@
                 :key="item.id"
                 :recurring="item"
                 :currency="defaultCurrency"
-                class="q-mb-sm"
                 @click="openEdit(item)"
                 @toggle="(value) => onToggle(item, value)"
                 @delete="openDelete(item)"
             />
         </div>
-
-        <!-- Add FAB -->
-        <q-page-sticky position="bottom-right" :offset="[18, 18]">
-            <BtnFab icon="add" @click="openCreate" />
-        </q-page-sticky>
 
         <!-- Create/Edit Dialog -->
         <RecurringDialog v-model="showDialog" :recurring="selected" />
@@ -54,6 +46,7 @@
 </template>
 
 <script setup lang="ts">
+import { maskAmount } from 'src/composables/usePrivacy';
 import type { RecurringTransaction } from 'src/types/recurring-transaction';
 import type { Wallet } from 'src/types/wallet';
 import { CURRENCIES, CurrencyCode } from 'src/types/currency';
@@ -61,10 +54,14 @@ import { useRecurringTransactionStore } from 'src/stores/recurring-transaction';
 import RecurringCard from 'src/components/recurring/RecurringCard.vue';
 import RecurringDialog from 'src/components/recurring/RecurringDialog.vue';
 import ModalConfirm from 'src/components/modals/ModalConfirm.vue';
-import BtnFab from 'src/components/buttons/BtnFab.vue';
 
 const { t, locale } = useI18n();
-usePage({ title: t('recurring.title'), showHeader: true, showBack: true });
+usePage({
+    title: t('recurring.title'),
+    showHeader: true,
+    showBack: true,
+    actions: [{ icon: 'add', label: t('common.add'), onClick: () => openCreate() }],
+});
 
 const recurringStore = useRecurringTransactionStore();
 const walletStore = useWalletStore();
@@ -89,12 +86,14 @@ const currencyInfo = computed(() => CURRENCIES[defaultCurrency.value]);
  * @returns The formatted currency string
  */
 function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency: defaultCurrency.value,
-        minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
-    }).format(amount);
+    return maskAmount(
+        new Intl.NumberFormat(locale.value, {
+            style: 'currency',
+            currency: defaultCurrency.value,
+            minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
+            maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
+        }).format(amount),
+    );
 }
 
 // Current liquid balance (non-game wallets converted to default currency)
@@ -188,21 +187,18 @@ async function onDelete(): Promise<void> {
 </script>
 
 <style lang="scss" scoped>
-.projected-card {
-    border-radius: 16px;
-}
+.projected-hero {
+    gap: 6px;
 
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 24px;
-    text-align: center;
+    &__hint {
+        font-size: 12px;
+        line-height: 1.5;
+    }
 }
 
 .recurring-list {
     display: flex;
     flex-direction: column;
+    gap: 10px;
 }
 </style>

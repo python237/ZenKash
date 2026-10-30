@@ -87,13 +87,15 @@
                     <q-item v-for="tx in transactions" :key="tx.id">
                         <q-item-section avatar>
                             <q-avatar
-                                :color="
-                                    tx.projectTransactionType === 'injection'
-                                        ? 'orange'
-                                        : 'positive'
+                                :style="
+                                    toneStyle(
+                                        tx.projectTransactionType === 'injection'
+                                            ? 'orange'
+                                            : 'positive',
+                                    )
                                 "
-                                text-color="white"
                                 size="36px"
+                                class="zk-avatar"
                             >
                                 <q-icon
                                     :name="
@@ -169,6 +171,8 @@
 </template>
 
 <script setup lang="ts">
+import { maskAmount } from 'src/composables/usePrivacy';
+import { toneStyle } from 'src/services/tone';
 import type { ProjectWithStats } from 'src/types/project';
 import type { TransactionWithRelations } from 'src/types/transaction';
 import { CURRENCIES, CurrencyCode } from 'src/types/currency';
@@ -197,11 +201,7 @@ const project = computed((): ProjectWithStats | undefined => {
 });
 
 // Page title
-watchEffect(() => {
-    if (project.value) {
-        usePage({ title: project.value.name, showHeader: true, showBack: true });
-    }
-});
+usePage({ title: () => project.value?.name ?? '', showHeader: true, showBack: true });
 
 // Load data
 onMounted(async () => {
@@ -253,12 +253,14 @@ const netGainClass = computed(() => {
  * @returns {string} The formatted currency string
  */
 function formatAmount(amount: number): string {
-    return new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency: currencyCode.value,
-        minimumFractionDigits: currency.value?.decimals ?? 0,
-        maximumFractionDigits: currency.value?.decimals ?? 0,
-    }).format(amount);
+    return maskAmount(
+        new Intl.NumberFormat(locale.value, {
+            style: 'currency',
+            currency: currencyCode.value,
+            minimumFractionDigits: currency.value?.decimals ?? 0,
+            maximumFractionDigits: currency.value?.decimals ?? 0,
+        }).format(amount),
+    );
 }
 
 /**

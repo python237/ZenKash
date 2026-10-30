@@ -307,6 +307,14 @@ async function createTables(): Promise<void> {
       FOREIGN KEY (wallet_id) REFERENCES wallets(id)
     );
 
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY NOT NULL,
+      type TEXT NOT NULL,
+      payload TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL,
+      read_at TEXT
+    );
+
     CREATE TABLE IF NOT EXISTS savings_goals (
       id TEXT PRIMARY KEY NOT NULL,
       name TEXT NOT NULL,

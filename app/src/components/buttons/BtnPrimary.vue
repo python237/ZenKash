@@ -28,8 +28,9 @@ defineEmits<{
 
 <style lang="scss" scoped>
 .btn-primary {
-    border-radius: 8px;
-    font-weight: 600;
+    border-radius: $radius-control;
+    font-weight: 700;
+    min-height: 44px;
     padding: 8px 20px;
 }
 </style>

@@ -28,7 +28,8 @@ defineEmits<{
 
 <style lang="scss" scoped>
 .btn-error {
-    font-weight: 600;
+    border-radius: $radius-control;
+    font-weight: 700;
     padding: 8px 20px;
 }
 </style>

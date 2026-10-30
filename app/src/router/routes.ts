@@ -131,6 +131,11 @@ const routes: RouteRecordRaw[] = [
                 component: () => import('pages/more/wallets/WalletHistoryPage.vue'),
             },
             {
+                path: 'notifications',
+                name: 'notifications',
+                component: () => import('pages/notifications/NotificationsPage.vue'),
+            },
+            {
                 path: 'settings',
                 name: 'settings',
                 component: () => import('pages/more/settings/SettingsPage.vue'),

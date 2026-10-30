@@ -1,103 +1,114 @@
 <template>
-    <q-page class="q-pa-md">
-        <!-- Total Net Worth Card -->
-        <q-card class="networth-card bg-dark text-white q-mb-md" flat>
-            <q-card-section class="q-pa-md">
-                <div class="text-caption text-grey-5">{{ t('netWorth.total') }}</div>
-                <div class="text-h4 text-weight-bold q-mt-xs">
-                    {{ formatCurrency(current.total) }}
-                </div>
-                <div v-if="delta" class="text-caption q-mt-xs" :class="deltaClass">
+    <q-page class="zk-page">
+        <!-- Net worth + evolution -->
+        <section class="zk-card">
+            <div class="total">
+                <span class="zk-caption">{{ t('netWorth.total') }}</span>
+                <span class="zk-amount zk-amount--lg">{{ formatCurrency(current.total) }}</span>
+                <span v-if="delta" class="total__delta" :class="deltaClass">
+                    {{ formatSignedCurrency(delta.amount) }} · {{ formatPercent(delta.percent) }}
+                    {{ t('netWorth.vsPrevious') }}
+                </span>
+            </div>
+            <div v-if="chartPoints.length < 2" class="zk-caption text-center q-py-md">
+                {{ t('netWorth.noData') }}
+            </div>
+            <div v-else class="chart-container">
+                <Line :data="chartData" :options="chartOptions" />
+            </div>
+        </section>
+
+        <!-- Composition -->
+        <section class="zk-card">
+            <h2 class="zk-section-title">{{ t('netWorth.breakdown') }}</h2>
+            <div class="stack-bar" aria-hidden="true">
+                <div
+                    v-for="item in assetItems"
+                    :key="item.key"
+                    :style="{ width: `${item.percent}%`, background: item.color }"
+                />
+            </div>
+            <div class="legend">
+                <component
+                    :is="item.route ? 'router-link' : 'div'"
+                    v-for="item in assetItems"
+                    :key="item.key"
+                    :to="item.route ? { name: item.route } : undefined"
+                    class="legend__row"
+                    :class="{ 'legend__row--link': item.route }"
+                >
+                    <span class="legend__dot" :style="{ background: item.color }" />
+                    <span class="legend__label">{{ item.label }}</span>
+                    <span class="legend__value">{{ formatCurrency(item.value) }}</span>
                     <q-icon
-                        :name="delta.amount >= 0 ? 'trending_up' : 'trending_down'"
-                        size="14px"
+                        v-if="item.route"
+                        name="chevron_right"
+                        size="18px"
+                        class="legend__chevron"
                     />
-                    {{ formatSignedCurrency(delta.amount) }} ({{ formatPercent(delta.percent) }})
-                    <span class="text-grey-5">{{ t('netWorth.vsPrevious') }}</span>
-                </div>
-            </q-card-section>
-        </q-card>
-
-        <!-- Evolution Chart -->
-        <q-card class="q-mb-md" flat bordered>
-            <q-card-section>
-                <div class="text-subtitle1 text-weight-medium q-mb-md">
-                    {{ t('netWorth.evolution') }}
-                </div>
-                <div v-if="chartPoints.length < 2" class="text-center text-grey-6 q-py-lg">
-                    {{ t('netWorth.noData') }}
-                </div>
-                <div v-else class="chart-container">
-                    <Line :data="chartData" :options="chartOptions" />
-                </div>
-            </q-card-section>
-        </q-card>
-
-        <!-- Breakdown -->
-        <q-card class="q-mb-md" flat bordered>
-            <q-card-section>
-                <div class="text-subtitle1 text-weight-medium q-mb-md">
-                    {{ t('netWorth.breakdown') }}
-                </div>
-                <div v-for="item in breakdown" :key="item.key" class="breakdown-item q-mb-sm">
-                    <div class="row items-center justify-between q-mb-xs">
-                        <span class="text-body2">{{ item.label }}</span>
-                        <span class="text-body2 text-weight-medium">
-                            {{ item.negative ? '−' : '' }}{{ formatCurrency(item.value) }} ·
-                            {{ formatPercent(item.percent) }}
+                </component>
+                <template v-if="current.payables > 0">
+                    <div class="legend__divider" />
+                    <router-link :to="{ name: 'debts' }" class="legend__row legend__row--link">
+                        <span class="legend__dot legend__dot--outline" />
+                        <span class="legend__label">{{ t('netWorth.payables') }}</span>
+                        <span class="legend__value text-negative">
+                            −{{ formatCurrency(current.payables) }}
                         </span>
-                    </div>
-                    <q-linear-progress
-                        :value="item.percent / 100"
-                        :color="item.color"
-                        track-color="grey-3"
-                        rounded
-                        size="8px"
-                    />
-                </div>
-            </q-card-section>
-        </q-card>
+                        <q-icon name="chevron_right" size="18px" class="legend__chevron" />
+                    </router-link>
+                </template>
+            </div>
+        </section>
+
+        <!-- Shortcuts to asset sections -->
+        <nav class="shortcuts" :aria-label="t('netWorth.sections')">
+            <router-link
+                v-for="shortcut in shortcuts"
+                :key="shortcut.name"
+                :to="{ name: shortcut.name }"
+                class="shortcut"
+            >
+                <span class="zk-tile zk-tile--sm" :class="`zk-tile--${shortcut.tone}`">
+                    <q-icon :name="shortcut.icon" size="20px" />
+                </span>
+                <span class="shortcut__label">{{ shortcut.label }}</span>
+                <span class="shortcut__value">{{ shortcut.value }}</span>
+            </router-link>
+        </nav>
 
         <!-- History -->
-        <q-card flat bordered>
-            <q-card-section>
-                <div class="row items-center justify-between q-mb-sm">
-                    <div class="text-subtitle1 text-weight-medium">{{ t('netWorth.history') }}</div>
-                    <BtnPrimary
-                        :label="t('netWorth.captureNow')"
-                        icon="add_chart"
-                        :loading="netWorthStore.isLoading"
-                        @click="capture"
-                    />
+        <section class="zk-card">
+            <div class="zk-section-head">
+                <h2 class="zk-section-title">{{ t('netWorth.history') }}</h2>
+                <button
+                    type="button"
+                    class="zk-link"
+                    :disabled="netWorthStore.isLoading"
+                    @click="capture"
+                >
+                    {{ t('netWorth.captureNow') }}
+                </button>
+            </div>
+            <div v-if="history.length === 0" class="zk-caption text-center q-py-md">
+                {{ t('netWorth.noHistory') }}
+            </div>
+            <div v-for="snapshot in history" :key="snapshot.id" class="history-row">
+                <div class="history-row__body">
+                    <span class="history-row__period">{{ formatPeriod(snapshot.period) }}</span>
+                    <span class="zk-caption">
+                        {{ t('netWorth.liquid') }} {{ formatCurrency(snapshot.liquid) }} ·
+                        {{ t('netWorth.investments') }}
+                        {{ formatCurrency(snapshot.investments) }}
+                        <template v-if="snapshot.payables > 0">
+                            · {{ t('netWorth.payables') }}
+                            {{ formatCurrency(snapshot.payables) }}
+                        </template>
+                    </span>
                 </div>
-                <div v-if="history.length === 0" class="text-center text-grey-6 q-py-md">
-                    {{ t('netWorth.noHistory') }}
-                </div>
-                <q-list v-else separator>
-                    <q-item v-for="snapshot in history" :key="snapshot.id">
-                        <q-item-section>
-                            <q-item-label class="text-capitalize">{{
-                                formatPeriod(snapshot.period)
-                            }}</q-item-label>
-                            <q-item-label caption>
-                                {{ t('netWorth.liquid') }} {{ formatCurrency(snapshot.liquid) }} ·
-                                {{ t('netWorth.investments') }}
-                                {{ formatCurrency(snapshot.investments) }}
-                                <template v-if="snapshot.payables > 0">
-                                    · {{ t('netWorth.payables') }}
-                                    {{ formatCurrency(snapshot.payables) }}
-                                </template>
-                            </q-item-label>
-                        </q-item-section>
-                        <q-item-section side>
-                            <q-item-label class="text-weight-bold text-primary">{{
-                                formatCurrency(snapshot.total)
-                            }}</q-item-label>
-                        </q-item-section>
-                    </q-item>
-                </q-list>
-            </q-card-section>
-        </q-card>
+                <span class="history-row__total">{{ formatCurrency(snapshot.total) }}</span>
+            </div>
+        </section>
     </q-page>
 </template>
 
@@ -118,12 +129,11 @@ import {
 import type { NetWorthComponents } from 'src/types/net-worth-snapshot';
 import { useNetWorthStore } from 'src/stores/net-worth';
 import { useCurrency } from 'src/composables/useCurrency';
-import BtnPrimary from 'src/components/buttons/BtnPrimary.vue';
 
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend, Filler);
 
 const { t, locale } = useI18n();
-usePage({ title: t('netWorth.title'), showHeader: true, showBack: true });
+usePage({ title: t('netWorth.title'), showHeader: true });
 
 const netWorthStore = useNetWorthStore();
 const walletStore = useWalletStore();
@@ -131,9 +141,15 @@ const investmentStore = useInvestmentStore();
 const exchangeRateStore = useExchangeRateStore();
 const settingsStore = useSettingsStore();
 const debtStore = useDebtStore();
+const projectStore = useProjectStore();
 
 // Currency formatting and conversion (shared with every other money screen)
-const { formatCurrency, formatSignedCurrency, formatPercent: formatPercentValue } = useCurrency();
+const {
+    formatCurrency,
+    formatSignedCurrency,
+    formatCompactCurrency,
+    formatPercent: formatPercentValue,
+} = useCurrency();
 
 /**
  * Formats a percentage value with an explicit sign on gains.
@@ -173,39 +189,82 @@ const current = computed<NetWorthComponents>(() => {
 
 const delta = computed(() => netWorthStore.deltaVsPrevious);
 const deltaClass = computed(() =>
-    (delta.value?.amount ?? 0) >= 0 ? 'text-green-4' : 'text-red-4',
+    (delta.value?.amount ?? 0) >= 0 ? 'text-positive' : 'text-negative',
 );
 
-// Breakdown bars. Shares are relative to gross assets: debts make the net
-// total smaller than the sum of its parts, so it is not a usable denominator.
-const breakdown = computed(() => {
-    const { liquid, investments, games, receivables, payables } = current.value;
+// Composition of gross assets. Shares are relative to gross assets: debts make
+// the net total smaller than the sum of its parts, so it is not a usable denominator.
+const assetItems = computed(() => {
+    const { liquid, investments, games, receivables } = current.value;
     const assets = liquid + investments + games + receivables || 1;
     return [
-        { key: 'liquid', label: t('netWorth.liquid'), value: liquid, color: 'primary' },
+        {
+            key: 'liquid',
+            label: t('netWorth.liquid'),
+            value: liquid,
+            color: '#0B6E5F',
+            route: 'wallets',
+        },
         {
             key: 'investments',
             label: t('netWorth.investments'),
             value: investments,
-            color: 'teal',
+            color: '#2F4A9A',
+            route: 'investments',
         },
-        { key: 'games', label: t('netWorth.games'), value: games, color: 'deep-orange' },
+        {
+            key: 'games',
+            label: t('netWorth.games'),
+            value: games,
+            color: '#8A5A00',
+            route: 'games',
+        },
         {
             key: 'receivables',
             label: t('netWorth.receivables'),
             value: receivables,
-            color: 'blue-grey',
-        },
-        {
-            key: 'payables',
-            label: t('netWorth.payables'),
-            value: payables,
-            color: 'negative',
-            negative: true,
+            color: '#7FB8AC',
+            route: 'debts',
         },
     ]
-        .filter((b) => b.value !== 0)
+        .filter((b) => b.value > 0)
         .map((b) => ({ ...b, percent: (b.value / assets) * 100 }));
+});
+
+// Sections grouped under the net worth tab
+const shortcuts = computed(() => {
+    const projectsInvested = projectStore.projects.reduce((sum, p) => sum + p.totalInvested, 0);
+    const { receivables, payables } = current.value;
+    return [
+        {
+            name: 'investments',
+            label: t('nav.investments'),
+            icon: 'trending_up',
+            tone: 'blue',
+            value: formatCurrency(investmentStore.summary.totalCurrentValue),
+        },
+        {
+            name: 'projects',
+            label: t('nav.projects'),
+            icon: 'o_business_center',
+            tone: 'green',
+            value: formatCurrency(projectsInvested),
+        },
+        {
+            name: 'debts',
+            label: t('debts.title'),
+            icon: 'o_handshake',
+            tone: 'amber',
+            value: formatSignedCurrency(receivables - payables),
+        },
+        {
+            name: 'games',
+            label: t('games.title'),
+            icon: 'o_casino',
+            tone: 'orange',
+            value: formatCurrency(current.value.games),
+        },
+    ];
 });
 
 // Chart
@@ -217,11 +276,13 @@ const chartData = computed<ChartData<'line'>>(() => ({
         {
             label: t('netWorth.total'),
             data: chartPoints.value.map((s) => s.total),
-            borderColor: '#4CAF50',
-            backgroundColor: 'rgba(76, 175, 80, 0.15)',
+            borderColor: '#0B6E5F',
+            backgroundColor: 'rgba(213, 236, 230, 0.6)',
+            borderWidth: 2.5,
             fill: true,
-            tension: 0.3,
-            pointRadius: 3,
+            tension: 0.35,
+            pointRadius: 0,
+            pointHoverRadius: 4,
         },
     ],
 }));
@@ -238,9 +299,19 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
         },
     },
     scales: {
+        x: {
+            grid: { display: false },
+            border: { display: false },
+            ticks: { color: '#5B6661', font: { size: 11 } },
+        },
         y: {
+            grid: { color: '#EEF2EF' },
+            border: { display: false },
             ticks: {
-                callback: (value) => formatCurrency(Number(value)),
+                color: '#5B6661',
+                font: { size: 11 },
+                maxTicksLimit: 4,
+                callback: (value) => formatCompactCurrency(Number(value)),
             },
         },
     },
@@ -265,6 +336,7 @@ onMounted(async () => {
         exchangeRateStore.loadAll(),
         netWorthStore.loadAll(),
         debtStore.loadAll(),
+        projectStore.loadAll(),
     ]);
     // Refresh the current month snapshot when opening the page
     await netWorthStore.captureCurrent();
@@ -272,16 +344,141 @@ onMounted(async () => {
 </script>
 
 <style lang="scss" scoped>
-.networth-card {
-    border-radius: 16px;
+.total {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    &__delta {
+        font-size: 13px;
+        font-weight: 600;
+    }
 }
 
 .chart-container {
     position: relative;
-    height: 240px;
+    height: 160px;
 }
 
-.breakdown-item {
-    width: 100%;
+.stack-bar {
+    display: flex;
+    gap: 2px;
+    height: 12px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: $grey-soft;
+}
+
+.legend {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    font-size: 14px;
+
+    &__row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: $text-primary;
+        text-decoration: none;
+
+        &--link {
+            min-height: 32px;
+        }
+    }
+
+    &__chevron {
+        margin-left: -4px;
+        color: $text-muted;
+    }
+
+    &__dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        flex-shrink: 0;
+
+        &--outline {
+            border: 2px solid $negative;
+        }
+    }
+
+    &__label {
+        flex: 1;
+        font-weight: 600;
+    }
+
+    &__value {
+        font-weight: 700;
+    }
+
+    &__divider {
+        height: 1px;
+        background: $border-light;
+    }
+}
+
+.shortcuts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.shortcut {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px;
+    border-radius: $radius-tile;
+    background: $bg-card;
+    color: $text-primary;
+    text-decoration: none;
+    min-width: 0;
+
+    &__label {
+        font-size: 13px;
+        font-weight: 700;
+    }
+
+    &__value {
+        margin-top: -4px;
+        font-size: 12px;
+        font-weight: 600;
+        color: $text-secondary;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+.history-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    & + & {
+        padding-top: 12px;
+        border-top: 1px solid $border-light;
+    }
+
+    &__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    &__period {
+        font-size: 14px;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+
+    &__total {
+        font-size: 14px;
+        font-weight: 700;
+        color: $primary;
+    }
 }
 </style>

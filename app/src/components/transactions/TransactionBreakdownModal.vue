@@ -2,17 +2,24 @@
     <q-dialog v-model="isOpen" maximized transition-show="slide-up" transition-hide="slide-down">
         <q-card class="breakdown-modal">
             <!-- Header -->
-            <q-toolbar class="bg-white text-dark">
-                <q-toolbar-title class="text-weight-bold">
+            <div class="breakdown-header">
+                <h2 class="breakdown-header__title">
                     {{ t(`transactions.${type}Breakdown`) }}
-                </q-toolbar-title>
-                <BtnIcon icon="close" @click="isOpen = false" />
-            </q-toolbar>
+                </h2>
+                <button
+                    type="button"
+                    class="breakdown-header__close"
+                    :aria-label="t('common.close')"
+                    @click="isOpen = false"
+                >
+                    <q-icon name="close" size="22px" />
+                </button>
+            </div>
 
             <!-- Tabs -->
-            <TabNav v-model="activeTab" :tabs="tabs" variant="underline" class="q-px-md" />
+            <TabNav v-model="activeTab" :tabs="tabs" class="q-mx-md" />
 
-            <q-card-section class="q-pa-md">
+            <q-card-section class="breakdown-body">
                 <!-- Master Category Tab -->
                 <div v-if="activeTab === 'master'">
                     <div
@@ -36,9 +43,9 @@
                             >
                                 <q-item-section avatar>
                                     <q-avatar
-                                        :style="{ backgroundColor: item.color }"
-                                        text-color="white"
+                                        :style="toneStyle(item.color)"
                                         size="40px"
+                                        class="zk-avatar"
                                     >
                                         <q-icon :name="item.icon" size="20px" />
                                     </q-avatar>
@@ -80,9 +87,9 @@
                             <q-item v-for="item in categoryData" :key="item.id" class="q-pa-sm">
                                 <q-item-section avatar>
                                     <q-avatar
-                                        :style="{ backgroundColor: item.color }"
-                                        text-color="white"
+                                        :style="toneStyle(item.color)"
                                         size="40px"
+                                        class="zk-avatar"
                                     >
                                         <q-icon :name="item.icon ?? 'label'" size="20px" />
                                     </q-avatar>
@@ -114,6 +121,9 @@
 </template>
 
 <script setup lang="ts">
+import { maskAmount } from 'src/composables/usePrivacy';
+import { toneOf, toneStyle } from 'src/services/tone';
+import { CHART_COLORS } from 'src/services/chart';
 import { Pie } from 'vue-chartjs';
 import {
     Chart as ChartJS,
@@ -126,7 +136,6 @@ import {
 import type { TransactionWithRelations } from 'src/types/transaction';
 import type { CurrencyCode } from 'src/types/currency';
 import TabNav from 'src/components/tabs/TabNav.vue';
-import BtnIcon from 'src/components/buttons/BtnIcon.vue';
 
 // Register Chart.js components
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -163,20 +172,6 @@ const tabs = computed(() => [
     { value: 'master', label: t('masterCategories.title') },
     { value: 'category', label: t('categories.title') },
 ]);
-
-// Chart colors palette
-const chartColors = [
-    '#0d9488',
-    '#f59e0b',
-    '#8b5cf6',
-    '#ec4899',
-    '#06b6d4',
-    '#84cc16',
-    '#ef4444',
-    '#3b82f6',
-    '#f97316',
-    '#14b8a6',
-];
 
 // Get transactions of the right type
 const filteredTransactions = computed(() => {
@@ -270,7 +265,7 @@ const masterCategoryData = computed(() => {
             id: mcId,
             name: mc.name,
             icon: mc.icon,
-            color: mc.color ?? chartColors[colorIndex % chartColors.length],
+            color: mc.color ?? CHART_COLORS[colorIndex % CHART_COLORS.length],
             amount: data.amount,
             transactionCount: data.count,
             percent: totalAmount.value > 0 ? (data.amount / totalAmount.value) * 100 : 0,
@@ -284,7 +279,7 @@ const masterCategoryData = computed(() => {
             id: '__project__',
             name: t('projects.title'),
             icon: 'rocket_launch',
-            color: props.type === 'income' ? '#9c27b0' : '#ff9800', // Purple for dividend, Orange for injection
+            color: props.type === 'income' ? 'purple' : 'orange', // Purple for dividend, orange for injection
             amount: projectAmount,
             transactionCount: projectCount,
             percent: totalAmount.value > 0 ? (projectAmount / totalAmount.value) * 100 : 0,
@@ -297,7 +292,7 @@ const masterCategoryData = computed(() => {
             id: '__investment__',
             name: t('investments.title'),
             icon: 'trending_up',
-            color: props.type === 'income' ? '#ffc107' : '#009688', // Amber for sell, Teal for buy
+            color: props.type === 'income' ? 'amber' : 'teal', // Amber for sell, teal for buy
             amount: investmentAmount,
             transactionCount: investmentCount,
             percent: totalAmount.value > 0 ? (investmentAmount / totalAmount.value) * 100 : 0,
@@ -387,7 +382,7 @@ const categoryData = computed(() => {
             id: catId,
             name: cat.name,
             icon: cat.icon,
-            color: chartColors[colorIndex % chartColors.length],
+            color: CHART_COLORS[colorIndex % CHART_COLORS.length],
             masterCategoryName: mc?.name ?? '',
             amount: data.amount,
             transactionCount: data.count,
@@ -402,7 +397,7 @@ const categoryData = computed(() => {
             id: `project-${projectId}`,
             name: data.name,
             icon: 'rocket_launch',
-            color: props.type === 'income' ? '#9c27b0' : '#ff9800',
+            color: props.type === 'income' ? 'purple' : 'orange',
             masterCategoryName: t('projects.title'),
             amount: data.amount,
             transactionCount: data.count,
@@ -416,7 +411,7 @@ const categoryData = computed(() => {
             id: `investment-${investmentId}`,
             name: data.name,
             icon: 'trending_up',
-            color: props.type === 'income' ? '#ffc107' : '#009688',
+            color: props.type === 'income' ? 'amber' : 'teal',
             masterCategoryName: t('investments.title'),
             amount: data.amount,
             transactionCount: data.count,
@@ -433,7 +428,7 @@ const masterCategoryChartData = computed<ChartData<'pie'>>(() => ({
     datasets: [
         {
             data: masterCategoryData.value.map((item) => item.amount),
-            backgroundColor: masterCategoryData.value.map((item) => item.color),
+            backgroundColor: masterCategoryData.value.map((item) => toneOf(item.color).fg),
             borderWidth: 0,
         },
     ],
@@ -445,7 +440,7 @@ const categoryChartData = computed<ChartData<'pie'>>(() => ({
     datasets: [
         {
             data: categoryData.value.map((item) => item.amount),
-            backgroundColor: categoryData.value.map((item) => item.color),
+            backgroundColor: categoryData.value.map((item) => toneOf(item.color).fg),
             borderWidth: 0,
         },
     ],
@@ -480,12 +475,14 @@ const pieChartOptions: ChartOptions<'pie'> = {
  * @returns The formatted currency string
  */
 function formatCurrency(amount: number): string {
-    return new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency: props.defaultCurrency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(amount);
+    return maskAmount(
+        new Intl.NumberFormat(locale.value, {
+            style: 'currency',
+            currency: props.defaultCurrency,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(amount),
+    );
 }
 
 /**
@@ -503,6 +500,50 @@ function formatPercent(percent: number): string {
     display: flex;
     flex-direction: column;
     height: 100%;
+    border-radius: 0;
+    background: $bg-page;
+    padding-top: var(--safe-area-top);
+    padding-bottom: var(--safe-area-bottom);
+}
+
+.breakdown-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px 12px;
+
+    &__title {
+        flex: 1;
+        margin: 0;
+        font-size: 22px;
+        font-weight: 800;
+        line-height: 1.2;
+        letter-spacing: -0.03em;
+    }
+
+    &__close {
+        width: 44px;
+        height: 44px;
+        flex-shrink: 0;
+        border-radius: $radius-control;
+        border: 1px solid $border-color;
+        background: $bg-card;
+        color: $text-primary;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+}
+
+.breakdown-body {
+    padding: 16px 20px;
+
+    :deep(.q-list) {
+        background: $bg-card;
+        border-radius: $radius-tile;
+        overflow: hidden;
+    }
 }
 
 .pie-chart-container {

@@ -1,71 +1,89 @@
 <template>
     <div class="category-list">
         <!-- Empty state -->
-        <div v-if="categories.length === 0" class="empty-state">
-            <q-icon name="category" size="64px" color="grey-4" />
-            <p class="text-grey-6">{{ emptyMessage }}</p>
+        <div v-if="categories.length === 0" class="zk-empty">
+            <div class="zk-empty__icon">
+                <q-icon name="o_category" size="30px" />
+            </div>
+            <div class="zk-empty__title">{{ emptyMessage }}</div>
         </div>
 
-        <!-- Categories list -->
-        <q-list v-else class="list-container">
-            <q-item
+        <!-- Master categories list -->
+        <div v-else class="list-card">
+            <div
                 v-for="category in categories"
                 :key="category.id"
-                class="category-item"
-                :class="{ 'category-item--retired': !category.isActive }"
+                class="category-row"
+                :class="{ 'category-row--retired': !category.isActive }"
             >
-                <q-item-section avatar>
-                    <q-avatar :style="avatarStyle(category)">
-                        <q-icon :name="category.icon" color="white" />
-                    </q-avatar>
-                </q-item-section>
+                <button type="button" class="category-row__main" @click="$emit('edit', category)">
+                    <span class="zk-tile" :style="toneStyle(category.color)">
+                        <q-icon :name="category.icon" size="20px" />
+                    </span>
+                    <span class="category-row__body">
+                        <span class="category-row__title">
+                            <span class="category-row__name">{{ category.name }}</span>
+                            <span v-if="!category.isActive" class="zk-pill">
+                                {{ t('categories.retired') }}
+                            </span>
+                        </span>
+                        <span class="category-row__count">
+                            {{
+                                t('masterCategories.subCategoryCount', {
+                                    count: countFor(category.id),
+                                })
+                            }}
+                        </span>
+                    </span>
+                </button>
 
-                <q-item-section>
-                    <q-item-label class="text-weight-medium">
-                        {{ category.name }}
-                        <q-badge v-if="!category.isActive" color="grey-5" class="q-ml-xs">
-                            {{ t('categories.retired') }}
-                        </q-badge>
-                    </q-item-label>
-                    <q-item-label caption class="text-grey-6">
-                        {{
-                            t('masterCategories.subCategoryCount', { count: countFor(category.id) })
-                        }}
-                    </q-item-label>
-                </q-item-section>
-
-                <q-item-section side>
-                    <div class="action-buttons">
-                        <BtnIcon
-                            dense
-                            icon="edit"
-                            color="grey-6"
-                            @click="$emit('edit', category)"
-                        />
-                        <BtnIcon
-                            v-if="!category.isActive"
-                            dense
-                            icon="restart_alt"
-                            color="primary"
-                            @click="$emit('restore', category)"
-                        />
-                        <BtnIcon
-                            dense
-                            icon="delete"
-                            color="grey-6"
-                            @click="$emit('delete', category)"
-                        />
-                    </div>
-                </q-item-section>
-            </q-item>
-        </q-list>
+                <q-btn
+                    flat
+                    round
+                    icon="more_vert"
+                    class="category-row__options"
+                    :aria-label="t('common.options')"
+                >
+                    <q-menu anchor="bottom right" self="top right" auto-close>
+                        <q-list class="row-menu">
+                            <q-item clickable @click="$emit('edit', category)">
+                                <q-item-section avatar>
+                                    <q-icon name="o_edit" size="20px" />
+                                </q-item-section>
+                                <q-item-section>{{ t('common.edit') }}</q-item-section>
+                            </q-item>
+                            <q-item
+                                v-if="!category.isActive"
+                                clickable
+                                @click="$emit('restore', category)"
+                            >
+                                <q-item-section avatar>
+                                    <q-icon name="restart_alt" size="20px" />
+                                </q-item-section>
+                                <q-item-section>{{ t('common.restore') }}</q-item-section>
+                            </q-item>
+                            <q-item
+                                clickable
+                                class="row-menu__danger"
+                                @click="$emit('delete', category)"
+                            >
+                                <q-item-section avatar>
+                                    <q-icon name="o_delete" size="20px" />
+                                </q-item-section>
+                                <q-item-section>{{ t('common.delete') }}</q-item-section>
+                            </q-item>
+                        </q-list>
+                    </q-menu>
+                </q-btn>
+            </div>
+        </div>
     </div>
 </template>
 
 <script setup lang="ts">
 import type { Category } from 'src/types/category';
 import type { MasterCategory } from 'src/types/master-category';
-import BtnIcon from '../buttons/BtnIcon.vue';
+import { toneStyle } from 'src/services/tone';
 
 defineProps<{
     categories: MasterCategory[];
@@ -98,79 +116,99 @@ const countByMaster = computed(() => {
 function countFor(masterCategoryId: string): number {
     return countByMaster.value.get(masterCategoryId) ?? 0;
 }
-
-// Color mapping for avatar background
-const colorMap: Record<string, string> = {
-    teal: '#0d9488',
-    blue: '#3b82f6',
-    indigo: '#6366f1',
-    purple: '#a855f7',
-    pink: '#ec4899',
-    red: '#ef4444',
-    orange: '#f97316',
-    amber: '#f59e0b',
-    green: '#22c55e',
-    cyan: '#06b6d4',
-};
-
-/**
- * Generates the inline style object for a category's avatar.
- * @param {MasterCategory} category - The master category to get the avatar style for.
- * @returns {{ backgroundColor: string }} An object containing the background color CSS property.
- */
-function avatarStyle(category: MasterCategory) {
-    return {
-        backgroundColor: colorMap[category.color] || colorMap.teal,
-    };
-}
 </script>
 
 <style lang="scss" scoped>
-.category-list {
-    min-height: 200px;
-}
-
-.empty-state {
+.list-card {
+    background: $bg-card;
+    border-radius: $radius-card;
+    padding: 4px 6px 4px 14px;
     display: flex;
     flex-direction: column;
+}
+
+.category-row {
+    display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 48px 24px;
-    text-align: center;
+    gap: 4px;
 
-    p {
-        margin-top: 16px;
-        font-size: 15px;
+    & + & {
+        border-top: 1px solid $border-light;
     }
-}
 
-.list-container {
-    padding: 8px 0;
-}
+    &--retired &__main {
+        opacity: 0.6;
+    }
 
-.category-item--retired {
-    opacity: 0.55;
-}
+    &__main {
+        flex: 1;
+        min-width: 0;
+        min-height: 64px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 0;
+        border: 0;
+        background: transparent;
+        font-family: inherit;
+        text-align: left;
+        color: $text-primary;
+        cursor: pointer;
+    }
 
-.category-item {
-    padding: 12px 16px;
-    background-color: white;
-    margin: 0 16px 8px;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    &__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
 
-    .q-avatar {
+    &__title {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+    }
+
+    &__name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    &__count {
+        font-size: 12px;
+        color: $text-secondary;
+    }
+
+    &__options {
         width: 44px;
         height: 44px;
-
-        .q-icon {
-            font-size: 22px;
-        }
+        color: $text-secondary;
     }
 }
 
-.action-buttons {
-    display: flex;
-    gap: 4px;
+.row-menu {
+    min-width: 180px;
+    padding: 4px 0;
+
+    .q-item {
+        min-height: 48px;
+        font-weight: 600;
+        color: $text-primary;
+    }
+
+    .q-item__section--avatar {
+        min-width: 36px;
+        color: $text-secondary;
+    }
+
+    &__danger,
+    &__danger .q-item__section--avatar {
+        color: $negative;
+    }
 }
 </style>

@@ -1,49 +1,31 @@
 <template>
-    <q-card
-        class="game-card"
-        :class="{
-            'game-card--positive': health === 'positive',
-            'game-card--negative': health === 'negative',
-        }"
-        flat
-        bordered
-        @click="$emit('click')"
-    >
-        <q-card-section class="row items-center q-pa-md">
-            <!-- Icon -->
-            <div class="game-icon q-mr-md">
-                <q-avatar color="primary-1" text-color="primary" size="48px">
-                    <q-icon :name="game.icon" size="24px" />
-                </q-avatar>
-            </div>
+    <button type="button" class="game-row" @click="$emit('click')">
+        <span class="zk-tile zk-tile--lg" :class="`zk-tile--${tileTone}`">
+            <q-icon :name="game.icon" size="22px" />
+        </span>
 
-            <!-- Info -->
-            <div class="col">
-                <div class="text-subtitle1 text-weight-medium">{{ game.name }}</div>
-                <div class="text-caption text-grey-6">
-                    {{ t('games.balance') }}: {{ formattedBalance }}
-                </div>
-                <div v-if="game.pendingCount > 0" class="text-caption text-orange-8">
-                    {{ game.pendingCount }} {{ t('games.pendingBets') }}
-                </div>
-            </div>
+        <span class="game-row__body">
+            <span class="game-row__title">{{ game.name }}</span>
+            <span class="game-row__meta">
+                {{ t('games.balance') }} {{ formattedBalance }}
+                <template v-if="game.pendingCount > 0">
+                    ·
+                    <span class="game-row__pending">
+                        {{ game.pendingCount }} {{ t('games.pendingBets') }}
+                    </span>
+                </template>
+            </span>
+        </span>
 
-            <!-- Net result -->
-            <div class="text-right">
-                <div class="health-indicator" :class="`health-indicator--${health}`">
-                    <q-icon :name="healthIcon" size="14px" />
-                    {{ formattedNet }}
-                </div>
-                <div class="text-caption text-grey-6">{{ t('games.netResult') }}</div>
-            </div>
-
-            <!-- Chevron -->
-            <q-icon name="chevron_right" color="grey-5" size="24px" class="q-ml-sm" />
-        </q-card-section>
-    </q-card>
+        <span class="game-row__net" :class="`game-row__net--${health}`">
+            <span class="sr-only">{{ t('games.netResult') }}</span>
+            {{ formattedNet }}
+        </span>
+    </button>
 </template>
 
 <script setup lang="ts">
+import { maskAmount } from 'src/composables/usePrivacy';
 import type { GameWithStats } from 'src/types/game';
 import { CURRENCIES, CurrencyCode } from 'src/types/currency';
 
@@ -72,10 +54,11 @@ const health = computed(() => {
     return 'neutral';
 });
 
-const healthIcon = computed(() => {
-    if (health.value === 'positive') return 'arrow_upward';
-    if (health.value === 'negative') return 'arrow_downward';
-    return 'remove';
+/** Tile tone follows the net result: green when winning, orange when losing. */
+const tileTone = computed(() => {
+    if (health.value === 'positive') return 'green';
+    if (health.value === 'negative') return 'orange';
+    return 'blue';
 });
 
 /**
@@ -84,66 +67,79 @@ const healthIcon = computed(() => {
  * @returns The formatted currency string
  */
 function formatAmount(amount: number): string {
-    return new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency: currencyCode.value,
-        minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
-    }).format(amount);
+    return maskAmount(
+        new Intl.NumberFormat(locale.value, {
+            style: 'currency',
+            currency: currencyCode.value,
+            minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
+            maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
+        }).format(amount),
+    );
 }
 
 const formattedBalance = computed(() => formatAmount(props.game.balance));
 
 const formattedNet = computed(() => {
-    const prefix = props.game.netResult >= 0 ? '+' : '';
-    return prefix + formatAmount(props.game.netResult);
+    const net = props.game.netResult;
+    const prefix = net > 0 ? '+' : net < 0 ? '−' : '';
+    return prefix + formatAmount(Math.abs(net));
 });
 </script>
 
 <style lang="scss" scoped>
-.game-card {
-    border-radius: 12px;
+.game-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 70px;
+    padding: 14px 0;
+    border: 0;
+    background: none;
+    color: $text-primary;
+    font-family: inherit;
+    text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
 
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    &__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
     }
 
-    &--positive {
-        border-left: 3px solid $positive;
+    &__title {
+        font-size: 15px;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    &--negative {
-        border-left: 3px solid $negative;
-    }
-}
-
-.game-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.health-indicator {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 2px;
-    font-size: 14px;
-    font-weight: 700;
-
-    &--positive {
-        color: $positive;
+    &__meta {
+        font-size: 12px;
+        color: $text-secondary;
     }
 
-    &--negative {
-        color: $negative;
+    &__pending {
+        color: $amber;
+        font-weight: 600;
     }
 
-    &--neutral {
-        color: $grey-6;
+    &__net {
+        flex-shrink: 0;
+        font-size: 14px;
+        font-weight: 700;
+        color: $text-secondary;
+
+        &--positive {
+            color: $positive;
+        }
+
+        &--negative {
+            color: $negative;
+        }
     }
 }
 </style>

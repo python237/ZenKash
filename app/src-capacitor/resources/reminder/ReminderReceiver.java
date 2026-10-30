@@ -78,6 +78,7 @@ public class ReminderReceiver extends BroadcastReceiver {
 
         // No transaction recorded - show the full screen alert
         showFullScreenAlert(context);
+        ReminderPlugin.recordFiredReminder(context);
 
         // Schedule next check in 5 minutes
         ReminderPlugin.scheduleNextAlarm(context);

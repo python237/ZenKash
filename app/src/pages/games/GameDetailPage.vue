@@ -80,9 +80,9 @@
                     <q-item v-for="bet in bets" :key="bet.id">
                         <q-item-section avatar>
                             <q-avatar
-                                :color="statusColor(bet.status)"
-                                text-color="white"
+                                :style="toneStyle(statusColor(bet.status))"
                                 size="36px"
+                                class="zk-avatar"
                             >
                                 <q-icon :name="statusIcon(bet.status)" size="20px" />
                             </q-avatar>
@@ -170,6 +170,8 @@
 </template>
 
 <script setup lang="ts">
+import { maskAmount } from 'src/composables/usePrivacy';
+import { toneStyle } from 'src/services/tone';
 import type { GameWithStats } from 'src/types/game';
 import type { Bet, BetStatus } from 'src/types/bet';
 import { CURRENCIES, CurrencyCode } from 'src/types/currency';
@@ -197,11 +199,7 @@ const game = computed((): GameWithStats | undefined =>
 );
 
 // Page title
-watchEffect(() => {
-    if (game.value) {
-        usePage({ title: game.value.name, showHeader: true, showBack: true });
-    }
-});
+usePage({ title: () => game.value?.name ?? '', showHeader: true, showBack: true });
 
 // Load data
 onMounted(async () => {
@@ -237,12 +235,14 @@ const currencyInfo = computed(() => CURRENCIES[currencyCode.value]);
  * @returns {string} The formatted currency string
  */
 function formatAmount(amount: number): string {
-    return new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency: currencyCode.value,
-        minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
-    }).format(amount);
+    return maskAmount(
+        new Intl.NumberFormat(locale.value, {
+            style: 'currency',
+            currency: currencyCode.value,
+            minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
+            maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
+        }).format(amount),
+    );
 }
 
 /**

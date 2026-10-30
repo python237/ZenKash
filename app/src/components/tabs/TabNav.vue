@@ -3,7 +3,7 @@
         :model-value="modelValue"
         class="tab-nav"
         :class="[`tab-nav--${variant}`]"
-        :active-color="variant === 'pills' ? 'white' : 'primary'"
+        :active-color="variant === 'pills' ? 'dark' : 'primary'"
         :indicator-color="variant === 'pills' ? 'transparent' : 'primary'"
         align="justify"
         mobile-arrows
@@ -29,7 +29,7 @@ withDefaults(
         variant?: 'underline' | 'pills';
     }>(),
     {
-        variant: 'underline',
+        variant: 'pills',
     },
 );
 
@@ -44,7 +44,7 @@ defineEmits<{
 
     // Underline variant (default)
     &--underline {
-        background-color: white;
+        background-color: transparent;
         border-bottom: 1px solid $border-light;
 
         :deep(.q-tab) {
@@ -65,28 +65,31 @@ defineEmits<{
         }
     }
 
-    // Pills variant (rounded background)
+    // Pills variant: segmented control
     &--pills {
-        background-color: white;
-        border-radius: 12px;
+        background-color: $grey-soft;
+        border-radius: $radius-control;
         padding: 4px;
+        min-height: 48px;
 
         :deep(.q-tab) {
             min-height: 40px;
-            font-size: 13px;
-            font-weight: 500;
+            font-size: 14px;
+            font-weight: 600;
             color: $text-secondary;
-            border-radius: 8px;
+            border-radius: 11px;
             margin: 0 2px;
         }
 
         :deep(.q-tab--active) {
-            font-weight: 600;
-            color: white;
-            background-color: $primary;
+            font-weight: 700;
+            color: $text-primary;
+            background-color: $bg-card;
+            box-shadow: 0 1px 3px rgba(18, 26, 23, 0.12);
         }
 
-        :deep(.q-tab__indicator) {
+        :deep(.q-tab__indicator),
+        :deep(.q-focus-helper) {
             display: none;
         }
     }

@@ -35,9 +35,9 @@
                 <template #option="{ itemProps, opt }">
                     <q-item v-bind="itemProps">
                         <q-item-section avatar>
-                            <q-avatar :style="{ backgroundColor: opt.color }" size="28px">
-                                <q-icon :name="opt.icon" color="white" size="16px" />
-                            </q-avatar>
+                            <span class="zk-tile zk-tile--sm" :style="toneStyle(opt.color)">
+                                <q-icon :name="opt.icon" size="18px" />
+                            </span>
                         </q-item-section>
                         <q-item-section>
                             <q-item-label>{{ opt.label }}</q-item-label>
@@ -46,9 +46,9 @@
                 </template>
                 <template #selected-item="{ opt }">
                     <div class="row items-center q-gutter-sm">
-                        <q-avatar :style="{ backgroundColor: opt.color }" size="24px">
-                            <q-icon :name="opt.icon" color="white" size="14px" />
-                        </q-avatar>
+                        <span class="zk-tile option-tile" :style="toneStyle(opt.color)">
+                            <q-icon :name="opt.icon" size="16px" />
+                        </span>
                         <span>{{ opt.label }}</span>
                     </div>
                 </template>
@@ -57,15 +57,20 @@
             <!-- Icon selector -->
             <div>
                 <div class="field-label">{{ t('categories.icon') }}</div>
-                <div class="icon-grid">
-                    <BtnIcon
+                <div class="icon-grid" role="radiogroup" :aria-label="t('categories.icon')">
+                    <button
                         v-for="icon in availableIcons"
                         :key="icon"
-                        :icon="icon"
-                        :color="form.icon === icon ? 'primary' : 'grey-6'"
-                        :selected="form.icon === icon"
+                        type="button"
+                        role="radio"
+                        class="icon-tile"
+                        :class="{ 'icon-tile--selected': form.icon === icon }"
+                        :aria-checked="form.icon === icon"
+                        :aria-label="icon"
                         @click="form.icon = icon"
-                    />
+                    >
+                        <q-icon :name="icon" size="22px" />
+                    </button>
                 </div>
             </div>
         </q-form>
@@ -88,10 +93,10 @@ import type { Category, CategoryWithMaster } from 'src/types/category';
 import type { MasterCategory } from 'src/types/master-category';
 import ModalBase from '../modals/ModalBase.vue';
 import InputSingle from '../inputs/InputSingle.vue';
-import BtnIcon from '../buttons/BtnIcon.vue';
 import BtnLink from '../buttons/BtnLink.vue';
 import BtnPrimary from '../buttons/BtnPrimary.vue';
 import { useFormValidation } from 'src/composables/useFormValidation';
+import { toneStyle } from 'src/services/tone';
 
 const props = defineProps<{
     modelValue: boolean;
@@ -130,26 +135,13 @@ const isOpen = computed({
 const isEditing = computed(() => !!props.category);
 const isLoading = computed(() => store.isLoading);
 
-// Master category options for select
-const colorMap: Record<string, string> = {
-    teal: '#0d9488',
-    blue: '#3b82f6',
-    indigo: '#6366f1',
-    purple: '#a855f7',
-    pink: '#ec4899',
-    red: '#ef4444',
-    orange: '#f97316',
-    amber: '#f59e0b',
-    green: '#22c55e',
-    cyan: '#06b6d4',
-};
-
+// Master category options for select (color kept as the stored name, see toneStyle)
 const masterCategoryOptions = computed(() =>
     props.masterCategories.map((mc) => ({
         value: mc.id,
         label: mc.name,
         icon: mc.icon,
-        color: colorMap[mc.color] || colorMap.teal,
+        color: mc.color,
     })),
 );
 
@@ -243,30 +235,44 @@ async function save(): Promise<void> {
 
 <style lang="scss" scoped>
 .field-label {
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 600;
     color: $text-secondary;
     margin-bottom: 8px;
 }
 
-.select-field {
-    :deep(.q-field__control) {
-        border-radius: 10px;
-        height: 58px;
-    }
-
-    :deep(.q-field__control:before) {
-        border-color: $border-color;
-    }
-
-    :deep(.q-field__control:hover:before) {
-        border-color: $primary;
-    }
+.option-tile {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
 }
 
 .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+    gap: 8px;
+}
+
+.icon-tile {
+    height: 46px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: $radius-control;
+    background: $bg-page;
+    color: $text-secondary;
+    font-family: inherit;
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        box-shadow 0.15s ease;
+
+    &--selected {
+        background: $primary-soft;
+        color: $primary;
+        box-shadow: inset 0 0 0 2px $primary;
+    }
 }
 </style>

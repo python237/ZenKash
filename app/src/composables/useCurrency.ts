@@ -12,6 +12,7 @@ import { CURRENCIES, CurrencyCode } from 'src/types/currency';
 import { useSettingsStore } from 'src/stores/settings';
 import { useExchangeRateStore } from 'src/stores/exchange-rate';
 import { useWalletStore } from 'src/stores/wallet';
+import { maskAmount } from './usePrivacy';
 
 /** Options accepted by the percentage formatter. */
 interface PercentOptions {
@@ -50,12 +51,14 @@ export function useCurrency() {
     function formatCurrency(amount: number, currency?: CurrencyCode): string {
         const code = currency ?? defaultCurrency.value;
         const decimals = CURRENCIES[code]?.decimals ?? 0;
-        return new Intl.NumberFormat(locale.value, {
-            style: 'currency',
-            currency: code,
-            minimumFractionDigits: decimals,
-            maximumFractionDigits: decimals,
-        }).format(amount);
+        return maskAmount(
+            new Intl.NumberFormat(locale.value, {
+                style: 'currency',
+                currency: code,
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals,
+            }).format(amount),
+        );
     }
 
     /**
@@ -74,12 +77,14 @@ export function useCurrency() {
      * @returns The compact string, for example `12,5 k FCFA`
      */
     function formatCompactCurrency(amount: number): string {
-        return new Intl.NumberFormat(locale.value, {
-            style: 'currency',
-            currency: defaultCurrency.value,
-            notation: 'compact',
-            maximumFractionDigits: 1,
-        }).format(amount);
+        return maskAmount(
+            new Intl.NumberFormat(locale.value, {
+                style: 'currency',
+                currency: defaultCurrency.value,
+                notation: 'compact',
+                maximumFractionDigits: 1,
+            }).format(amount),
+        );
     }
 
     /**

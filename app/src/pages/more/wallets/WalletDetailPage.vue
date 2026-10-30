@@ -1,53 +1,50 @@
 <template>
-    <q-page class="q-pa-md">
-        <div v-if="wallet" class="wallet-detail">
+    <q-page class="zk-page">
+        <template v-if="wallet">
             <!-- Header card -->
-            <q-card flat bordered class="wallet-header-card">
-                <q-card-section class="column items-center q-pa-lg">
-                    <q-avatar class="bg-primary-1" size="72px">
-                        <q-icon :name="wallet.icon" color="primary" size="36px" />
-                    </q-avatar>
-                    <div class="wallet-name q-mt-md">{{ wallet.name }}</div>
-                    <div class="wallet-balance q-mt-sm">{{ formattedBalance }}</div>
-                </q-card-section>
-            </q-card>
+            <section class="zk-hero wallet-hero">
+                <span class="wallet-hero__icon">
+                    <q-icon :name="wallet.icon" size="24px" />
+                </span>
+                <div class="wallet-hero__body">
+                    <span class="zk-hero__label">{{ wallet.name }} · {{ wallet.currency }}</span>
+                    <span class="zk-amount zk-amount--lg">{{ formattedBalance }}</span>
+                </div>
+            </section>
 
             <!-- Actions -->
-            <div class="actions-section q-mt-lg">
-                <q-list bordered class="rounded-borders">
-                    <q-item clickable v-ripple @click="openHistory">
-                        <q-item-section avatar>
-                            <q-icon name="history" color="grey-7" />
-                        </q-item-section>
-                        <q-item-section>{{ t('wallets.history.title') }}</q-item-section>
-                        <q-item-section side>
-                            <q-icon name="chevron_right" color="grey-5" />
-                        </q-item-section>
-                    </q-item>
-
-                    <q-separator />
-
-                    <q-item clickable v-ripple @click="openEdit">
-                        <q-item-section avatar>
-                            <q-icon name="edit" color="grey-7" />
-                        </q-item-section>
-                        <q-item-section>{{ t('common.edit') }}</q-item-section>
-                        <q-item-section side>
-                            <q-icon name="chevron_right" color="grey-5" />
-                        </q-item-section>
-                    </q-item>
-
-                    <q-separator />
-
-                    <q-item clickable v-ripple @click="confirmDelete" class="text-negative">
-                        <q-item-section avatar>
-                            <q-icon name="delete" color="negative" />
-                        </q-item-section>
-                        <q-item-section>{{ t('common.delete') }}</q-item-section>
-                    </q-item>
-                </q-list>
+            <div class="actions">
+                <button type="button" class="action" @click="openHistory">
+                    <span class="zk-tile zk-tile--sm zk-tile--blue">
+                        <q-icon name="history" size="20px" />
+                    </span>
+                    {{ t('wallets.history.title') }}
+                </button>
+                <button type="button" class="action" @click="openEdit">
+                    <span class="zk-tile zk-tile--sm">
+                        <q-icon name="o_edit" size="20px" />
+                    </span>
+                    {{ t('common.edit') }}
+                </button>
+                <button type="button" class="action action--danger" @click="confirmDelete">
+                    <span class="zk-tile zk-tile--sm zk-tile--orange">
+                        <q-icon name="o_delete" size="20px" />
+                    </span>
+                    {{ t('common.delete') }}
+                </button>
             </div>
-        </div>
+
+            <!-- Latest operations -->
+            <section class="recent">
+                <div class="zk-section-head recent__head">
+                    <h2 class="zk-section-title">{{ t('wallets.latestOperations') }}</h2>
+                    <button type="button" class="zk-link" @click="openHistory">
+                        {{ t('common.seeAll') }}
+                    </button>
+                </div>
+                <TransactionList :transactions="recentTransactions" :show-date-headers="false" />
+            </section>
+        </template>
 
         <!-- Edit Dialog -->
         <WalletDialog v-model="showDialog" :wallet="wallet ?? null" @saved="onSaved" />
@@ -66,8 +63,10 @@
 </template>
 
 <script setup lang="ts">
+import { maskAmount } from 'src/composables/usePrivacy';
 import WalletDialog from 'src/components/wallets/WalletDialog.vue';
 import ModalConfirm from 'src/components/modals/ModalConfirm.vue';
+import TransactionList from 'src/components/transactions/TransactionList.vue';
 import { CURRENCIES } from 'src/types/currency';
 
 const { t } = useI18n();
@@ -80,15 +79,19 @@ const walletId = computed(() => route.params.id as string);
 const wallet = computed(() => store.getWalletById(walletId.value));
 
 // Page title
-watchEffect(() => {
-    if (wallet.value) {
-        usePage({ title: wallet.value.name, showHeader: true, showBack: true });
-    }
-});
+usePage({ title: () => wallet.value?.name ?? '', showHeader: true, showBack: true });
 
-// Load wallets if not loaded
+const transactionStore = useTransactionStore();
+
+// Latest operations touching this wallet
+const recentTransactions = computed(() =>
+    transactionStore.getTransactionsWithRelations({ walletId: walletId.value }).slice(0, 5),
+);
+
+// Load wallets and transactions if not loaded
 onMounted(() => {
     void store.loadAll();
+    void transactionStore.loadAll();
 });
 
 // Format balance with wallet's currency
@@ -99,12 +102,14 @@ const formattedBalance = computed(() => {
     const currency = CURRENCIES[currencyCode];
     const decimals = currency?.decimals ?? 0;
 
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: currencyCode,
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-    }).format(amount);
+    return maskAmount(
+        new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: currencyCode,
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals,
+        }).format(amount),
+    );
 });
 
 // State
@@ -157,26 +162,64 @@ async function onDelete(): Promise<void> {
 </script>
 
 <style lang="scss" scoped>
-.wallet-header-card {
-    border-radius: 16px;
+.wallet-hero {
+    flex-direction: row;
+    align-items: center;
+    gap: 16px;
+
+    &__icon {
+        width: 48px;
+        height: 48px;
+        flex-shrink: 0;
+        border-radius: 14px;
+        background: rgba(143, 227, 207, 0.16);
+        color: $hero-accent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+    }
 }
 
-.wallet-name {
-    font-size: 20px;
+.actions {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.action {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 4px;
+    border: 0;
+    border-radius: $radius-tile;
+    background: $bg-card;
+    font-family: inherit;
+    font-size: 12px;
     font-weight: 600;
-    color: var(--q-dark);
+    color: $text-primary;
+    cursor: pointer;
+
+    &--danger {
+        color: $negative;
+    }
 }
 
-.wallet-balance {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--q-primary);
-}
+.recent {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 
-.actions-section {
-    .q-list {
-        border-radius: 12px;
-        overflow: hidden;
+    &__head {
+        padding: 0 4px;
     }
 }
 </style>

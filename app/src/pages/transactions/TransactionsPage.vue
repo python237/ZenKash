@@ -1,80 +1,21 @@
 <template>
-    <q-page class="q-pa-md">
-        <!-- Summary Cards -->
-        <div class="summary-section q-mb-lg">
-            <!-- Balance Card -->
-            <q-card class="summary-card summary-card--value" flat>
-                <q-card-section class="q-pa-md">
-                    <div class="text-caption balance-label">{{ t('transactions.balance') }}</div>
-                    <div class="summary-value q-mt-xs">{{ formattedBalance }}</div>
-                    <div class="summary-currency">{{ currencyLabel }}</div>
-                    <div class="text-caption balance-label q-mt-xs">
-                        {{ summary.transactionCount }} {{ t('transactions.transactionsCount') }}
-                    </div>
-                </q-card-section>
-            </q-card>
-
-            <!-- Income / Expense / Games Cards -->
-            <div class="summary-row">
-                <q-card
-                    class="summary-card summary-card--mini clickable"
-                    flat
-                    bordered
-                    @click="openBreakdown('income')"
-                >
-                    <q-card-section class="q-pa-sm column items-center text-center">
-                        <q-avatar size="30px" color="positive" text-color="white">
-                            <q-icon name="arrow_downward" size="16px" />
-                        </q-avatar>
-                        <div class="text-caption text-grey-6 q-mt-xs">
-                            {{ t('transactions.income') }}
-                        </div>
-                        <div class="summary-value-mini text-positive">{{ formattedIncome }}</div>
-                    </q-card-section>
-                </q-card>
-
-                <q-card
-                    class="summary-card summary-card--mini clickable"
-                    flat
-                    bordered
-                    @click="openBreakdown('expense')"
-                >
-                    <q-card-section class="q-pa-sm column items-center text-center">
-                        <q-avatar size="30px" color="negative" text-color="white">
-                            <q-icon name="arrow_upward" size="16px" />
-                        </q-avatar>
-                        <div class="text-caption text-grey-6 q-mt-xs">
-                            {{ t('transactions.expense') }}
-                        </div>
-                        <div class="summary-value-mini text-negative">{{ formattedExpense }}</div>
-                    </q-card-section>
-                </q-card>
-
-                <q-card class="summary-card summary-card--mini" flat bordered>
-                    <q-card-section class="q-pa-sm column items-center text-center">
-                        <q-avatar size="30px" color="deep-orange" text-color="white">
-                            <q-icon name="casino" size="16px" />
-                        </q-avatar>
-                        <div class="text-caption text-grey-6 q-mt-xs">{{ t('games.title') }}</div>
-                        <div class="summary-value-mini" :class="gamesTextClass">
-                            {{ formattedGames }}
-                        </div>
-                    </q-card-section>
-                </q-card>
-            </div>
-        </div>
-
-        <!-- Filter Tabs -->
-        <TabNav v-model="activeFilter" :tabs="filterTabs" variant="pills" class="q-mb-md" />
-
-        <!-- Month Selector -->
-        <div class="month-selector q-mb-md">
-            <BtnIcon icon="chevron_left" @click="prevMonth" />
-            <div class="month-label" @click="showMonthPicker = true">
+    <q-page class="zk-page">
+        <!-- Month + search -->
+        <div class="toolbar">
+            <label class="search">
+                <q-icon name="search" size="20px" />
+                <span class="sr-only">{{ t('common.search') }}</span>
+                <input
+                    v-model="searchQuery"
+                    type="search"
+                    class="search__input"
+                    :placeholder="t('transactions.searchPlaceholder')"
+                />
+            </label>
+            <button type="button" class="month-chip" @click="showMonthPicker = true">
+                <q-icon name="o_calendar_month" size="18px" />
                 {{ formattedMonth }}
-                <q-icon name="expand_more" size="18px" class="q-ml-xs" />
-            </div>
-            <BtnIcon icon="chevron_right" :disable="isCurrentMonth" @click="nextMonth" />
+            </button>
         </div>
 
         <!-- Month picker dialog -->
@@ -89,41 +30,54 @@
             />
         </q-dialog>
 
+        <!-- Filter chips -->
+        <div class="chips" role="tablist" :aria-label="t('transactions.filterLabel')">
+            <button
+                v-for="tab in filterTabs"
+                :key="tab.value"
+                type="button"
+                role="tab"
+                class="chip"
+                :class="{ 'chip--active': activeFilter === tab.value }"
+                :aria-selected="activeFilter === tab.value"
+                @click="activeFilter = tab.value"
+            >
+                {{ tab.label }}
+            </button>
+        </div>
+
+        <!-- Summary strip -->
+        <div class="summary">
+            <button type="button" class="summary__card" @click="openBreakdown('income')">
+                <span class="zk-caption">{{ t('transactions.inflows') }}</span>
+                <span class="summary__value text-positive">{{ formattedIncome }}</span>
+            </button>
+            <button type="button" class="summary__card" @click="openBreakdown('expense')">
+                <span class="zk-caption">{{ t('transactions.outflows') }}</span>
+                <span class="summary__value text-negative">{{ formattedExpense }}</span>
+            </button>
+        </div>
+        <div class="summary-caption zk-caption">
+            <span>
+                {{ t('transactions.balance') }} :
+                <strong :class="summary.balance >= 0 ? 'text-positive' : 'text-negative'">
+                    {{ formattedBalance }} {{ currencyLabel }}
+                </strong>
+                · {{ summary.transactionCount }} {{ t('transactions.transactionsCount') }}
+            </span>
+            <span v-if="summary.totalGames !== 0">
+                {{ t('games.title') }} :
+                <strong :class="gamesTextClass">{{ formattedGames }}</strong>
+            </span>
+        </div>
+
         <!-- Transaction List -->
         <TransactionList
-            :transactions="filteredTransactions"
+            :transactions="listedTransactions"
             @select="openEdit"
             @delete="onDelete"
             @duplicate="onDuplicate"
         />
-
-        <!-- Add FAB with menu -->
-        <q-page-sticky position="bottom-right" :offset="[18, 18]">
-            <q-fab
-                v-model="fabOpen"
-                icon="add"
-                active-icon="close"
-                direction="up"
-                color="primary"
-                padding="12px"
-            >
-                <q-fab-action color="positive" icon="arrow_downward" @click="openCreate('income')">
-                    <q-tooltip anchor="center left" self="center right">{{
-                        t('transactions.addIncome')
-                    }}</q-tooltip>
-                </q-fab-action>
-                <q-fab-action color="negative" icon="arrow_upward" @click="openCreate('expense')">
-                    <q-tooltip anchor="center left" self="center right">{{
-                        t('transactions.addExpense')
-                    }}</q-tooltip>
-                </q-fab-action>
-                <q-fab-action color="blue" icon="swap_horiz" @click="openCreate('transfer')">
-                    <q-tooltip anchor="center left" self="center right">{{
-                        t('transactions.addTransfer')
-                    }}</q-tooltip>
-                </q-fab-action>
-            </q-fab>
-        </q-page-sticky>
 
         <!-- Create/Edit Dialog -->
         <TransactionDialog
@@ -145,6 +99,7 @@
 </template>
 
 <script setup lang="ts">
+import { maskAmount } from 'src/composables/usePrivacy';
 import type {
     Transaction,
     TransactionType,
@@ -155,8 +110,6 @@ import { CURRENCIES, CurrencyCode } from 'src/types/currency';
 import TransactionList from 'src/components/transactions/TransactionList.vue';
 import TransactionDialog from 'src/components/transactions/TransactionDialog.vue';
 import TransactionBreakdownModal from 'src/components/transactions/TransactionBreakdownModal.vue';
-import TabNav from 'src/components/tabs/TabNav.vue';
-import BtnIcon from 'src/components/buttons/BtnIcon.vue';
 
 const { t, locale } = useI18n();
 usePage({ title: t('transactions.title'), showHeader: true });
@@ -180,7 +133,7 @@ const selectedTransaction = ref<Transaction | null>(null);
 const duplicateFromTransaction = ref<Transaction | null>(null);
 const initialType = ref<TransactionType>('expense');
 const activeFilter = ref<'all' | TransactionType>('all');
-const fabOpen = ref(false);
+const searchQuery = ref('');
 
 // Breakdown modal state
 const showBreakdownModal = ref(false);
@@ -192,18 +145,13 @@ const selectedMonth = ref(`${now.getFullYear()}/${String(now.getMonth() + 1).pad
 const showMonthPicker = ref(false);
 
 // Filter tabs
-const filterTabs = computed(() => [
+const filterTabs = computed((): { value: 'all' | TransactionType; label: string }[] => [
     { value: 'all', label: t('common.all') },
     { value: 'income', label: t('transactions.income') },
     { value: 'expense', label: t('transactions.expense') },
     { value: 'transfer', label: t('transactions.transfer') },
+    { value: 'debt', label: t('debts.title') },
 ]);
-
-// Current month check
-const isCurrentMonth = computed(() => {
-    const current = `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, '0')}`;
-    return selectedMonth.value === current;
-});
 
 // Formatted month
 const formattedMonth = computed(() => {
@@ -211,39 +159,12 @@ const formattedMonth = computed(() => {
     const year = parts[0] ?? '2024';
     const month = parts[1] ?? '01';
     const date = new Date(parseInt(year), parseInt(month) - 1);
-    return new Intl.DateTimeFormat(locale.value, {
+    const text = new Intl.DateTimeFormat(locale.value, {
         month: 'long',
         year: 'numeric',
     }).format(date);
+    return text.charAt(0).toUpperCase() + text.slice(1);
 });
-
-// Month navigation
-/**
- * Navigates to the previous month in the transaction view.
- * Updates the selected month state to show transactions from the previous month.
- * @returns {void}
- */
-function prevMonth(): void {
-    const parts = selectedMonth.value.split('/').map(Number);
-    const year = parts[0] ?? 2024;
-    const month = parts[1] ?? 1;
-    const date = new Date(year, month - 2);
-    selectedMonth.value = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`;
-}
-
-/**
- * Navigates to the next month in the transaction view.
- * Does nothing if already viewing the current month.
- * @returns {void}
- */
-function nextMonth(): void {
-    if (isCurrentMonth.value) return;
-    const parts = selectedMonth.value.split('/').map(Number);
-    const year = parts[0] ?? 2024;
-    const month = parts[1] ?? 1;
-    const date = new Date(year, month);
-    selectedMonth.value = `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}`;
-}
 
 // Convert selected month to filter format
 const monthFilter = computed(() => {
@@ -314,9 +235,38 @@ const filteredTransactions = computed((): TransactionWithRelations[] => {
     return [...allTxs].sort((a, b) => b.date.getTime() - a.date.getTime());
 });
 
+/**
+ * Text a transaction can be found by in the search field.
+ * @param tx - The transaction
+ * @returns Lowercased searchable text
+ */
+function searchableText(tx: TransactionWithRelations): string {
+    return [
+        tx.description,
+        tx.category?.name,
+        tx.category?.masterCategory?.name,
+        tx.wallet?.name,
+        tx.fromWallet?.name,
+        tx.toWallet?.name,
+        tx.project?.name,
+        tx.investment?.label,
+        tx.debt?.counterparty,
+    ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+}
+
+// Transactions after the search query
+const listedTransactions = computed((): TransactionWithRelations[] => {
+    const query = searchQuery.value.trim().toLowerCase();
+    if (!query) return filteredTransactions.value;
+    return filteredTransactions.value.filter((tx) => searchableText(tx).includes(query));
+});
+
 // Summary calculations
 const summary = computed(() => {
-    const txs = filteredTransactions.value;
+    const txs = listedTransactions.value;
     const targetCurrency = defaultCurrency.value;
     let totalIncome = 0;
     let totalExpense = 0;
@@ -401,15 +351,17 @@ const currencyLabel = computed(() => {
  * @returns {string} The formatted number string
  */
 function formatAmount(amount: number): string {
-    return new Intl.NumberFormat(locale.value, {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(amount);
+    return maskAmount(
+        new Intl.NumberFormat(locale.value, {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(amount),
+    );
 }
 
 const formattedBalance = computed(() => formatAmount(summary.value.balance));
 const formattedIncome = computed(() => '+' + formatAmount(summary.value.totalIncome));
-const formattedExpense = computed(() => '-' + formatAmount(summary.value.totalExpense));
+const formattedExpense = computed(() => '−' + formatAmount(summary.value.totalExpense));
 const formattedGames = computed(() => {
     const value = summary.value.totalGames;
     const prefix = value >= 0 ? '+' : '';
@@ -433,21 +385,6 @@ onMounted(async () => {
         gameStore.loadAll(),
     ]);
 });
-
-// Open create dialog
-/**
- * Opens the dialog to create a new transaction of the specified type.
- * Clears any previously selected or duplicate transaction before showing the dialog.
- * @param {TransactionType} type - The type of transaction to create (income, expense, or transfer)
- * @returns {void}
- */
-function openCreate(type: TransactionType): void {
-    selectedTransaction.value = null;
-    duplicateFromTransaction.value = null;
-    initialType.value = type;
-    showDialog.value = true;
-    fabOpen.value = false;
-}
 
 // Open breakdown modal
 /**
@@ -515,101 +452,117 @@ async function onDelete(tx: TransactionWithRelations): Promise<void> {
 </script>
 
 <style lang="scss" scoped>
-@use 'sass:color';
-
-.summary-section {
+.toolbar {
     display: flex;
-    flex-direction: column;
-    gap: 12px;
+    gap: 10px;
 }
 
-.summary-card {
-    border-radius: 16px;
-    overflow: hidden;
-
-    &--value {
-        background: linear-gradient(
-            135deg,
-            $primary 0%,
-            color.adjust($primary, $lightness: -10%) 100%
-        );
-        color: white;
-
-        .balance-label {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .summary-value {
-            color: white;
-        }
-
-        .summary-currency {
-            color: rgba(255, 255, 255, 0.7);
-        }
-    }
-
-    &--mini {
-        flex: 1;
-        border-radius: 12px;
-    }
-}
-
-.summary-row {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-}
-
-.summary-value {
-    font-size: 28px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-}
-
-.summary-value-mini {
-    font-size: 15px;
-    font-weight: 600;
-    white-space: nowrap;
-    line-height: 1.2;
-}
-
-.summary-currency {
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.month-selector {
+.search {
+    flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
+    gap: 10px;
+    height: 48px;
+    padding: 0 14px;
+    background: $bg-card;
+    border: 1px solid $border-color;
+    border-radius: 16px;
+    color: $text-secondary;
 
-    .month-label {
-        display: flex;
-        align-items: center;
-        font-weight: 600;
-        font-size: 16px;
-        text-transform: capitalize;
-        cursor: pointer;
-        padding: 8px 16px;
-        border-radius: 20px;
-        background: $grey-2;
-        transition: background 0.2s;
-
-        &:hover {
-            background: $grey-3;
-        }
+    &__input {
+        flex: 1;
+        min-width: 0;
+        border: 0;
+        outline: 0;
+        background: transparent;
+        font-family: inherit;
+        font-size: 14px;
+        color: $text-primary;
     }
 }
 
-.clickable {
+.month-chip {
+    flex-shrink: 0;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    border-radius: 16px;
+    border: 1px solid $border-color;
+    background: $bg-card;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: $text-primary;
     cursor: pointer;
-    transition:
-        transform 0.15s,
-        box-shadow 0.15s;
+}
 
-    &:active {
-        transform: scale(0.98);
+.chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -20px;
+    padding: 0 20px;
+
+    &::-webkit-scrollbar {
+        display: none;
     }
+}
+
+.chip {
+    flex-shrink: 0;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid $border-color;
+    background: $bg-card;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: $text-primary;
+    cursor: pointer;
+
+    &--active {
+        background: $text-primary;
+        border-color: $text-primary;
+        color: #ffffff;
+    }
+}
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+
+    &__card {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 14px;
+        border: 0;
+        border-radius: $radius-tile;
+        background: $bg-card;
+        font-family: inherit;
+        text-align: left;
+        cursor: pointer;
+    }
+
+    &__value {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+    }
+}
+
+.summary-caption {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: -6px;
+    padding: 0 4px;
 }
 </style>

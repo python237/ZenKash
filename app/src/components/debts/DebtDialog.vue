@@ -5,66 +5,89 @@
         :title="isEditing ? t('debts.editDebt') : t('debts.addDebt')"
         max-width="440px"
     >
-        <q-form @submit.prevent="save" class="q-gutter-md">
+        <q-form @submit.prevent="save" class="debt-form">
             <!-- Direction: fixed once movements exist against the debt -->
-            <q-btn-toggle
-                v-if="!isEditing"
-                v-model="form.direction"
-                :options="directionOptions"
-                spread
-                unelevated
-                no-caps
-                toggle-color="primary"
-                color="grey-2"
-                text-color="grey-8"
-            />
+            <template v-if="!isEditing">
+                <div class="direction-switch" role="tablist" :aria-label="t('debts.direction')">
+                    <button
+                        v-for="option in directionOptions"
+                        :key="option.value"
+                        type="button"
+                        role="tab"
+                        class="direction-switch__btn"
+                        :class="{
+                            'direction-switch__btn--active': form.direction === option.value,
+                        }"
+                        :aria-selected="form.direction === option.value"
+                        @click="form.direction = option.value"
+                    >
+                        {{ option.label }}
+                    </button>
+                </div>
+                <p class="direction-hint">{{ t(`debts.directionHint.${form.direction}`) }}</p>
+            </template>
 
-            <InputSingle
-                v-model="form.counterparty"
-                :label="t('debts.counterparty')"
-                :error="errors.counterparty"
-            />
+            <label class="field">
+                <span class="field__label">{{ t('debts.counterparty') }}</span>
+                <InputSingle
+                    v-model="form.counterparty"
+                    :placeholder="t('debts.counterpartyPlaceholder')"
+                    :error="errors.counterparty"
+                />
+            </label>
 
-            <InputNumber
-                v-model="form.principal"
-                :label="t('debts.principal')"
-                :suffix="currencySymbol"
-                :error="errors.principal"
-                :disable="isEditing"
-                :hint="isEditing ? t('debts.principalLocked') : ''"
-            />
+            <label class="field">
+                <span class="field__label">{{ t('debts.principal') }}</span>
+                <InputNumber
+                    v-model="form.principal"
+                    class="amount-field"
+                    :suffix="currencySymbol"
+                    :error="errors.principal"
+                    :disable="isEditing"
+                    :hint="isEditing ? t('debts.principalLocked') : ''"
+                />
+            </label>
 
-            <q-select
-                v-model="form.walletId"
-                :options="walletOptions"
-                :label="t('debts.wallet')"
-                :hint="isEditing ? '' : t('debts.walletHint')"
-                outlined
-                dense
-                emit-value
-                map-options
-                :disable="isEditing"
-                :error="!!errors.walletId"
-                :error-message="errors.walletId"
-            />
+            <label class="field">
+                <span class="field__label">
+                    {{ t(`debts.walletLabel.${form.direction}`) }}
+                </span>
+                <q-select
+                    v-model="form.walletId"
+                    :options="walletOptions"
+                    outlined
+                    emit-value
+                    map-options
+                    behavior="dialog"
+                    popup-content-class="select-popup-clean"
+                    :disable="isEditing"
+                    :error="!!errors.walletId"
+                    :error-message="errors.walletId"
+                />
+            </label>
 
-            <InputDate v-model="form.dueDate" :label="t('debts.dueDateOptional')" />
-
-            <InputSingle
-                v-model="form.description"
-                :label="t('common.description')"
-                :error="errors.description"
-            />
+            <div class="field-row">
+                <InputDate v-model="form.dueDate" :label="t('debts.dueDateOptional')" />
+                <InputSingle
+                    v-model="form.description"
+                    :label="t('common.description')"
+                    :error="errors.description"
+                />
+            </div>
 
             <div v-if="saveError" class="save-error text-caption">
                 <q-icon name="error" size="16px" /> {{ saveError }}
             </div>
-
-            <div class="row justify-end q-gutter-sm q-mt-md">
-                <BtnLink :label="t('common.cancel')" @click="close" />
-                <BtnPrimary :label="t('common.save')" type="submit" :loading="isLoading" />
-            </div>
         </q-form>
+
+        <template #actions>
+            <BtnError
+                v-if="isEditing && debt"
+                :label="t('common.delete')"
+                @click="$emit('delete', debt)"
+            />
+            <BtnPrimary :label="t('common.save')" :loading="isLoading" @click="save" />
+        </template>
     </ModalBase>
 </template>
 
@@ -77,7 +100,7 @@ import ModalBase from '../modals/ModalBase.vue';
 import InputNumber from '../inputs/InputNumber.vue';
 import InputSingle from '../inputs/InputSingle.vue';
 import InputDate from '../inputs/InputDate.vue';
-import BtnLink from '../buttons/BtnLink.vue';
+import BtnError from '../buttons/BtnError.vue';
 import BtnPrimary from '../buttons/BtnPrimary.vue';
 import { useFormValidation } from 'src/composables/useFormValidation';
 import { useDebtStore } from 'src/stores/debt';
@@ -90,6 +113,7 @@ const props = defineProps<{
 const emit = defineEmits<{
     'update:modelValue': [value: boolean];
     saved: [debt: Debt];
+    delete: [debt: Debt];
 }>();
 
 const { t } = useI18n();
@@ -131,9 +155,9 @@ const saveError = ref('');
 const isEditing = computed(() => !!props.debt);
 const isLoading = computed(() => debtStore.isLoading);
 
-const directionOptions = computed(() => [
-    { label: t('debts.directions.lent'), value: 'lent' },
-    { label: t('debts.directions.borrowed'), value: 'borrowed' },
+const directionOptions = computed((): { label: string; value: DebtDirection }[] => [
+    { label: t('debts.directionChoice.lent'), value: 'lent' },
+    { label: t('debts.directionChoice.borrowed'), value: 'borrowed' },
 ]);
 
 const walletOptions = computed(() =>
@@ -242,6 +266,73 @@ async function save(): Promise<void> {
 </script>
 
 <style lang="scss" scoped>
+.debt-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.direction-switch {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    border-radius: $radius-control;
+    background: $bg-page;
+
+    &__btn {
+        height: 40px;
+        border: 0;
+        border-radius: 11px;
+        background: transparent;
+        color: $text-secondary;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+
+        &--active {
+            background: $bg-card;
+            color: $text-primary;
+            box-shadow: 0 1px 3px rgba(18, 26, 23, 0.12);
+        }
+    }
+}
+
+.direction-hint {
+    margin: -4px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: $text-secondary;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+
+    &__label {
+        font-size: 12px;
+        font-weight: 600;
+        color: $text-secondary;
+    }
+
+    :deep(.q-field--with-bottom) {
+        padding-bottom: 0;
+    }
+}
+
+.amount-field :deep(.q-field__native) {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.field-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
 .save-error {
     color: $negative;
 }

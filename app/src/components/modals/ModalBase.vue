@@ -1,33 +1,42 @@
 <template>
-    <q-dialog v-model="isOpen" :persistent="persistent" @hide="$emit('hide')">
+    <q-dialog
+        v-model="isOpen"
+        :persistent="persistent"
+        position="bottom"
+        class="modal-sheet"
+        @hide="$emit('hide')"
+    >
         <q-card class="modal-base" :style="{ maxWidth: maxWidth }">
-            <!-- Header -->
-            <q-card-section class="modal-header">
-                <div class="modal-title">{{ title }}</div>
-                <BtnIcon v-if="showClose" dense icon="close" color="grey-6" @click="close" />
-            </q-card-section>
+            <div class="modal-handle" aria-hidden="true" />
 
-            <q-separator />
+            <!-- Header -->
+            <div class="modal-header">
+                <div class="modal-title">{{ title }}</div>
+                <button
+                    v-if="showClose"
+                    type="button"
+                    class="modal-close"
+                    :aria-label="$t('common.close')"
+                    @click="close"
+                >
+                    <q-icon name="close" size="20px" />
+                </button>
+            </div>
 
             <!-- Content -->
-            <q-card-section class="modal-content">
+            <div class="modal-content">
                 <slot />
-            </q-card-section>
+            </div>
 
             <!-- Actions -->
-            <template v-if="$slots.actions">
-                <q-separator />
-                <q-card-actions align="right" class="modal-actions">
-                    <slot name="actions" />
-                </q-card-actions>
-            </template>
+            <div v-if="$slots.actions" class="modal-actions">
+                <slot name="actions" />
+            </div>
         </q-card>
     </q-dialog>
 </template>
 
 <script setup lang="ts">
-import BtnIcon from '../buttons/BtnIcon.vue';
-
 const props = withDefaults(
     defineProps<{
         modelValue: boolean;
@@ -39,7 +48,7 @@ const props = withDefaults(
     {
         persistent: false,
         showClose: true,
-        maxWidth: '400px',
+        maxWidth: '640px',
     },
 );
 
@@ -66,27 +75,83 @@ defineExpose({ close });
 <style lang="scss" scoped>
 .modal-base {
     width: 100%;
-    border-radius: 16px;
+    max-height: calc(92vh - var(--safe-area-top));
+    display: flex;
+    flex-direction: column;
+    border-radius: 28px 28px 0 0 !important;
+    padding-bottom: var(--safe-area-bottom);
+}
+
+.modal-handle {
+    align-self: center;
+    flex-shrink: 0;
+    width: 40px;
+    height: 5px;
+    margin-top: 10px;
+    border-radius: 999px;
+    background: $border-color;
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px;
+    gap: 12px;
+    padding: 14px 20px 6px;
 }
 
 .modal-title {
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
     color: $text-primary;
 }
 
-.modal-content {
-    padding: 16px;
+.modal-close {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border: 0;
+    border-radius: 12px;
+    background: $bg-page;
+    color: $text-primary;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
 }
 
+.modal-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 20px;
+}
+
+// Actions: full width, primary action takes the remaining space
 .modal-actions {
-    padding: 12px 16px;
+    display: flex;
+    gap: 10px;
+    padding: 12px 20px 20px;
+
+    :deep(.q-btn) {
+        flex: 1;
+        min-height: 52px;
+        border-radius: $radius-tile;
+        font-size: 15px;
+    }
+
+    :deep(.btn-primary) {
+        flex: 2;
+        font-weight: 800;
+    }
+
+    :deep(.btn-link) {
+        background: $bg-page;
+        color: $text-primary !important;
+    }
+
+    :deep(.btn-error) {
+        background: $negative-soft;
+    }
 }
 </style>

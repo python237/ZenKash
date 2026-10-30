@@ -1,46 +1,33 @@
 <template>
-    <q-card
-        class="project-card"
-        :class="{
-            'project-card--positive': health === 'positive',
-            'project-card--negative': health === 'negative',
-        }"
-        flat
-        bordered
-        @click="$emit('click')"
-    >
-        <q-card-section class="row items-center q-pa-md">
-            <!-- Icon -->
-            <div class="project-icon q-mr-md">
-                <q-avatar color="primary-1" text-color="primary" size="48px">
-                    <q-icon name="rocket_launch" size="24px" />
-                </q-avatar>
-            </div>
+    <button type="button" class="project-card" @click="$emit('click')">
+        <span class="project-card__head">
+            <span class="zk-tile zk-tile--lg zk-tile--violet">
+                <q-icon name="o_rocket_launch" size="22px" />
+            </span>
+            <span class="project-card__body">
+                <span class="project-card__name">{{ project.name }}</span>
+                <span class="project-card__meta">
+                    {{ t('projects.invested') }} {{ formattedInvested }}
+                </span>
+            </span>
+            <span class="zk-pill" :class="pillClass">
+                {{ t('projects.roi') }} {{ formattedRoi }}
+            </span>
+        </span>
 
-            <!-- Info -->
-            <div class="col">
-                <div class="text-subtitle1 text-weight-medium">{{ project.name }}</div>
-                <div class="text-caption text-grey-6">
-                    {{ t('projects.invested') }}: {{ formattedInvested }}
-                </div>
-            </div>
+        <span class="zk-progress">
+            <span class="project-card__fill" :style="progressStyle" />
+        </span>
 
-            <!-- Value & ROI -->
-            <div class="text-right">
-                <div class="text-subtitle1 text-weight-bold">{{ formattedDividends }}</div>
-                <div class="health-indicator" :class="`health-indicator--${health}`">
-                    <q-icon :name="healthIcon" size="14px" />
-                    {{ formattedRoi }}
-                </div>
-            </div>
-
-            <!-- Chevron -->
-            <q-icon name="chevron_right" color="grey-5" size="24px" class="q-ml-sm" />
-        </q-card-section>
-    </q-card>
+        <span class="project-card__meta">
+            {{ t('projects.dividendsReceived') }} {{ formattedDividends }} ·
+            {{ recoveryLabel }}
+        </span>
+    </button>
 </template>
 
 <script setup lang="ts">
+import { maskAmount } from 'src/composables/usePrivacy';
 import type { ProjectWithStats } from 'src/types/project';
 import { CURRENCIES, CurrencyCode } from 'src/types/currency';
 
@@ -69,81 +56,110 @@ const health = computed(() => {
     return 'neutral';
 });
 
-// Health icon
-const healthIcon = computed(() => {
-    if (health.value === 'positive') return 'arrow_upward';
-    if (health.value === 'negative') return 'arrow_downward';
-    return 'remove';
+const pillClass = computed(() => {
+    if (health.value === 'positive') return 'zk-pill--green';
+    if (health.value === 'negative') return 'zk-pill--orange';
+    return '';
 });
+
+/** Share of the invested amount already paid back by dividends (0-100). */
+const recoveredPercent = computed(() => {
+    if (props.project.totalInvested <= 0) return 0;
+    return Math.min((props.project.totalDividends / props.project.totalInvested) * 100, 100);
+});
+
+const progressStyle = computed(() => ({
+    width: `${recoveredPercent.value}%`,
+    background: recoveredPercent.value >= 100 ? undefined : '#d97a2b',
+}));
+
+const recoveryLabel = computed(() =>
+    recoveredPercent.value >= 100
+        ? t('projects.paidBack')
+        : t('projects.recovered', { percent: `${recoveredPercent.value.toFixed(0)}%` }),
+);
 
 // Formatting
 const formattedInvested = computed(() => {
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: currencyCode.value,
-        minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
-    }).format(props.project.totalInvested);
+    return maskAmount(
+        new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: currencyCode.value,
+            minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
+            maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
+        }).format(props.project.totalInvested),
+    );
 });
 
 const formattedDividends = computed(() => {
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: currencyCode.value,
-        minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
-    }).format(props.project.totalDividends);
+    return maskAmount(
+        new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: currencyCode.value,
+            minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
+            maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
+        }).format(props.project.totalDividends),
+    );
 });
 
 const formattedRoi = computed(() => {
-    const prefix = props.project.roi >= 0 ? '+' : '';
-    return `${prefix}${props.project.roi.toFixed(1)}%`;
+    const roi = props.project.roi;
+    const prefix = roi > 0 ? '+' : roi < 0 ? '−' : '';
+    return `${prefix}${Math.abs(roi).toFixed(1)}%`;
 });
 </script>
 
 <style lang="scss" scoped>
 .project-card {
-    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    padding: 16px;
+    border: 0;
+    border-radius: 20px;
+    background: $bg-card;
+    color: $text-primary;
+    font-family: inherit;
+    text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
 
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
-    &--positive {
-        border-left: 3px solid $positive;
+    &__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
     }
 
-    &--negative {
-        border-left: 3px solid $negative;
-    }
-}
-
-.project-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.health-indicator {
-    display: flex;
-    align-items: center;
-    gap: 2px;
-    font-size: 12px;
-    font-weight: 600;
-
-    &--positive {
-        color: $positive;
+    &__name {
+        font-size: 15px;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    &--negative {
-        color: $negative;
+    &__meta {
+        font-size: 12px;
+        color: $text-secondary;
     }
 
-    &--neutral {
-        color: $grey-6;
+    .zk-progress {
+        display: block;
+    }
+
+    &__fill {
+        display: block;
+        height: 100%;
+        border-radius: 999px;
+        background: $primary;
     }
 }
 </style>

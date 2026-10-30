@@ -39,6 +39,7 @@ const TABLES = [
     'net_worth_snapshots',
     'recurring_transactions',
     'savings_goals',
+    'notifications',
 ] as const;
 
 /**

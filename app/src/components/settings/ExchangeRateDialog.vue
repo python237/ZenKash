@@ -1,71 +1,64 @@
 <template>
-    <q-dialog
+    <ModalBase
         :model-value="modelValue"
-        @update:model-value="$emit('update:modelValue', $event)"
+        :title="isEditing ? t('settings.editExchangeRate') : t('settings.addExchangeRate')"
         persistent
+        @update:model-value="$emit('update:modelValue', $event)"
     >
-        <q-card style="min-width: 320px">
-            <q-card-section>
-                <div class="text-h6">
-                    {{ isEditing ? t('settings.editExchangeRate') : t('settings.addExchangeRate') }}
-                </div>
-            </q-card-section>
+        <q-form ref="formRef" @submit.prevent="save" class="q-gutter-md">
+            <!-- From Currency -->
+            <q-select
+                v-model="form.fromCurrency"
+                :options="fromCurrencyOptions"
+                :label="t('settings.fromCurrency')"
+                outlined
+                emit-value
+                map-options
+                :disable="isEditing"
+                :rules="currencyRules"
+            />
 
-            <q-card-section class="q-pt-none">
-                <q-form @submit.prevent="save" class="q-gutter-md">
-                    <!-- From Currency -->
-                    <q-select
-                        v-model="form.fromCurrency"
-                        :options="fromCurrencyOptions"
-                        :label="t('settings.fromCurrency')"
-                        outlined
-                        emit-value
-                        map-options
-                        :disable="isEditing"
-                        :rules="currencyRules"
-                    />
+            <!-- To Currency (locked to default) -->
+            <InputSingle
+                :model-value="defaultCurrencyLabel"
+                :label="t('settings.toCurrency')"
+                readonly
+                disable
+            >
+                <template #append>
+                    <q-icon name="lock" size="18px" color="grey-5" />
+                </template>
+            </InputSingle>
 
-                    <!-- To Currency (locked to default) -->
-                    <InputSingle
-                        :model-value="defaultCurrencyLabel"
-                        :label="t('settings.toCurrency')"
-                        readonly
-                        disable
-                    >
-                        <template #append>
-                            <q-icon name="lock" size="18px" color="grey-5" />
-                        </template>
-                    </InputSingle>
+            <!-- Rate -->
+            <InputNumber
+                v-model="form.rate"
+                :label="t('settings.rate')"
+                :step="0.0001"
+                :error="rateError"
+            >
+                <template #prepend>
+                    <span class="text-body2">1 {{ form.fromCurrency }} =</span>
+                </template>
+                <template #append>
+                    <span class="text-body2">{{ defaultCurrency }}</span>
+                </template>
+            </InputNumber>
+        </q-form>
 
-                    <!-- Rate -->
-                    <InputNumber
-                        v-model="form.rate"
-                        :label="t('settings.rate')"
-                        :step="0.0001"
-                        :error="rateError"
-                    >
-                        <template #prepend>
-                            <span class="text-body2">1 {{ form.fromCurrency }} =</span>
-                        </template>
-                        <template #append>
-                            <span class="text-body2">{{ defaultCurrency }}</span>
-                        </template>
-                    </InputNumber>
-
-                    <div class="row justify-end q-gutter-sm q-mt-md">
-                        <BtnLink :label="t('common.cancel')" @click="close" />
-                        <BtnPrimary :label="t('common.save')" type="submit" :loading="loading" />
-                    </div>
-                </q-form>
-            </q-card-section>
-        </q-card>
-    </q-dialog>
+        <template #actions>
+            <BtnLink :label="t('common.cancel')" @click="close" />
+            <BtnPrimary :label="t('common.save')" :loading="loading" @click="formRef?.submit()" />
+        </template>
+    </ModalBase>
 </template>
 
 <script setup lang="ts">
+import type { QForm } from 'quasar';
 import type { ExchangeRate, CurrencyCode } from 'src/types/currency';
 import { CURRENCIES, getCurrencyOptions } from 'src/types/currency';
 import { useExchangeRateStore } from 'src/stores/exchange-rate';
+import ModalBase from '../modals/ModalBase.vue';
 import InputSingle from '../inputs/InputSingle.vue';
 import InputNumber from '../inputs/InputNumber.vue';
 import BtnLink from '../buttons/BtnLink.vue';
@@ -87,6 +80,8 @@ const exchangeRateStore = useExchangeRateStore();
 
 // State
 const loading = ref(false);
+/** Form instance: submitting through it runs the field rules before save() */
+const formRef = ref<QForm | null>(null);
 const form = ref<{ fromCurrency: CurrencyCode | ''; rate: number }>({
     fromCurrency: '',
     rate: 1,

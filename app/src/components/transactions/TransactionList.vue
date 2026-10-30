@@ -1,77 +1,77 @@
 <template>
     <div class="transaction-list">
         <!-- Empty state -->
-        <div v-if="transactions.length === 0" class="empty-state">
-            <q-icon name="receipt_long" size="64px" color="grey-4" />
-            <div class="text-subtitle1 text-grey-6 q-mt-md">
-                {{ t('transactions.noTransactions') }}
+        <div v-if="transactions.length === 0" class="zk-empty">
+            <div class="zk-empty__icon">
+                <q-icon name="o_receipt_long" size="30px" />
             </div>
+            <div class="zk-empty__title">{{ t('transactions.noTransactions') }}</div>
         </div>
 
-        <!-- Transaction list -->
-        <q-list v-else separator class="rounded-borders">
-            <template v-for="group in groupedTransactions" :key="group.date">
-                <!-- Date header -->
-                <q-item-label v-if="showDateHeaders" header class="date-header">
+        <!-- Transaction list, one card per day -->
+        <template v-else>
+            <section v-for="group in groupedTransactions" :key="group.date" class="day-group">
+                <h3 v-if="showDateHeaders" class="date-header">
                     {{ formatDateHeader(group.date) }}
-                </q-item-label>
+                </h3>
 
-                <!-- Transactions for this date -->
-                <q-slide-item
-                    v-for="tx in group.transactions"
-                    :key="tx.id"
-                    :left-color="canDuplicate(tx) ? 'primary' : undefined"
-                    :right-color="canEdit(tx) ? 'negative' : undefined"
-                    @left="(details: { reset: () => void }) => onSlideLeft(details, tx)"
-                    @right="(details: { reset: () => void }) => onSlideRight(details, tx)"
-                >
-                    <template v-if="canDuplicate(tx)" #left>
-                        <q-icon name="content_copy" />
-                    </template>
-                    <template v-if="canEdit(tx)" #right>
-                        <q-icon name="delete" />
-                    </template>
+                <div class="day-card">
+                    <q-slide-item
+                        v-for="tx in group.transactions"
+                        :key="tx.id"
+                        class="tx-slide"
+                        :left-color="canDuplicate(tx) ? 'primary' : undefined"
+                        :right-color="canEdit(tx) ? 'negative' : undefined"
+                        @left="(details: { reset: () => void }) => onSlideLeft(details, tx)"
+                        @right="(details: { reset: () => void }) => onSlideRight(details, tx)"
+                    >
+                        <template v-if="canDuplicate(tx)" #left>
+                            <q-icon name="content_copy" />
+                        </template>
+                        <template v-if="canEdit(tx)" #right>
+                            <q-icon name="delete" />
+                        </template>
 
-                    <q-item :clickable="canEdit(tx)" @click="canEdit(tx) && $emit('select', tx)">
-                        <q-item-section avatar>
-                            <q-avatar
-                                :color="getTransactionColor(tx)"
-                                text-color="white"
-                                size="40px"
-                            >
-                                <q-icon :name="getTransactionIcon(tx)" size="20px" />
-                            </q-avatar>
-                        </q-item-section>
+                        <q-item
+                            class="tx-row"
+                            :clickable="canEdit(tx)"
+                            @click="canEdit(tx) && $emit('select', tx)"
+                        >
+                            <q-item-section avatar>
+                                <span class="zk-tile" :style="toneStyle(getTransactionColor(tx))">
+                                    <q-icon :name="getTransactionIcon(tx)" size="20px" />
+                                </span>
+                            </q-item-section>
 
-                        <q-item-section>
-                            <q-item-label class="transaction-title">
-                                <span class="type-indicator" :class="getTypeIndicatorClass(tx)" />
-                                {{ getTransactionTitle(tx) }}
-                            </q-item-label>
-                            <q-item-label caption class="transaction-subtitle">
-                                {{ getTransactionSubtitle(tx) }}
-                            </q-item-label>
-                        </q-item-section>
+                            <q-item-section>
+                                <q-item-label class="transaction-title">
+                                    {{ getTransactionTitle(tx) }}
+                                </q-item-label>
+                                <q-item-label caption class="transaction-subtitle">
+                                    {{ getTransactionSubtitle(tx) }}
+                                </q-item-label>
+                            </q-item-section>
 
-                        <q-item-section side>
-                            <q-item-label :class="['transaction-amount', getAmountClass(tx)]">
-                                {{ formatTransactionAmount(tx) }}
-                            </q-item-label>
-                            <q-item-label
-                                v-if="tx.type === 'transfer' && tx.fee"
-                                caption
-                                class="text-grey-6"
-                            >
-                                {{ t('transactions.fee') }}: {{ formatFee(tx) }}
-                            </q-item-label>
-                            <q-item-label caption class="transaction-time">
-                                {{ formatTime(tx.date) }}
-                            </q-item-label>
-                        </q-item-section>
-                    </q-item>
-                </q-slide-item>
-            </template>
-        </q-list>
+                            <q-item-section side>
+                                <q-item-label :class="['transaction-amount', getAmountClass(tx)]">
+                                    {{ formatTransactionAmount(tx) }}
+                                </q-item-label>
+                                <q-item-label
+                                    v-if="tx.type === 'transfer' && tx.fee"
+                                    caption
+                                    class="text-grey-6"
+                                >
+                                    {{ t('transactions.fee') }}: {{ formatFee(tx) }}
+                                </q-item-label>
+                                <q-item-label caption class="transaction-time">
+                                    {{ formatTime(tx.date) }}
+                                </q-item-label>
+                            </q-item-section>
+                        </q-item>
+                    </q-slide-item>
+                </div>
+            </section>
+        </template>
 
         <!-- Delete confirmation dialog -->
         <ModalConfirm
@@ -89,9 +89,11 @@
 </template>
 
 <script setup lang="ts">
+import { maskAmount } from 'src/composables/usePrivacy';
 import type { TransactionWithRelations } from 'src/types/transaction';
 import { CURRENCIES } from 'src/types/currency';
 import ModalConfirm from '../modals/ModalConfirm.vue';
+import { toneStyle } from 'src/services/tone';
 
 const props = withDefaults(
     defineProps<{
@@ -313,34 +315,6 @@ function debtSubtitle(tx: TransactionWithRelations): string {
 }
 
 /**
- * Gets the CSS class for the type indicator dot based on transaction type.
- * @param tx - The transaction to get the indicator class for
- * @returns The CSS class name for styling the colored dot
- */
-function getTypeIndicatorClass(tx: TransactionWithRelations): string {
-    switch (tx.type) {
-        case 'income':
-            return 'type-income';
-        case 'expense':
-            return 'type-expense';
-        case 'transfer':
-            return 'type-transfer';
-        case 'project':
-            return tx.projectTransactionType === 'injection'
-                ? 'type-project-injection'
-                : 'type-project-dividend';
-        case 'debt':
-            return debtGoesOut(tx) ? 'type-project-injection' : 'type-project-dividend';
-        case 'investment':
-            return tx.investmentTransactionType === 'buy'
-                ? 'type-investment-buy'
-                : 'type-investment-sell';
-        default:
-            return 'type-default';
-    }
-}
-
-/**
  * Gets the avatar background color for a transaction based on its type.
  * @param tx - The transaction to get the color for
  * @returns The Quasar color name or hex color value
@@ -355,6 +329,8 @@ function getTransactionColor(tx: TransactionWithRelations): string {
             return 'blue';
         case 'project':
             return tx.projectTransactionType === 'injection' ? 'orange' : 'purple';
+        case 'debt':
+            return 'amber';
         case 'investment':
             return tx.investmentTransactionType === 'buy' ? 'teal' : 'amber';
         default:
@@ -438,7 +414,7 @@ function getAmountClass(tx: TransactionWithRelations): string {
         case 'expense':
             return 'text-negative';
         case 'transfer':
-            return 'text-blue';
+            return 'text-info';
         case 'project':
             return tx.projectTransactionType === 'injection' ? 'text-negative' : 'text-positive';
         case 'debt':
@@ -465,12 +441,14 @@ function formatTransactionAmount(tx: TransactionWithRelations): string {
     const currencyInfo = CURRENCIES[currency];
     const prefix = getAmountPrefix(tx);
 
-    const formatted = new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency,
-        minimumFractionDigits: currencyInfo?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo?.decimals ?? 2,
-    }).format(tx.amount);
+    const formatted = maskAmount(
+        new Intl.NumberFormat(locale.value, {
+            style: 'currency',
+            currency,
+            minimumFractionDigits: currencyInfo?.decimals ?? 0,
+            maximumFractionDigits: currencyInfo?.decimals ?? 2,
+        }).format(tx.amount),
+    );
 
     return prefix + formatted;
 }
@@ -485,13 +463,13 @@ function getAmountPrefix(tx: TransactionWithRelations): string {
         case 'income':
             return '+';
         case 'expense':
-            return '-';
+            return '−';
         case 'project':
-            return tx.projectTransactionType === 'injection' ? '-' : '+';
+            return tx.projectTransactionType === 'injection' ? '−' : '+';
         case 'debt':
-            return debtGoesOut(tx) ? '-' : '+';
+            return debtGoesOut(tx) ? '−' : '+';
         case 'investment':
-            return tx.investmentTransactionType === 'buy' ? '-' : '+';
+            return tx.investmentTransactionType === 'buy' ? '−' : '+';
         default:
             return '';
     }
@@ -506,12 +484,14 @@ function formatPricePerUnit(tx: TransactionWithRelations): string {
     if (!tx.pricePerUnit) return '';
     const currency = tx.investment?.currency ?? settingsStore.defaultCurrency ?? 'XOF';
 
-    return new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-    }).format(tx.pricePerUnit);
+    return maskAmount(
+        new Intl.NumberFormat(locale.value, {
+            style: 'currency',
+            currency,
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 2,
+        }).format(tx.pricePerUnit),
+    );
 }
 
 /**
@@ -524,91 +504,76 @@ function formatFee(tx: TransactionWithRelations): string {
     const currency = tx.fromWallet?.currency ?? settingsStore.defaultCurrency ?? 'XOF';
     const currencyInfo = CURRENCIES[currency];
 
-    return new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency,
-        minimumFractionDigits: currencyInfo?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo?.decimals ?? 2,
-    }).format(tx.fee);
+    return maskAmount(
+        new Intl.NumberFormat(locale.value, {
+            style: 'currency',
+            currency,
+            minimumFractionDigits: currencyInfo?.decimals ?? 0,
+            maximumFractionDigits: currencyInfo?.decimals ?? 2,
+        }).format(tx.fee),
+    );
 }
 </script>
 
 <style lang="scss" scoped>
 .transaction-list {
-    .empty-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 48px 24px;
-        text-align: center;
-    }
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
 
-    .date-header {
-        font-weight: 600;
-        color: $text-secondary;
-        text-transform: capitalize;
-        padding: 16px 16px 8px;
-        font-size: 13px;
-    }
+.day-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
 
-    .transaction-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-weight: 500;
-        font-size: 15px;
-        color: $text-primary;
-    }
+.date-header {
+    margin: 0;
+    padding: 0 4px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+    color: $text-secondary;
+    text-transform: capitalize;
+}
 
-    .type-indicator {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
+.day-card {
+    background: $bg-card;
+    border-radius: $radius-tile;
+    overflow: hidden;
+}
 
-        &.type-income {
-            background-color: $positive;
-        }
+.tx-slide + .tx-slide {
+    border-top: 1px solid $border-light;
+}
 
-        &.type-expense {
-            background-color: $negative;
-        }
+.tx-row {
+    min-height: 64px;
+    padding: 10px 14px;
+    border-radius: 0;
+    background: $bg-card;
+}
 
-        &.type-transfer {
-            background-color: $info;
-        }
+.transaction-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: $text-primary;
+}
 
-        &.type-project-injection {
-            background-color: $warning;
-        }
+.transaction-subtitle {
+    font-size: 12px;
+    color: $text-secondary;
+}
 
-        &.type-project-dividend {
-            background-color: #9c27b0; // Purple
-        }
+.transaction-amount {
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+}
 
-        &.type-investment-buy {
-            background-color: $teal-6;
-        }
-
-        &.type-investment-sell {
-            background-color: $amber-8;
-        }
-
-        &.type-default {
-            background-color: $grey-5;
-        }
-    }
-
-    .transaction-subtitle {
-        font-size: 13px;
-        color: $text-secondary;
-        margin-left: 16px; // Align with title text after the dot
-    }
-
-    .transaction-amount {
-        font-weight: 600;
-        font-size: 15px;
-    }
+.transaction-time {
+    font-size: 11px;
 }
 </style>

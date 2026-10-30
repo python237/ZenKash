@@ -1,191 +1,196 @@
 <template>
-    <q-page class="q-pa-md">
+    <q-page class="zk-page">
+        <!-- Profile Section -->
+        <section class="settings-section">
+            <h2 class="section-title">{{ t('settings.profile') }}</h2>
+            <div class="settings-card">
+                <button type="button" class="settings-row" @click="showFirstNameDialog = true">
+                    <span class="zk-tile zk-tile--violet">
+                        <q-icon name="o_person" size="20px" />
+                    </span>
+                    <span class="settings-row__body">
+                        <span class="settings-row__title">{{ t('settings.firstName') }}</span>
+                        <span class="settings-row__value">
+                            {{ settingsStore.firstName ?? '—' }}
+                        </span>
+                    </span>
+                    <q-icon name="chevron_right" size="22px" class="settings-row__trail" />
+                </button>
+            </div>
+        </section>
+
         <!-- Currency Section -->
-        <div class="section-title">{{ t('settings.currency') }}</div>
+        <section class="settings-section">
+            <h2 class="section-title">{{ t('settings.currency') }}</h2>
+            <div class="settings-card">
+                <!-- Default Currency (read-only) -->
+                <div class="settings-row">
+                    <span class="zk-tile zk-tile--green">
+                        <q-icon name="o_payments" size="20px" />
+                    </span>
+                    <span class="settings-row__body">
+                        <span class="settings-row__title">{{ t('settings.defaultCurrency') }}</span>
+                        <span class="settings-row__value">{{ defaultCurrencyLabel }}</span>
+                    </span>
+                    <q-icon
+                        name="o_lock"
+                        size="18px"
+                        class="settings-row__trail"
+                        :aria-label="t('settings.currencyLocked')"
+                    />
+                </div>
 
-        <q-list bordered class="rounded-borders q-mb-lg">
-            <!-- Default Currency (read-only) -->
-            <q-item>
-                <q-item-section avatar>
-                    <q-icon name="currency_exchange" color="primary" />
-                </q-item-section>
-                <q-item-section>
-                    <q-item-label>{{ t('settings.defaultCurrency') }}</q-item-label>
-                    <q-item-label caption>{{ defaultCurrencyLabel }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                    <q-icon name="lock" color="grey-5" size="18px" />
-                </q-item-section>
-            </q-item>
-
-            <q-separator />
-
-            <!-- Exchange Rates -->
-            <q-item clickable v-ripple @click="goToExchangeRates">
-                <q-item-section avatar>
-                    <q-icon name="swap_horiz" color="orange" />
-                </q-item-section>
-                <q-item-section>
-                    <q-item-label>{{ t('settings.exchangeRates') }}</q-item-label>
-                    <q-item-label caption
-                        >{{ ratesCount }}
-                        {{ t('settings.exchangeRates').toLowerCase() }}</q-item-label
-                    >
-                </q-item-section>
-                <q-item-section side>
-                    <q-icon name="chevron_right" color="grey-5" />
-                </q-item-section>
-            </q-item>
-        </q-list>
+                <!-- Exchange Rates -->
+                <button type="button" class="settings-row" @click="goToExchangeRates">
+                    <span class="zk-tile zk-tile--amber">
+                        <q-icon name="swap_horiz" size="20px" />
+                    </span>
+                    <span class="settings-row__body">
+                        <span class="settings-row__title">{{ t('settings.exchangeRates') }}</span>
+                        <span class="settings-row__value">
+                            {{ t('settings.ratesDefined', { count: ratesCount }, ratesCount) }}
+                        </span>
+                    </span>
+                    <q-icon name="chevron_right" size="22px" class="settings-row__trail" />
+                </button>
+            </div>
+        </section>
 
         <!-- App Section -->
-        <div class="section-title">{{ t('more.application') }}</div>
+        <section class="settings-section">
+            <h2 class="section-title">{{ t('more.application') }}</h2>
+            <div class="settings-card">
+                <!-- Language -->
+                <div class="settings-row">
+                    <span class="zk-tile zk-tile--blue">
+                        <q-icon name="language" size="20px" />
+                    </span>
+                    <span class="settings-row__body">
+                        <span class="settings-row__title">{{ t('settings.language') }}</span>
+                        <span class="settings-row__value">Français</span>
+                    </span>
+                </div>
 
-        <q-list bordered class="rounded-borders q-mb-lg">
-            <!-- Language -->
-            <q-item>
-                <q-item-section avatar>
-                    <q-icon name="language" color="blue" />
-                </q-item-section>
-                <q-item-section>
-                    <q-item-label>{{ t('settings.language') }}</q-item-label>
-                    <q-item-label caption>Français</q-item-label>
-                </q-item-section>
-            </q-item>
-
-            <q-separator />
-
-            <!-- Daily Reminder (native only) -->
-            <q-item v-if="isNativePlatform">
-                <q-item-section avatar>
-                    <q-icon name="notifications_active" color="purple" />
-                </q-item-section>
-                <q-item-section>
-                    <q-item-label>{{ t('settings.reminder') }}</q-item-label>
-                    <q-item-label caption>{{ t('settings.reminderDescription') }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
+                <!-- Daily Reminder (native only) -->
+                <div v-if="isNativePlatform" class="settings-row">
+                    <span class="zk-tile zk-tile--violet">
+                        <q-icon name="o_notifications_active" size="20px" />
+                    </span>
+                    <span class="settings-row__body">
+                        <span class="settings-row__title">{{ t('settings.reminder') }}</span>
+                        <span class="settings-row__value">
+                            {{ t('settings.reminderDescription') }}
+                        </span>
+                    </span>
                     <q-toggle
                         :model-value="reminderEnabled"
                         :disable="!canScheduleAlarms && !reminderEnabled"
+                        :aria-label="t('settings.reminder')"
                         color="primary"
                         @update:model-value="toggleReminder"
                     />
-                </q-item-section>
-            </q-item>
+                </div>
 
-            <!-- Alarm permission warning -->
-            <q-item
-                v-if="isNativePlatform && !canScheduleAlarms"
-                clickable
-                v-ripple
-                @click="openAlarmSettings"
-            >
-                <q-item-section avatar>
-                    <q-icon name="warning" color="orange" />
-                </q-item-section>
-                <q-item-section>
-                    <q-item-label class="text-orange">{{
-                        t('settings.alarmPermissionRequired')
-                    }}</q-item-label>
-                    <q-item-label caption>{{ t('settings.openAlarmSettings') }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                    <q-icon name="chevron_right" color="grey-5" />
-                </q-item-section>
-            </q-item>
-
-            <q-separator />
-
-            <!-- About -->
-            <q-item clickable v-ripple>
-                <q-item-section avatar>
-                    <q-icon name="info" color="grey" />
-                </q-item-section>
-                <q-item-section>
-                    <q-item-label>{{ t('settings.about') }}</q-item-label>
-                    <q-item-label caption>Zenkash v1.0.0</q-item-label>
-                </q-item-section>
-            </q-item>
-        </q-list>
+                <!-- Alarm permission warning -->
+                <button
+                    v-if="isNativePlatform && !canScheduleAlarms"
+                    type="button"
+                    class="settings-row"
+                    @click="openAlarmSettings"
+                >
+                    <span class="zk-tile zk-tile--orange">
+                        <q-icon name="o_warning" size="20px" />
+                    </span>
+                    <span class="settings-row__body">
+                        <span class="settings-row__title settings-row__title--warning">
+                            {{ t('settings.alarmPermissionRequired') }}
+                        </span>
+                        <span class="settings-row__value">
+                            {{ t('settings.openAlarmSettings') }}
+                        </span>
+                    </span>
+                    <q-icon name="chevron_right" size="22px" class="settings-row__trail" />
+                </button>
+            </div>
+        </section>
 
         <!-- Security & Data Section -->
-        <div class="section-title">{{ t('settings.securityData') }}</div>
-
-        <q-list bordered class="rounded-borders q-mb-lg">
-            <!-- App lock -->
-            <q-item>
-                <q-item-section avatar>
-                    <q-icon name="lock" color="green" />
-                </q-item-section>
-                <q-item-section>
-                    <q-item-label>{{ t('appLock.title') }}</q-item-label>
-                    <q-item-label caption>{{ t('appLock.description') }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
+        <section class="settings-section">
+            <h2 class="section-title">{{ t('settings.securityData') }}</h2>
+            <div class="settings-card">
+                <!-- App lock -->
+                <div class="settings-row">
+                    <span class="zk-tile zk-tile--green">
+                        <q-icon name="o_lock" size="20px" />
+                    </span>
+                    <span class="settings-row__body">
+                        <span class="settings-row__title">{{ t('appLock.title') }}</span>
+                        <span class="settings-row__value">{{ t('appLock.description') }}</span>
+                    </span>
                     <q-toggle
                         :model-value="appLockEnabled"
+                        :aria-label="t('appLock.title')"
                         color="primary"
                         @update:model-value="toggleAppLock"
                     />
-                </q-item-section>
-            </q-item>
+                </div>
 
-            <template v-if="appLockEnabled">
-                <q-separator />
-                <q-item clickable v-ripple @click="openChangePin">
-                    <q-item-section avatar>
-                        <q-icon name="pin" color="teal" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>{{ t('appLock.changePin') }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side>
-                        <q-icon name="chevron_right" color="grey-5" />
-                    </q-item-section>
-                </q-item>
-            </template>
+                <!-- Change PIN -->
+                <button
+                    v-if="appLockEnabled"
+                    type="button"
+                    class="settings-row"
+                    @click="openChangePin"
+                >
+                    <span class="zk-tile">
+                        <q-icon name="o_pin" size="20px" />
+                    </span>
+                    <span class="settings-row__body">
+                        <span class="settings-row__title">{{ t('appLock.changePin') }}</span>
+                    </span>
+                    <q-icon name="chevron_right" size="22px" class="settings-row__trail" />
+                </button>
 
-            <q-separator />
+                <!-- Export -->
+                <button type="button" class="settings-row" @click="openExport">
+                    <span class="zk-tile zk-tile--blue">
+                        <q-icon name="o_file_download" size="20px" />
+                    </span>
+                    <span class="settings-row__body">
+                        <span class="settings-row__title">{{ t('backup.export') }}</span>
+                        <span class="settings-row__value">{{ t('backup.exportCaption') }}</span>
+                    </span>
+                    <q-icon name="chevron_right" size="22px" class="settings-row__trail" />
+                </button>
 
-            <!-- Export -->
-            <q-item clickable v-ripple @click="openExport">
-                <q-item-section avatar>
-                    <q-icon name="download" color="blue" />
-                </q-item-section>
-                <q-item-section>
-                    <q-item-label>{{ t('backup.export') }}</q-item-label>
-                    <q-item-label caption>{{ t('backup.exportCaption') }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                    <q-icon name="chevron_right" color="grey-5" />
-                </q-item-section>
-            </q-item>
+                <!-- Import (replaces every current data) -->
+                <button type="button" class="settings-row" @click="openImport">
+                    <span class="zk-tile zk-tile--orange">
+                        <q-icon name="o_file_upload" size="20px" />
+                    </span>
+                    <span class="settings-row__body">
+                        <span class="settings-row__title">{{ t('backup.import') }}</span>
+                        <span class="settings-row__value settings-row__value--warning">
+                            {{ t('backup.importWarning') }}
+                        </span>
+                    </span>
+                    <q-icon name="chevron_right" size="22px" class="settings-row__trail" />
+                </button>
+            </div>
+        </section>
 
-            <q-separator />
-
-            <!-- Import -->
-            <q-item clickable v-ripple @click="openImport">
-                <q-item-section avatar>
-                    <q-icon name="upload" color="deep-purple" />
-                </q-item-section>
-                <q-item-section>
-                    <q-item-label>{{ t('backup.import') }}</q-item-label>
-                    <q-item-label caption>{{ t('backup.importCaption') }}</q-item-label>
-                </q-item-section>
-                <q-item-section side>
-                    <q-icon name="chevron_right" color="grey-5" />
-                </q-item-section>
-            </q-item>
-        </q-list>
+        <!-- About -->
+        <div class="app-version">Zenkash v{{ appVersion }}</div>
 
         <!-- Dialogs -->
         <PinDialog v-model="showPinDialog" :mode="pinMode" />
         <BackupDialog v-model="showBackupDialog" :mode="backupMode" />
+        <FirstNameDialog v-model="showFirstNameDialog" editing />
     </q-page>
 </template>
 
 <script setup lang="ts">
+import { version } from '../../../../package.json';
 import { CURRENCIES } from 'src/types/currency';
 import { useSettingsStore } from 'src/stores/settings';
 import { useExchangeRateStore } from 'src/stores/exchange-rate';
@@ -193,9 +198,11 @@ import { useReminder } from 'src/composables/useReminder';
 import { useAppLock } from 'src/composables/useAppLock';
 import PinDialog from 'src/components/app-lock/PinDialog.vue';
 import BackupDialog from 'src/components/settings/BackupDialog.vue';
+import FirstNameDialog from 'src/components/onboarding/FirstNameDialog.vue';
 
 const { t } = useI18n();
 const router = useRouter();
+const appVersion = version;
 usePage({ title: t('settings.title'), showHeader: true, showBack: true });
 
 const settingsStore = useSettingsStore();
@@ -208,6 +215,7 @@ const pinMode = ref<'set' | 'change' | 'disable'>('set');
 
 // Backup
 const showBackupDialog = ref(false);
+const showFirstNameDialog = ref(false);
 const backupMode = ref<'export' | 'import'>('export');
 
 // Reminder system
@@ -305,17 +313,89 @@ function openImport(): void {
 </script>
 
 <style lang="scss" scoped>
-.section-title {
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--q-grey-7);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.rounded-borders {
-    border-radius: 12px;
-    overflow: hidden;
+.section-title {
+    margin: 0;
+    padding: 0 4px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: $text-secondary;
+}
+
+.settings-card {
+    background: $bg-card;
+    border-radius: $radius-card;
+    padding: 2px 16px;
+    display: flex;
+    flex-direction: column;
+}
+
+.settings-row {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 64px;
+    padding: 10px 0;
+    border: 0;
+    background: transparent;
+    font-family: inherit;
+    text-align: left;
+    color: $text-primary;
+
+    & + & {
+        border-top: 1px solid $border-light;
+    }
+
+    &:is(button) {
+        cursor: pointer;
+    }
+
+    &__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    &__title {
+        font-size: 14px;
+        font-weight: 600;
+
+        &--warning {
+            color: $negative;
+        }
+    }
+
+    &__value {
+        font-size: 12px;
+        line-height: 1.4;
+        color: $text-secondary;
+
+        &--warning {
+            color: $negative;
+        }
+    }
+
+    &__trail {
+        flex-shrink: 0;
+        color: $text-muted;
+    }
+}
+
+.app-version {
+    text-align: center;
+    font-size: 12px;
+    color: $text-muted;
+    padding: 8px 0 16px;
 }
 </style>

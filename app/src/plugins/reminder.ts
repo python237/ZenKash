@@ -39,6 +39,14 @@ export interface HasTransactionResult {
 }
 
 /**
+ * Reminders fired by the native alarm since the last call.
+ */
+export interface FiredRemindersResult {
+    /** Epoch milliseconds of each fired reminder */
+    timestamps: number[];
+}
+
+/**
  * Result of checking alarm scheduling permission.
  */
 export interface CanScheduleAlarmsResult {
@@ -103,6 +111,11 @@ export interface ReminderPluginInterface {
      * @returns Promise resolving when the alert is dismissed
      */
     dismissAlert(): Promise<void>;
+
+    /**
+     * Returns the reminders fired since the last call, then forgets them.
+     */
+    consumeFiredReminders(): Promise<FiredRemindersResult>;
 }
 
 /**
@@ -154,6 +167,10 @@ class ReminderPluginWeb implements ReminderPluginInterface {
 
     dismissAlert(): Promise<void> {
         return Promise.resolve();
+    }
+
+    consumeFiredReminders(): Promise<FiredRemindersResult> {
+        return Promise.resolve({ timestamps: [] });
     }
 }
 

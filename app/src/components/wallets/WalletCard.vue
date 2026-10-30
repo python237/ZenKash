@@ -1,26 +1,17 @@
 <template>
-    <q-card class="wallet-card" flat bordered @click="emit('click')">
-        <q-card-section class="row items-center no-wrap q-pa-md">
-            <!-- Icon -->
-            <q-avatar class="bg-primary-1" size="44px">
-                <q-icon :name="wallet.icon" color="primary" size="22px" />
-            </q-avatar>
-
-            <!-- Content -->
-            <div class="wallet-content q-ml-md">
-                <div class="wallet-name">{{ wallet.name }}</div>
-                <div class="wallet-balance">{{ formattedBalance }}</div>
-            </div>
-
-            <!-- Chevron -->
-            <q-icon name="chevron_right" color="grey-5" size="20px" class="q-ml-auto" />
-        </q-card-section>
-    </q-card>
+    <button type="button" class="wallet-card" @click="emit('click')">
+        <span class="zk-tile zk-tile--blue">
+            <q-icon :name="wallet.icon" size="20px" />
+        </span>
+        <span class="wallet-card__body">
+            <span class="wallet-card__name">{{ wallet.name }}</span>
+            <span class="wallet-card__balance zk-amount">{{ formattedBalance }}</span>
+        </span>
+    </button>
 </template>
 
 <script setup lang="ts">
 import type { Wallet } from 'src/types/wallet';
-import { CURRENCIES } from 'src/types/currency';
 
 const props = defineProps<{
     wallet: Wallet;
@@ -31,55 +22,53 @@ const emit = defineEmits<{
     click: [];
 }>();
 
-// Format balance with wallet's currency
-const formattedBalance = computed(() => {
-    const amount = props.balance ?? 0;
-    const currency = CURRENCIES[props.wallet.currency];
-    const decimals = currency?.decimals ?? 0;
+const { formatCurrency } = useCurrency();
 
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: props.wallet.currency,
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-    }).format(amount);
-});
+// Balance in the wallet's own currency
+const formattedBalance = computed(() => formatCurrency(props.balance ?? 0, props.wallet.currency));
 </script>
 
 <style lang="scss" scoped>
 .wallet-card {
-    border-radius: 12px;
-    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 22px;
+    min-height: 132px;
+    padding: 16px;
+    border: 0;
+    border-radius: $radius-card;
+    background: $bg-card;
+    color: $text-primary;
+    font-family: inherit;
+    text-align: left;
     cursor: pointer;
-
-    &:hover {
-        background-color: rgba(0, 0, 0, 0.02);
-    }
+    transition: transform 0.15s ease;
 
     &:active {
         transform: scale(0.98);
     }
-}
 
-.wallet-content {
-    flex: 1;
-    min-width: 0;
-}
+    &__body {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
 
-.wallet-name {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--q-dark);
-    line-height: 1.3;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+    &__name {
+        font-size: 13px;
+        font-weight: 600;
+        color: $text-secondary;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 
-.wallet-balance {
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--q-grey-7);
-    margin-top: 2px;
+    &__balance {
+        font-size: 17px;
+        letter-spacing: -0.02em;
+        overflow-wrap: anywhere;
+    }
 }
 </style>

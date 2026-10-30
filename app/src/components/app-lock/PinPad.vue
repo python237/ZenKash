@@ -1,12 +1,16 @@
 <template>
-    <div class="pin-pad column items-center">
-        <div class="text-subtitle1 text-weight-medium">{{ title }}</div>
-        <div v-if="subtitle" class="text-caption text-grey-6 q-mt-xs text-center">
+    <div class="pin-pad column items-center" :class="{ 'pin-pad--dark': dark }">
+        <div class="pin-title">{{ title }}</div>
+        <div v-if="subtitle" class="pin-subtitle q-mt-xs text-center">
             {{ subtitle }}
         </div>
 
         <!-- Dots -->
-        <div class="pin-dots q-my-md">
+        <div
+            class="pin-dots"
+            role="img"
+            :aria-label="t('appLock.digitsEntered', { count: modelValue.length, total: length })"
+        >
             <span
                 v-for="i in length"
                 :key="i"
@@ -15,26 +19,25 @@
             />
         </div>
 
-        <div
-            class="pin-error text-caption text-negative"
-            :class="{ 'pin-error--visible': !!error }"
-        >
+        <div class="pin-error text-caption" :class="{ 'pin-error--visible': !!error }" role="alert">
             {{ error }}
         </div>
 
         <!-- Keypad -->
-        <div class="pin-keys q-mt-sm">
+        <div class="pin-keys">
             <button
                 v-for="key in keys"
                 :key="key.value || 'empty'"
                 v-ripple
                 type="button"
                 class="pin-key"
-                :class="{ 'pin-key--empty': key.value === '' }"
+                :class="{ 'pin-key--empty': key.value === '', 'pin-key--del': key.value === 'del' }"
                 :disabled="key.value === ''"
+                :aria-hidden="key.value === '' ? 'true' : undefined"
+                :aria-label="key.value === 'del' ? t('appLock.deleteDigit') : undefined"
                 @click="press(key.value)"
             >
-                <q-icon v-if="key.icon" :name="key.icon" size="24px" />
+                <q-icon v-if="key.icon" :name="key.icon" :size="dark ? '26px' : '24px'" />
                 <span v-else>{{ key.digit }}</span>
             </button>
         </div>
@@ -49,11 +52,16 @@ const props = withDefaults(
         subtitle?: string | undefined;
         error?: string | undefined;
         length?: number;
+        /** Renders the pad for a dark background (lock screen). */
+        dark?: boolean;
     }>(),
     {
         length: 4,
+        dark: false,
     },
 );
+
+const { t } = useI18n();
 
 const emit = defineEmits<{
     'update:modelValue': [value: string];
@@ -72,7 +80,7 @@ const keys = [
     { value: '9', digit: '9', icon: '' },
     { value: '', digit: '', icon: '' },
     { value: '0', digit: '0', icon: '' },
-    { value: 'del', digit: '', icon: 'backspace' },
+    { value: 'del', digit: '', icon: 'o_backspace' },
 ];
 
 /**
@@ -98,16 +106,31 @@ function press(value: string): void {
 </script>
 
 <style lang="scss" scoped>
+// Error tone readable on the dark hero background
+$negative-on-dark: #f0a283;
+
+.pin-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: $text-primary;
+}
+
+.pin-subtitle {
+    font-size: 13px;
+    color: $text-secondary;
+}
+
 .pin-dots {
     display: flex;
     gap: 16px;
+    margin: 16px 0;
 }
 
 .pin-dot {
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    border: 2px solid $grey-5;
+    border: 2px solid $border-color;
     transition: all 0.15s ease;
 
     &--filled {
@@ -124,6 +147,7 @@ function press(value: string): void {
 .pin-error {
     min-height: 18px;
     opacity: 0;
+    color: $negative;
 
     &--visible {
         opacity: 1;
@@ -135,6 +159,7 @@ function press(value: string): void {
     grid-template-columns: repeat(3, 72px);
     gap: 12px;
     justify-content: center;
+    margin-top: 8px;
 }
 
 .pin-key {
@@ -142,21 +167,103 @@ function press(value: string): void {
     width: 72px;
     border: none;
     border-radius: 50%;
-    background: rgba($primary, 0.06);
+    background: $bg-subtle;
     color: $text-primary;
+    font-family: inherit;
     font-size: 24px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
     position: relative;
     overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 
     &:active {
-        background: rgba($primary, 0.16);
+        background: $primary-soft;
+    }
+
+    &:focus-visible {
+        outline: 2px solid $primary;
+        outline-offset: 2px;
     }
 
     &--empty {
         visibility: hidden;
         background: transparent;
+    }
+}
+
+// Dark variant (lock screen)
+.pin-pad--dark {
+    flex: 1;
+    width: 100%;
+
+    .pin-title {
+        font-size: 22px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+    }
+
+    .pin-subtitle {
+        color: $hero-muted;
+    }
+
+    .pin-dots {
+        gap: 18px;
+        margin: 28px 0 12px;
+    }
+
+    .pin-dot {
+        border-color: #3a4a44;
+
+        &--filled {
+            background-color: $hero-accent;
+            border-color: $hero-accent;
+        }
+
+        &--error {
+            background-color: $negative-on-dark;
+            border-color: $negative-on-dark;
+        }
+    }
+
+    .pin-error {
+        color: $negative-on-dark;
+    }
+
+    .pin-keys {
+        grid-template-columns: repeat(3, 76px);
+        gap: 18px 28px;
+        // Pushes the keypad to the bottom of the screen
+        margin-top: auto;
+        padding-top: 24px;
+    }
+
+    .pin-key {
+        width: 76px;
+        height: 76px;
+        background: #1e2925;
+        color: #ffffff;
+        font-size: 26px;
+
+        &:active {
+            background: #2c3a35;
+        }
+
+        &:focus-visible {
+            outline-color: $hero-accent;
+        }
+
+        &--del {
+            background: transparent;
+            color: $hero-muted;
+        }
+
+        &--empty {
+            background: transparent;
+        }
     }
 }
 </style>

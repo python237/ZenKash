@@ -1,6 +1,8 @@
 export default {
     // Common
     common: {
+        notFound: 'Not found',
+        seeAll: 'See all',
         save: 'Save',
         cancel: 'Cancel',
         delete: 'Delete',
@@ -24,6 +26,8 @@ export default {
         actions: 'Actions',
         all: 'All',
         apply: 'Apply',
+        options: 'Options',
+        restore: 'Reactivate',
     },
 
     // Validation
@@ -38,6 +42,9 @@ export default {
 
     // Navigation
     nav: {
+        home: 'Home',
+        netWorth: 'Net worth',
+        main: 'Main navigation',
         report: 'Report',
         transactions: 'Transactions',
         investments: 'Investments',
@@ -68,6 +75,10 @@ export default {
 
     // Transactions
     transactions: {
+        searchPlaceholder: 'Search transactions',
+        filterLabel: 'Filter by type',
+        inflows: 'Money in',
+        outflows: 'Money out',
         title: 'Transactions',
         income: 'Income',
         expense: 'Expense',
@@ -104,6 +115,20 @@ export default {
 
     // Loans and debts
     debts: {
+        direction: 'Direction',
+        counterpartyPlaceholder: 'Name',
+        directionChoice: {
+            lent: 'I lent',
+            borrowed: 'I borrowed',
+        },
+        directionHint: {
+            lent: 'The money leaves your wallet and counts as a receivable in your net worth.',
+            borrowed: 'The money enters your wallet and counts as a debt in your net worth.',
+        },
+        walletLabel: {
+            lent: 'Leaves from',
+            borrowed: 'Arrives on',
+        },
         title: 'Loans & debts',
         subtitle: 'Money lent and borrowed',
         addDebt: 'Record a loan',
@@ -121,6 +146,12 @@ export default {
         settled: 'Settled',
         overdue: 'Overdue',
         daysLeft: '{count} day(s) left',
+        daysLeftShort: 'D−{count}',
+        dueOn: 'Due {date}',
+        repayAction: {
+            lent: 'Collect',
+            borrowed: 'Repay',
+        },
         addRepayment: 'Repayment',
         repaymentWalletHint: {
             lent: 'The wallet you were repaid into',
@@ -131,6 +162,11 @@ export default {
         undoRepaymentHint: 'The wallet balance is restored and the loan is open again.',
         totalReceivable: 'Owed to you',
         totalPayable: 'You owe',
+        statusFilter: 'Filter by status',
+        filterOpen: 'Open',
+        filterSettled: 'Settled',
+        noOpenDebts: 'No open loans',
+        noSettledDebts: 'No settled loans',
         openCount: '{count} open',
         deleteConfirm: 'Are you sure you want to delete this loan?',
         deleteTransactionsQuestion: 'Also delete the {count} linked transaction(s)?',
@@ -167,6 +203,7 @@ export default {
 
     // Wallets
     wallets: {
+        latestOperations: 'Latest operations',
         title: 'Wallets',
         balance: 'Balance',
         initialBalance: 'Initial Balance',
@@ -230,6 +267,8 @@ export default {
             'It will be deactivated: it keeps labelling the history but is no longer offered for new transactions. You can bring it back at any time.',
         masterCategory: 'Master Category',
         icon: 'Icon',
+        searchPlaceholder: 'Search a category',
+        noResults: 'No category matches your search',
     },
 
     // Master Categories
@@ -271,6 +310,7 @@ export default {
         byMasterCategory: 'By Master Category',
         deleteConfirm: 'Are you sure you want to delete this budget?',
         exceededWarning: '{count} budget(s) exceeded',
+        ofTotal: 'of {amount}',
     },
 
     // Investments
@@ -327,6 +367,9 @@ export default {
         returnOnInvestment: 'Return on Investment',
         netGain: 'Net Gain',
         projectCount: 'projects',
+        dividends: 'Dividends',
+        paidBack: 'paid back',
+        recovered: '{percent} recovered',
         invested: 'Invested',
         history: 'Transaction History',
         noTransactions: 'No transactions yet',
@@ -378,6 +421,17 @@ export default {
 
     // Report / Dashboard
     report: {
+        greetingName: 'Hello, {name}',
+        hideAmounts: 'Hide amounts',
+        showAmounts: 'Show amounts',
+        greeting: 'Hello',
+        availableBalance: 'Available balance',
+        walletsCount: '{count} account | {count} accounts',
+        quickActions: 'Quick actions',
+        previousMonth: 'Previous month',
+        nextMonth: 'Next month',
+        quickLoan: 'Loan',
+        recent: 'Recent',
         title: 'Report',
         selectMonth: 'Select Month',
         totalBalance: 'Total Balance',
@@ -509,6 +563,7 @@ export default {
 
     // Net Worth
     netWorth: {
+        sections: 'Net worth sections',
         title: 'Net Worth',
         subtitle: 'Track how your wealth evolves over time',
         total: 'Total Net Worth',
@@ -701,6 +756,8 @@ export default {
 
     // Settings
     settings: {
+        profile: 'Profile',
+        firstName: 'First name',
         title: 'Settings',
         language: 'Language',
         currency: 'Currency',
@@ -725,6 +782,10 @@ export default {
         alarmPermissionRequired: 'Exact alarm permission required',
         openAlarmSettings: 'Open settings',
         securityData: 'Security & Data',
+        ratesDefined: 'No rate defined | {count} rate defined | {count} rates defined',
+        exchangeRatesHint:
+            'Rates convert to your default currency ({currency}) for totals and net worth.',
+        updatedOn: 'Updated {date}',
     },
 
     // App lock
@@ -741,6 +802,9 @@ export default {
         confirmPin: 'Confirm your PIN',
         wrongPin: 'Wrong PIN',
         pinMismatch: 'PINs do not match',
+        lockedSubtitle: 'Zenkash is locked',
+        deleteDigit: 'Delete',
+        digitsEntered: '{count} of {total} digits entered',
     },
 
     // Backup
@@ -763,15 +827,41 @@ export default {
         invalidFile: 'Invalid backup file',
     },
 
+    // Notification history
+    notifications: {
+        title: 'Notifications',
+        empty: 'No notifications',
+        emptyHint: 'Evening reminders and recurring items will show up here.',
+        clear: 'Clear all',
+        clearTitle: 'Clear notifications',
+        clearMessage: 'The whole notification history will be deleted.',
+        dailyReminderTitle: 'Evening reminder',
+        dailyReminderText: 'No transaction recorded today: remember to log your spending.',
+        recurringPostedTitle: 'Recurring item recorded',
+        recurringPostedText:
+            '{label} · {amount} added automatically | {label} · {amount} added automatically ({count} times)',
+        recurringDueTitle: 'Recurring item due',
+        recurringDueText: '{label} · {amount} is due.',
+    },
+
     // Onboarding
     onboarding: {
-        welcomeTitle: 'Welcome to Zenkash',
-        welcomeSubtitle: 'Manage your personal finances, investments, and projects with ease.',
+        firstNameTitle: 'What’s your first name?',
+        firstNameHint:
+            'Your first name is only used to greet you in the app. It stays on your phone.',
+        firstNamePlaceholder: 'First name',
+        continue: 'Continue',
+        welcomeTitle: 'Your money,\nfinally at peace.',
+        welcomeSubtitle:
+            'Expenses, investments, projects and loans: your whole net worth in one place, stress-free.',
+        welcomePrivacy: 'Your data stays on your phone.',
         getStarted: 'Get Started',
-        currencyTitle: 'Choose Your Currency',
+        currencyTitle: "What's your currency?",
         currencyDescription:
-            'This currency will be used by default for all your calculations and reports.',
+            'All your totals and your net worth will be calculated in this currency.',
         currencyWarning: 'This choice is permanent and cannot be changed.',
+        otherCurrencies: 'Other currencies ({count})',
+        stepProgress: 'Step {current} of {total}',
     },
 
     // Messages

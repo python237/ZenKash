@@ -120,9 +120,9 @@
                     <q-item v-for="tx in transactions" :key="tx.id">
                         <q-item-section avatar>
                             <q-avatar
-                                :color="tx.type === 'buy' ? 'positive' : 'negative'"
-                                text-color="white"
+                                :style="toneStyle(tx.type === 'buy' ? 'positive' : 'negative')"
                                 size="36px"
+                                class="zk-avatar"
                             >
                                 <q-icon :name="tx.type === 'buy' ? 'add' : 'remove'" size="20px" />
                             </q-avatar>
@@ -194,6 +194,8 @@
 </template>
 
 <script setup lang="ts">
+import { maskAmount } from 'src/composables/usePrivacy';
+import { toneStyle } from 'src/services/tone';
 import type { InvestmentTransactionType, RateHistory } from 'src/types/investment';
 import { CURRENCIES } from 'src/types/currency';
 import { useInvestmentStore } from 'src/stores/investment';
@@ -230,11 +232,7 @@ const transactions = computed(() =>
 );
 
 // Page title
-watchEffect(() => {
-    if (investment.value) {
-        usePage({ title: investment.value.label, showHeader: true, showBack: true });
-    }
-});
+usePage({ title: () => investment.value?.label ?? '', showHeader: true, showBack: true });
 
 // Load data
 onMounted(async () => {
@@ -286,12 +284,14 @@ const currency = computed(() => {
  */
 function formatAmount(amount: number): string {
     if (!investment.value) return '0';
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: investment.value.currency,
-        minimumFractionDigits: currency.value?.decimals ?? 0,
-        maximumFractionDigits: currency.value?.decimals ?? 2,
-    }).format(amount);
+    return maskAmount(
+        new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: investment.value.currency,
+            minimumFractionDigits: currency.value?.decimals ?? 0,
+            maximumFractionDigits: currency.value?.decimals ?? 2,
+        }).format(amount),
+    );
 }
 
 /**

@@ -1,17 +1,36 @@
 <template>
-    <q-page class="q-pa-md">
+    <q-page class="zk-page">
         <!-- Info banner: game wallets are excluded from reports -->
-        <q-banner v-if="games.length > 0" dense rounded class="info-banner q-mb-md">
-            <template #avatar>
-                <q-icon name="info" color="primary" />
-            </template>
-            {{ t('games.excludedHint') }}
-        </q-banner>
+        <div v-if="games.length > 0" class="info-banner">
+            <q-icon name="o_info" size="18px" class="info-banner__icon" />
+            <span>{{ t('games.excludedHint') }}</span>
+        </div>
+
+        <!-- Totals -->
+        <div v-if="games.length > 0" class="summary-card">
+            <div class="summary-card__item">
+                <span class="zk-caption">{{ t('report.totalBalance') }}</span>
+                <span class="zk-amount summary-card__amount">
+                    {{ formatCurrency(totalBalance) }}
+                </span>
+            </div>
+            <div class="summary-card__item">
+                <span class="zk-caption">{{ t('games.netResult') }}</span>
+                <span
+                    class="zk-amount summary-card__amount"
+                    :class="{ 'text-positive': totalNet > 0, 'text-negative': totalNet < 0 }"
+                >
+                    {{ formattedTotalNet }}
+                </span>
+            </div>
+        </div>
 
         <!-- Games List -->
-        <div v-if="games.length === 0" class="empty-state">
-            <q-icon name="casino" size="64px" color="grey-4" />
-            <div class="text-grey-6 q-mt-md">{{ t('games.noGames') }}</div>
+        <div v-if="games.length === 0" class="zk-empty">
+            <span class="zk-empty__icon">
+                <q-icon name="o_casino" size="30px" />
+            </span>
+            <span class="zk-empty__title">{{ t('games.noGames') }}</span>
         </div>
 
         <div v-else class="game-list">
@@ -20,15 +39,9 @@
                 :key="game.id"
                 :game="game"
                 :currency="defaultCurrency"
-                class="q-mb-sm"
                 @click="goToDetail(game)"
             />
         </div>
-
-        <!-- Add FAB -->
-        <q-page-sticky position="bottom-right" :offset="[18, 18]">
-            <BtnFab icon="add" @click="openCreate" />
-        </q-page-sticky>
 
         <!-- Create Dialog -->
         <GameDialog v-model="showDialog" :game="null" @saved="onGameSaved" />
@@ -40,11 +53,15 @@ import type { GameWithStats } from 'src/types/game';
 import { CurrencyCode } from 'src/types/currency';
 import GameCard from 'src/components/games/GameCard.vue';
 import GameDialog from 'src/components/games/GameDialog.vue';
-import BtnFab from 'src/components/buttons/BtnFab.vue';
 
 const { t } = useI18n();
 const router = useRouter();
-usePage({ title: t('games.title'), showHeader: true, showBack: true });
+usePage({
+    title: t('games.title'),
+    showHeader: true,
+    showBack: true,
+    actions: [{ icon: 'add', label: t('common.add'), onClick: () => openCreate() }],
+});
 
 const gameStore = useGameStore();
 const betStore = useBetStore();
@@ -69,6 +86,17 @@ const games = computed(() => gameStore.getGamesWithStats);
 
 // Default currency
 const defaultCurrency = computed(() => settingsStore.defaultCurrency ?? CurrencyCode.XOF);
+
+// Totals across every game (amounts as shown on each game card)
+const { formatCurrency } = useCurrency();
+const totalBalance = computed(() => games.value.reduce((sum, game) => sum + game.balance, 0));
+const totalNet = computed(() => games.value.reduce((sum, game) => sum + game.netResult, 0));
+
+/** Net result with an explicit sign (true minus for losses). */
+const formattedTotalNet = computed(() => {
+    const sign = totalNet.value > 0 ? '+' : totalNet.value < 0 ? '−' : '';
+    return `${sign}${formatCurrency(Math.abs(totalNet.value))}`;
+});
 
 /**
  * Navigates to the detail page for a specific game.
@@ -99,21 +127,53 @@ function onGameSaved(): void {
 
 <style lang="scss" scoped>
 .info-banner {
-    background: var(--q-primary-1, rgba(99, 102, 241, 0.08));
-    font-size: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    background: $amber-soft;
+    color: #6b4600;
+    font-size: 13px;
+    line-height: 1.5;
+
+    &__icon {
+        flex-shrink: 0;
+        margin-top: 1px;
+    }
 }
 
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 24px;
-    text-align: center;
+.summary-card {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+    padding: 18px;
+    border-radius: $radius-card;
+    background: $bg-card;
+
+    &__item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    &__amount {
+        font-size: 20px;
+        letter-spacing: -0.02em;
+        overflow-wrap: anywhere;
+    }
 }
 
 .game-list {
     display: flex;
     flex-direction: column;
+    padding: 4px 14px;
+    border-radius: $radius-card;
+    background: $bg-card;
+
+    > * + * {
+        border-top: 1px solid $border-light;
+    }
 }
 </style>

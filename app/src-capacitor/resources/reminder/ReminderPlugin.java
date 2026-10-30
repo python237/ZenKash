@@ -9,6 +9,7 @@ import android.os.Build;
 import android.provider.Settings;
 import android.util.Log;
 
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -30,6 +31,7 @@ public class ReminderPlugin extends Plugin {
     private static final String PREFS_NAME = "ZenkashReminderPrefs";
     private static final String KEY_REMINDER_ENABLED = "reminder_enabled";
     private static final String KEY_LAST_TRANSACTION_DATE = "last_transaction_date";
+    private static final String KEY_FIRED_REMINDERS = "fired_reminders";
     private static final int ALARM_REQUEST_CODE = 1001;
 
     /**
@@ -161,6 +163,46 @@ public class ReminderPlugin extends Plugin {
         Intent intent = new Intent(FullScreenAlertActivity.ACTION_DISMISS);
         context.sendBroadcast(intent);
         call.resolve();
+    }
+
+    /**
+     * Returns the reminders fired since the last call (epoch milliseconds),
+     * then forgets them. The app stores them in its notification history.
+     */
+    @PluginMethod
+    public void consumeFiredReminders(PluginCall call) {
+        JSArray timestamps = new JSArray();
+        synchronized (ReminderPlugin.class) {
+            SharedPreferences prefs = getContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            String stored = prefs.getString(KEY_FIRED_REMINDERS, "");
+            for (String value : stored.split(",")) {
+                if (value.isEmpty()) continue;
+                try {
+                    timestamps.put(Long.parseLong(value));
+                } catch (NumberFormatException e) {
+                    Log.w(TAG, "Ignoring invalid fired reminder value: " + value);
+                }
+            }
+            prefs.edit().remove(KEY_FIRED_REMINDERS).apply();
+        }
+        JSObject result = new JSObject();
+        result.put("timestamps", timestamps);
+        call.resolve(result);
+    }
+
+    /**
+     * Remembers that a reminder was shown, so the app can list it later
+     * even if it was closed at that time.
+     */
+    public static void recordFiredReminder(Context context) {
+        synchronized (ReminderPlugin.class) {
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            String stored = prefs.getString(KEY_FIRED_REMINDERS, "");
+            String value = String.valueOf(System.currentTimeMillis());
+            prefs.edit()
+                .putString(KEY_FIRED_REMINDERS, stored.isEmpty() ? value : stored + "," + value)
+                .commit();
+        }
     }
 
     /**

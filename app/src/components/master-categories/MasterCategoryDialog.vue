@@ -21,26 +21,32 @@
             <!-- Icon selector -->
             <div>
                 <div class="field-label">{{ t('masterCategories.icon') }}</div>
-                <div class="icon-grid">
-                    <BtnIcon
+                <div class="icon-grid" role="radiogroup" :aria-label="t('masterCategories.icon')">
+                    <button
                         v-for="icon in availableIcons"
                         :key="icon"
-                        :icon="icon"
-                        :color="form.icon === icon ? 'primary' : 'grey-6'"
-                        :selected="form.icon === icon"
+                        type="button"
+                        role="radio"
+                        class="icon-tile"
+                        :class="{ 'icon-tile--selected': form.icon === icon }"
+                        :aria-checked="form.icon === icon"
+                        :aria-label="icon"
                         @click="form.icon = icon"
-                    />
+                    >
+                        <q-icon :name="icon" size="22px" />
+                    </button>
                 </div>
             </div>
 
             <!-- Color selector -->
             <div>
                 <div class="field-label">{{ t('masterCategories.color') }}</div>
-                <div class="color-grid">
+                <div class="color-grid" role="radiogroup" :aria-label="t('masterCategories.color')">
                     <BtnColor
                         v-for="color in availableColors"
                         :key="color.value"
-                        :color="color.hex"
+                        :color="toneOf(color.value).fg"
+                        :aria-label="color.value"
                         :selected="form.color === color.value"
                         @click="form.color = color.value"
                     />
@@ -65,11 +71,11 @@ import { z } from 'zod/v4';
 import type { MasterCategory, CategoryType } from 'src/types/master-category';
 import ModalBase from '../modals/ModalBase.vue';
 import InputSingle from '../inputs/InputSingle.vue';
-import BtnIcon from '../buttons/BtnIcon.vue';
 import BtnColor from '../buttons/BtnColor.vue';
 import BtnLink from '../buttons/BtnLink.vue';
 import BtnPrimary from '../buttons/BtnPrimary.vue';
 import { useFormValidation } from 'src/composables/useFormValidation';
+import { toneOf } from 'src/services/tone';
 
 const props = defineProps<{
     modelValue: boolean;
@@ -154,19 +160,19 @@ const availableIcons = [
     'payments',
 ];
 
-// Available colors
+// Available colors (stored by name, rendered through the calm tone palette)
 const availableColors = [
-    { value: 'teal', hex: '#0d9488' },
-    { value: 'blue', hex: '#3b82f6' },
-    { value: 'indigo', hex: '#6366f1' },
-    { value: 'purple', hex: '#a855f7' },
-    { value: 'pink', hex: '#ec4899' },
-    { value: 'red', hex: '#ef4444' },
-    { value: 'orange', hex: '#f97316' },
-    { value: 'amber', hex: '#f59e0b' },
-    { value: 'green', hex: '#22c55e' },
-    { value: 'cyan', hex: '#06b6d4' },
-];
+    'teal',
+    'blue',
+    'indigo',
+    'purple',
+    'pink',
+    'red',
+    'orange',
+    'amber',
+    'green',
+    'cyan',
+].map((value) => ({ value }));
 
 /**
  * Closes the master category dialog by setting isOpen to false.
@@ -210,21 +216,44 @@ async function save() {
 
 <style lang="scss" scoped>
 .field-label {
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 13px;
+    font-weight: 600;
     color: $text-secondary;
     margin-bottom: 8px;
 }
 
 .icon-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+    gap: 8px;
+}
+
+.icon-tile {
+    height: 46px;
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: $radius-control;
+    background: $bg-page;
+    color: $text-secondary;
+    font-family: inherit;
+    cursor: pointer;
+    transition:
+        background-color 0.15s ease,
+        box-shadow 0.15s ease;
+
+    &--selected {
+        background: $primary-soft;
+        color: $primary;
+        box-shadow: inset 0 0 0 2px $primary;
+    }
 }
 
 .color-grid {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
     gap: 8px;
 }
 </style>

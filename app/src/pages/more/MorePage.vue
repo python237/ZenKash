@@ -1,196 +1,22 @@
 <template>
-    <q-page class="page-more">
-        <!-- Section Gestion -->
-        <div class="section-title">{{ $t('more.management') }}</div>
-        <q-card flat class="menu-card">
-            <q-list>
-                <q-item clickable v-ripple to="/budgets" class="menu-item">
-                    <q-item-section avatar>
-                        <q-avatar color="amber-1" text-color="amber-9" icon="savings" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>{{ $t('more.budgets') }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side>
-                        <q-icon name="chevron_right" color="grey-5" />
-                    </q-item-section>
-                </q-item>
-
-                <q-separator inset="item" />
-
-                <q-item clickable v-ripple to="/wallets" class="menu-item">
-                    <q-item-section avatar>
-                        <q-avatar
-                            color="blue-1"
-                            text-color="blue-9"
-                            icon="account_balance_wallet"
-                        />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>{{ $t('more.wallets') }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side>
-                        <q-icon name="chevron_right" color="grey-5" />
-                    </q-item-section>
-                </q-item>
-
-                <q-separator inset="item" />
-
-                <q-item clickable v-ripple to="/games" class="menu-item">
-                    <q-item-section avatar>
-                        <q-avatar color="deep-orange-1" text-color="deep-orange-9" icon="casino" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>{{ $t('more.games') }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side>
-                        <q-icon name="chevron_right" color="grey-5" />
-                    </q-item-section>
-                </q-item>
-            </q-list>
-        </q-card>
-
-        <!-- Section Analyse -->
-        <div class="section-title">{{ $t('more.analysis') }}</div>
-        <q-card flat class="menu-card">
-            <q-list>
-                <q-item clickable v-ripple to="/analytics" class="menu-item">
-                    <q-item-section avatar>
-                        <q-avatar color="teal-1" text-color="teal-9" icon="insights" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>{{ $t('more.analytics') }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side>
-                        <q-icon name="chevron_right" color="grey-5" />
-                    </q-item-section>
-                </q-item>
-            </q-list>
-        </q-card>
-
-        <!-- Section Planification -->
-        <div class="section-title">{{ $t('more.planning') }}</div>
-        <q-card flat class="menu-card">
-            <q-list>
-                <q-item clickable v-ripple to="/debts" class="menu-item">
-                    <q-item-section avatar>
-                        <q-avatar color="amber-1" text-color="amber-9" icon="handshake" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>{{ $t('more.debts') }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side>
-                        <q-icon name="chevron_right" color="grey-5" />
-                    </q-item-section>
-                </q-item>
-
-                <q-separator inset="item" />
-
-                <q-item clickable v-ripple to="/cash-flow" class="menu-item">
-                    <q-item-section avatar>
-                        <q-avatar color="cyan-1" text-color="cyan-9" icon="waterfall_chart" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>{{ $t('more.cashFlow') }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side>
-                        <q-icon name="chevron_right" color="grey-5" />
-                    </q-item-section>
-                </q-item>
-
-                <q-separator inset="item" />
-
-                <q-item clickable v-ripple to="/net-worth" class="menu-item">
-                    <q-item-section avatar>
-                        <q-avatar color="green-1" text-color="green-9" icon="show_chart" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>{{ $t('more.netWorth') }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side>
-                        <q-icon name="chevron_right" color="grey-5" />
-                    </q-item-section>
-                </q-item>
-
-                <q-separator inset="item" />
-
-                <q-item clickable v-ripple to="/recurring" class="menu-item">
-                    <q-item-section avatar>
-                        <q-avatar color="indigo-1" text-color="indigo-9" icon="autorenew" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>{{ $t('more.recurring') }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side>
-                        <q-icon name="chevron_right" color="grey-5" />
-                    </q-item-section>
-                </q-item>
-
-                <q-separator inset="item" />
-
-                <q-item clickable v-ripple to="/goals" class="menu-item">
-                    <q-item-section avatar>
-                        <q-avatar color="pink-1" text-color="pink-9" icon="flag" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>{{ $t('more.goals') }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side>
-                        <q-icon name="chevron_right" color="grey-5" />
-                    </q-item-section>
-                </q-item>
-            </q-list>
-        </q-card>
-
-        <!-- Section Catégories -->
-        <div class="section-title">{{ $t('more.categorization') }}</div>
-        <q-card flat class="menu-card">
-            <q-list>
-                <q-item clickable v-ripple to="/master-categories" class="menu-item">
-                    <q-item-section avatar>
-                        <q-avatar color="purple-1" text-color="purple-9" icon="category" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>{{ $t('more.masterCategories') }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side>
-                        <q-icon name="chevron_right" color="grey-5" />
-                    </q-item-section>
-                </q-item>
-
-                <q-separator inset="item" />
-
-                <q-item clickable v-ripple to="/categories" class="menu-item">
-                    <q-item-section avatar>
-                        <q-avatar color="teal-1" text-color="teal-9" icon="label" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>{{ $t('more.categories') }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side>
-                        <q-icon name="chevron_right" color="grey-5" />
-                    </q-item-section>
-                </q-item>
-            </q-list>
-        </q-card>
-
-        <!-- Section App -->
-        <div class="section-title">{{ $t('more.application') }}</div>
-        <q-card flat class="menu-card">
-            <q-list>
-                <q-item clickable v-ripple to="/settings" class="menu-item">
-                    <q-item-section avatar>
-                        <q-avatar color="grey-2" text-color="grey-8" icon="settings" />
-                    </q-item-section>
-                    <q-item-section>
-                        <q-item-label>{{ $t('settings.title') }}</q-item-label>
-                    </q-item-section>
-                    <q-item-section side>
-                        <q-icon name="chevron_right" color="grey-5" />
-                    </q-item-section>
-                </q-item>
-            </q-list>
-        </q-card>
+    <q-page class="zk-page">
+        <section v-for="section in sections" :key="section.title" class="menu-section">
+            <h2 class="section-title">{{ section.title }}</h2>
+            <div class="menu-card">
+                <router-link
+                    v-for="item in section.items"
+                    :key="item.to"
+                    :to="item.to"
+                    class="menu-item"
+                >
+                    <span class="zk-tile" :style="toneStyle(item.color)">
+                        <q-icon :name="item.icon" size="20px" />
+                    </span>
+                    <span class="menu-item__label">{{ item.label }}</span>
+                    <q-icon name="chevron_right" size="22px" class="menu-item__chevron" />
+                </router-link>
+            </div>
+        </section>
 
         <!-- Version -->
         <div class="app-version">Zenkash v{{ appVersion }}</div>
@@ -199,60 +25,134 @@
 
 <script setup lang="ts">
 import { version } from '../../../package.json';
+import { toneStyle } from 'src/services/tone';
 
 const { t } = useI18n();
 const appVersion = version;
+
 usePage({ title: t('nav.more'), showHeader: true });
+
+// Menu entries grouped by section (asset sections are also reachable from the net worth tab)
+const sections = computed(() => [
+    {
+        title: t('nav.netWorth'),
+        items: [
+            {
+                to: '/investments',
+                icon: 'trending_up',
+                color: 'blue',
+                label: t('nav.investments'),
+            },
+            {
+                to: '/projects',
+                icon: 'o_business_center',
+                color: 'teal',
+                label: t('nav.projects'),
+            },
+            { to: '/debts', icon: 'o_handshake', color: 'amber', label: t('debts.title') },
+            { to: '/games', icon: 'o_casino', color: 'orange', label: t('games.title') },
+        ],
+    },
+    {
+        title: t('more.management'),
+        items: [
+            { to: '/budgets', icon: 'o_savings', color: 'amber', label: t('more.budgets') },
+            {
+                to: '/wallets',
+                icon: 'o_account_balance_wallet',
+                color: 'blue',
+                label: t('more.wallets'),
+            },
+        ],
+    },
+    {
+        title: t('more.planning'),
+        items: [
+            { to: '/goals', icon: 'o_flag', color: 'pink', label: t('more.goals') },
+            {
+                to: '/cash-flow',
+                icon: 'o_waterfall_chart',
+                color: 'cyan',
+                label: t('more.cashFlow'),
+            },
+            { to: '/recurring', icon: 'autorenew', color: 'indigo', label: t('more.recurring') },
+        ],
+    },
+    {
+        title: t('more.analysis'),
+        items: [{ to: '/analytics', icon: 'insights', color: 'teal', label: t('more.analytics') }],
+    },
+    {
+        title: t('more.categorization'),
+        items: [
+            {
+                to: '/master-categories',
+                icon: 'o_category',
+                color: 'purple',
+                label: t('more.masterCategories'),
+            },
+            { to: '/categories', icon: 'o_label', color: 'green', label: t('more.categories') },
+        ],
+    },
+    {
+        title: t('more.application'),
+        items: [{ to: '/settings', icon: 'o_settings', color: 'grey', label: t('settings.title') }],
+    },
+]);
 </script>
 
 <style lang="scss" scoped>
-.page-more {
-    padding: 16px;
-    background-color: $bg-page;
+.menu-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .section-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: $text-secondary;
+    margin: 0;
+    padding: 0 4px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 8px;
-    margin-top: 16px;
-    padding-left: 4px;
-
-    &:first-child {
-        margin-top: 0;
-    }
+    color: $text-secondary;
 }
 
 .menu-card {
-    border-radius: 12px;
+    background: $bg-card;
+    border-radius: $radius-card;
     overflow: hidden;
 }
 
 .menu-item {
-    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    min-height: 64px;
+    padding: 10px 16px;
+    color: $text-primary;
+    text-decoration: none;
 
-    .q-avatar {
-        width: 44px;
-        height: 44px;
-
-        :deep(.q-icon) {
-            font-size: 24px;
-        }
+    & + & {
+        border-top: 1px solid $border-light;
     }
 
-    .q-item__label {
+    &__label {
+        flex: 1;
         font-size: 15px;
-        font-weight: 500;
+        font-weight: 600;
+    }
+
+    &__chevron {
+        color: $text-muted;
     }
 }
 
 .app-version {
     text-align: center;
-    color: $text-muted;
     font-size: 12px;
-    margin-top: 32px;
+    color: $text-muted;
+    padding: 8px 0 16px;
 }
 </style>

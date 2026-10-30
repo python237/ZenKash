@@ -8,12 +8,29 @@
  */
 
 import type { Router } from 'vue-router';
+import type { TransactionType } from 'src/types/transaction';
+
+/** Action button rendered on the right side of the page header */
+export interface HeaderAction {
+    /** Material icon name */
+    icon: string;
+    /** Accessible label */
+    label: string;
+    /** Click handler */
+    onClick: () => void;
+    /** Visual style: filled primary (default) or outlined neutral */
+    variant?: 'primary' | 'outline';
+}
 
 /** Current page title displayed in the header */
 const pageTitle = ref('');
 const showHeader = ref(false);
 const showBackButton = ref(false);
 const showBottomNav = ref(true);
+const headerActions = shallowRef<HeaderAction[]>([]);
+/** Opens the global "add transaction" sheet (central tab bar button) */
+const quickAddOpen = ref(false);
+const quickAddType = ref<TransactionType>('expense');
 
 /** Router instance (set from boot file) */
 let routerInstance: Router | null = null;
@@ -144,8 +161,30 @@ export function useNavigation() {
         showBottomNav.value = show;
     };
 
+    /**
+     * Sets the action buttons displayed on the right side of the header.
+     * @param actions - The actions to display (empty array to clear)
+     */
+    const setHeaderActions = (actions: HeaderAction[]) => {
+        headerActions.value = actions;
+    };
+
+    /**
+     * Opens the global add-transaction sheet.
+     * @param type - The transaction type preselected in the form
+     */
+    const openQuickAdd = (type: TransactionType = 'expense') => {
+        quickAddType.value = type;
+        quickAddOpen.value = true;
+    };
+
     return {
+        openQuickAdd,
         pageTitle: computed(() => pageTitle.value),
+        headerActions: computed(() => headerActions.value),
+        quickAddOpen,
+        quickAddType,
+        setHeaderActions,
         showHeader: computed(() => showHeader.value),
         showBackButton: computed(() => showBackButton.value),
         showBottomNav: computed(() => showBottomNav.value),

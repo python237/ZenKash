@@ -1,10 +1,12 @@
 <template>
-    <div v-if="wallets.length === 0" class="empty-state">
-        <q-icon name="account_balance_wallet" size="64px" color="grey-4" />
-        <div class="text-grey-6 q-mt-md">{{ t('wallets.noWallets') }}</div>
+    <div v-if="wallets.length === 0" class="zk-empty">
+        <span class="zk-empty__icon">
+            <q-icon name="o_account_balance_wallet" size="30px" />
+        </span>
+        <span class="zk-empty__title">{{ t('wallets.noWallets') }}</span>
     </div>
 
-    <div v-else class="wallet-list">
+    <div v-else class="wallet-grid">
         <WalletCard
             v-for="wallet in wallets"
             :key="wallet.id"
@@ -31,18 +33,9 @@ const { t } = useI18n();
 </script>
 
 <style lang="scss" scoped>
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 24px;
-    text-align: center;
-}
-
-.wallet-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+.wallet-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
 }
 </style>

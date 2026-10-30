@@ -1,44 +1,27 @@
 <template>
-    <q-card
-        class="investment-card"
-        :class="{
-            'investment-card--positive': health === 'positive',
-            'investment-card--negative': health === 'negative',
-        }"
-        flat
-        bordered
-        @click="$emit('click')"
-    >
-        <q-card-section class="row items-center q-pa-md">
-            <!-- Icon -->
-            <div class="investment-icon q-mr-md">
-                <q-icon :name="typeIcon" size="28px" :color="typeColor" />
-            </div>
+    <button type="button" class="investment-row" @click="$emit('click')">
+        <span class="zk-tile zk-tile--lg" :class="`zk-tile--${typeTone}`">
+            <q-icon :name="typeIcon" size="22px" />
+        </span>
 
-            <!-- Info -->
-            <div class="col">
-                <div class="text-subtitle1 text-weight-medium">{{ investment.label }}</div>
-                <div class="text-caption text-grey-6">
-                    {{ investment.quantity }} {{ t(`investments.units`) }} × {{ formattedRate }}
-                </div>
-            </div>
+        <span class="investment-row__body">
+            <span class="investment-row__title">{{ investment.label }}</span>
+            <span class="investment-row__meta">
+                {{ investment.quantity }} {{ t(`investments.units`) }} × {{ formattedRate }}
+            </span>
+        </span>
 
-            <!-- Value & Health -->
-            <div class="text-right">
-                <div class="text-subtitle1 text-weight-bold">{{ formattedValue }}</div>
-                <div class="health-indicator" :class="`health-indicator--${health}`">
-                    <q-icon :name="healthIcon" size="14px" />
-                    {{ formattedGainLoss }}
-                </div>
-            </div>
-
-            <!-- Chevron -->
-            <q-icon name="chevron_right" color="grey-5" size="24px" class="q-ml-sm" />
-        </q-card-section>
-    </q-card>
+        <span class="investment-row__value">
+            <span class="investment-row__amount">{{ formattedValue }}</span>
+            <span class="investment-row__perf" :class="`investment-row__perf--${health}`">
+                {{ formattedGainLoss }}
+            </span>
+        </span>
+    </button>
 </template>
 
 <script setup lang="ts">
+import { maskAmount } from 'src/composables/usePrivacy';
 import type { InvestmentItem } from 'src/types/investment';
 import { CURRENCIES } from 'src/types/currency';
 import { useInvestmentStore } from 'src/stores/investment';
@@ -70,95 +53,114 @@ const typeIcon = computed(() => {
     return icons[props.investment.type] ?? 'savings';
 });
 
-const typeColor = computed(() => {
-    const colors: Record<string, string> = {
+/** Tile tone per investment type (zk-tile modifier). */
+const typeTone = computed(() => {
+    const tones: Record<string, string> = {
         stock: 'blue',
-        crypto: 'orange',
-        other: 'grey',
+        crypto: 'amber',
+        other: 'violet',
     };
-    return colors[props.investment.type] ?? 'grey';
-});
-
-// Health icon
-const healthIcon = computed(() => {
-    if (health.value === 'positive') return 'arrow_upward';
-    if (health.value === 'negative') return 'arrow_downward';
-    return 'remove';
+    return tones[props.investment.type] ?? 'violet';
 });
 
 // Formatting
 const currency = computed(() => CURRENCIES[props.investment.currency]);
 
 const formattedRate = computed(() => {
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: props.investment.currency,
-        minimumFractionDigits: currency.value?.decimals ?? 0,
-        maximumFractionDigits: currency.value?.decimals ?? 2,
-    }).format(props.investment.currentRate);
+    return maskAmount(
+        new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: props.investment.currency,
+            minimumFractionDigits: currency.value?.decimals ?? 0,
+            maximumFractionDigits: currency.value?.decimals ?? 2,
+        }).format(props.investment.currentRate),
+    );
 });
 
 const formattedValue = computed(() => {
     const value = props.investment.quantity * props.investment.currentRate;
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: props.investment.currency,
-        minimumFractionDigits: currency.value?.decimals ?? 0,
-        maximumFractionDigits: currency.value?.decimals ?? 2,
-    }).format(value);
+    return maskAmount(
+        new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: props.investment.currency,
+            minimumFractionDigits: currency.value?.decimals ?? 0,
+            maximumFractionDigits: currency.value?.decimals ?? 2,
+        }).format(value),
+    );
 });
 
 const formattedGainLoss = computed(() => {
     if (!stats.value) return '0%';
     const percent = stats.value.gainLossPercent;
-    const sign = percent >= 0 ? '+' : '';
-    return `${sign}${percent.toFixed(1)}%`;
+    const sign = percent > 0 ? '+' : percent < 0 ? '−' : '';
+    return `${sign}${Math.abs(percent).toFixed(1)}%`;
 });
 </script>
 
 <style lang="scss" scoped>
-.investment-card {
-    cursor: pointer;
-    border-radius: 12px;
-    transition: all 0.2s ease;
-
-    &:active {
-        transform: scale(0.98);
-    }
-}
-
-.investment-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.05);
+.investment-row {
     display: flex;
     align-items: center;
-    justify-content: center;
-}
+    gap: 12px;
+    width: 100%;
+    min-height: 68px;
+    padding: 12px 0;
+    border: 0;
+    background: none;
+    color: $text-primary;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
 
-.health-indicator {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 2px 6px;
-    border-radius: 4px;
-
-    &--positive {
-        color: var(--q-positive);
-        background: rgba(76, 175, 80, 0.1);
+    &__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
     }
 
-    &--negative {
-        color: var(--q-negative);
-        background: rgba(244, 67, 54, 0.1);
+    &__title {
+        font-size: 14px;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
-    &--neutral {
-        color: var(--q-grey-6);
-        background: rgba(0, 0, 0, 0.05);
+    &__meta {
+        font-size: 12px;
+        color: $text-secondary;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__value {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 2px;
+        flex-shrink: 0;
+    }
+
+    &__amount {
+        font-size: 14px;
+        font-weight: 700;
+    }
+
+    &__perf {
+        font-size: 12px;
+        font-weight: 700;
+        color: $text-secondary;
+
+        &--positive {
+            color: $positive;
+        }
+
+        &--negative {
+            color: $negative;
+        }
     }
 }
 </style>

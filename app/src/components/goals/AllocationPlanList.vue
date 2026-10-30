@@ -44,9 +44,9 @@
             <q-item v-for="(line, index) in plan.lines" :key="line.goalId">
                 <q-item-section avatar>
                     <q-avatar
-                        :color="line.completes ? 'positive' : 'primary'"
-                        text-color="white"
+                        :style="toneStyle(line.completes ? 'positive' : 'primary')"
                         size="32px"
+                        class="zk-avatar"
                     >
                         {{ index + 1 }}
                     </q-avatar>
@@ -91,6 +91,7 @@
 </template>
 
 <script setup lang="ts">
+import { toneStyle } from 'src/services/tone';
 import type { CurrencyCode } from 'src/types/currency';
 import type { AllocationPlan } from 'src/types/goal-allocation';
 import type { SavingsGoalWithStats } from 'src/types/savings-goal';

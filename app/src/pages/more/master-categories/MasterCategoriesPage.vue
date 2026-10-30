@@ -1,5 +1,5 @@
 <template>
-    <q-page class="page-master-categories">
+    <q-page class="zk-page">
         <!-- Tabs -->
         <TabNav v-model="activeTab" :tabs="categoryTabs" />
 
@@ -27,11 +27,6 @@
                 />
             </q-tab-panel>
         </q-tab-panels>
-
-        <!-- FAB -->
-        <q-page-sticky position="bottom-right" :offset="[20, 20]">
-            <BtnFab icon="add" @click="openAddDialog" />
-        </q-page-sticky>
 
         <!-- Add/Edit Dialog -->
         <MasterCategoryDialog
@@ -70,10 +65,14 @@ import MasterCategoryDialog from 'src/components/master-categories/MasterCategor
 import MasterCategoryList from 'src/components/master-categories/MasterCategoryList.vue';
 import ModalConfirm from 'src/components/modals/ModalConfirm.vue';
 import TabNav from 'src/components/tabs/TabNav.vue';
-import BtnFab from 'src/components/buttons/BtnFab.vue';
 
 const { t } = useI18n();
-usePage({ title: t('masterCategories.title'), showHeader: true, showBack: true });
+usePage({
+    title: t('masterCategories.title'),
+    showHeader: true,
+    showBack: true,
+    actions: [{ icon: 'add', label: t('common.add'), onClick: () => openAddDialog() }],
+});
 
 const store = useMasterCategoryStore();
 const categoryStore = useCategoryStore();
@@ -182,14 +181,7 @@ function onSaved() {
 </script>
 
 <style lang="scss" scoped>
-.page-master-categories {
-    display: flex;
-    flex-direction: column;
-    background-color: $bg-page;
-}
-
 .tab-panels {
-    flex: 1;
     background-color: transparent;
 }
 </style>

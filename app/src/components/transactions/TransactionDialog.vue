@@ -1,12 +1,40 @@
 <template>
     <ModalBase v-model="isOpen" :title="dialogTitle" persistent>
         <q-form @submit.prevent="save" class="q-gutter-md">
+            <!-- Type switch (creation only) -->
+            <div
+                v-if="!isEditing"
+                class="type-switch"
+                role="tablist"
+                :aria-label="t('common.type')"
+            >
+                <button
+                    v-for="opt in typeOptions"
+                    :key="opt.value"
+                    type="button"
+                    role="tab"
+                    :aria-selected="form.type === opt.value"
+                    class="type-switch__btn"
+                    :class="[
+                        `type-switch__btn--${opt.value}`,
+                        { 'type-switch__btn--active': form.type === opt.value },
+                    ]"
+                    @click="form.type = opt.value"
+                >
+                    {{ opt.label }}
+                </button>
+            </div>
+
             <!-- Income/Expense Form -->
             <template v-if="form.type === 'income' || form.type === 'expense'">
                 <!-- Amount -->
+                <div class="amount-caption">{{ t('common.amount') }}</div>
                 <InputNumber
                     v-model="form.amount"
-                    :label="t('common.amount')"
+                    :aria-label="t('common.amount')"
+                    placeholder="0"
+                    class="amount-hero"
+                    :class="`amount-hero--${form.type}`"
                     :error="getError('amount') ?? ''"
                     :suffix="selectedWalletCurrency"
                     autofocus
@@ -95,9 +123,12 @@
             <!-- Transfer Form -->
             <template v-else-if="form.type === 'transfer'">
                 <!-- Amount -->
+                <div class="amount-caption">{{ t('common.amount') }}</div>
                 <InputNumber
                     v-model="form.amount"
-                    :label="t('common.amount')"
+                    :aria-label="t('common.amount')"
+                    placeholder="0"
+                    class="amount-hero amount-hero--transfer"
                     :error="getError('amount') ?? ''"
                     :suffix="fromWalletCurrency"
                     autofocus
@@ -348,6 +379,13 @@ const isOpen = computed({
 });
 
 const isEditing = computed(() => !!props.transaction);
+
+// Types selectable when creating a transaction
+const typeOptions = computed<{ value: 'expense' | 'income' | 'transfer'; label: string }[]>(() => [
+    { value: 'expense', label: t('transactions.expense') },
+    { value: 'income', label: t('transactions.income') },
+    { value: 'transfer', label: t('transactions.transfer') },
+]);
 const isLoading = computed(() => transactionStore.isLoading);
 
 // Dialog title
@@ -592,10 +630,90 @@ async function save(): Promise<void> {
 </script>
 
 <style lang="scss" scoped>
+.type-switch {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+    padding: 4px;
+    border-radius: $radius-control;
+    background: $bg-page;
+
+    &__btn {
+        height: 40px;
+        border: 0;
+        border-radius: 11px;
+        background: transparent;
+        color: $text-secondary;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+
+        &--active {
+            background: $bg-card;
+            box-shadow: 0 1px 3px rgba(18, 26, 23, 0.12);
+        }
+
+        &--active#{&}--expense {
+            color: $negative;
+        }
+
+        &--active#{&}--income {
+            color: $positive;
+        }
+
+        &--active#{&}--transfer {
+            color: $info;
+        }
+    }
+}
+
+.amount-caption {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: $text-secondary;
+    margin-bottom: -12px;
+}
+
+// Large centered amount field
+.amount-hero {
+    :deep(.q-field__control) {
+        height: 72px;
+        min-height: 72px;
+
+        &:before,
+        &:after {
+            border: 0 !important;
+        }
+    }
+
+    :deep(.q-field__native) {
+        text-align: center;
+        font-size: 40px;
+        font-weight: 800;
+        letter-spacing: -0.03em;
+        color: $negative;
+    }
+
+    :deep(.q-field__append span) {
+        font-size: 18px !important;
+        font-weight: 700;
+    }
+
+    &--income :deep(.q-field__native) {
+        color: $positive;
+    }
+
+    &--transfer :deep(.q-field__native) {
+        color: $info;
+    }
+}
+
 .select-field {
     :deep(.q-field__control) {
-        border-radius: 10px;
-        height: 48px;
+        border-radius: 16px;
+        height: 52px;
     }
 
     :deep(.q-field__control:before) {

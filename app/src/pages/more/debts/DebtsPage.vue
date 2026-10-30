@@ -1,56 +1,75 @@
 <template>
-    <q-page class="q-pa-md">
+    <q-page class="zk-page">
         <!-- What is owed, both ways -->
-        <div v-if="debts.length > 0" class="row q-col-gutter-sm q-mb-md">
-            <div class="col-6">
-                <q-card flat bordered class="tile">
-                    <div class="text-caption text-grey-6">{{ t('debts.totalReceivable') }}</div>
-                    <div class="text-subtitle1 text-weight-medium text-positive">
-                        {{ formatCurrency(totalReceivable) }}
-                    </div>
-                    <div class="text-caption text-grey-6">
-                        {{ t('debts.openCount', { count: debtStore.receivables.length }) }}
-                    </div>
-                </q-card>
+        <div v-if="debts.length > 0" class="summary-grid">
+            <div class="summary-tile">
+                <span class="zk-caption">{{ t('debts.totalReceivable') }}</span>
+                <span class="zk-amount summary-tile__amount text-positive">
+                    {{ formatCurrency(totalReceivable) }}
+                </span>
+                <span class="zk-caption">
+                    {{ t('debts.openCount', { count: debtStore.receivables.length }) }}
+                </span>
             </div>
-            <div class="col-6">
-                <q-card flat bordered class="tile">
-                    <div class="text-caption text-grey-6">{{ t('debts.totalPayable') }}</div>
-                    <div class="text-subtitle1 text-weight-medium text-negative">
-                        {{ formatCurrency(totalPayable) }}
-                    </div>
-                    <div class="text-caption text-grey-6">
-                        {{ t('debts.openCount', { count: debtStore.payables.length }) }}
-                    </div>
-                </q-card>
+            <div class="summary-tile">
+                <span class="zk-caption">{{ t('debts.totalPayable') }}</span>
+                <span class="zk-amount summary-tile__amount text-negative">
+                    {{ formatCurrency(totalPayable) }}
+                </span>
+                <span class="zk-caption">
+                    {{ t('debts.openCount', { count: debtStore.payables.length }) }}
+                </span>
             </div>
+        </div>
+
+        <!-- Status filter -->
+        <div
+            v-if="debts.length > 0"
+            class="chips"
+            role="tablist"
+            :aria-label="t('debts.statusFilter')"
+        >
+            <button
+                v-for="option in statusOptions"
+                :key="option.value"
+                type="button"
+                role="tab"
+                class="chip"
+                :class="{ 'chip--active': statusFilter === option.value }"
+                :aria-selected="statusFilter === option.value"
+                @click="statusFilter = option.value"
+            >
+                {{ option.label }}
+            </button>
         </div>
 
         <!-- Empty state -->
-        <div v-if="debts.length === 0" class="empty-state">
-            <q-icon name="handshake" size="64px" color="grey-4" />
-            <div class="text-grey-6 q-mt-md">{{ t('debts.noDebts') }}</div>
+        <div v-if="debts.length === 0" class="zk-empty">
+            <span class="zk-empty__icon">
+                <q-icon name="o_handshake" size="30px" />
+            </span>
+            <span class="zk-empty__title">{{ t('debts.noDebts') }}</span>
         </div>
 
-        <!-- List, unsettled first -->
+        <div v-else-if="visibleDebts.length === 0" class="zk-empty">
+            <span class="zk-empty__title">
+                {{ statusFilter === 'open' ? t('debts.noOpenDebts') : t('debts.noSettledDebts') }}
+            </span>
+        </div>
+
+        <!-- List, overdue first -->
         <div v-else class="debt-list">
             <DebtCard
-                v-for="debt in debts"
+                v-for="debt in visibleDebts"
                 :key="debt.id"
                 :debt="debt"
-                class="q-mb-sm"
                 @click="openEdit(debt)"
-                @delete="openDelete(debt)"
                 @repay="openRepay(debt)"
                 @undo="openUndo(debt)"
             />
         </div>
 
-        <q-page-sticky position="bottom-right" :offset="[18, 18]">
-            <BtnFab icon="add" @click="openCreate" />
-        </q-page-sticky>
-
-        <DebtDialog v-model="showDialog" :debt="selected" />
+        <DebtDialog v-model="showDialog" :debt="selected" @delete="onDeleteFromDialog" />
         <DebtRepaymentDialog v-model="showRepayment" :debt="toRepay" />
 
         <ModalConfirm
@@ -109,11 +128,17 @@ import DebtCard from 'src/components/debts/DebtCard.vue';
 import DebtDialog from 'src/components/debts/DebtDialog.vue';
 import DebtRepaymentDialog from 'src/components/debts/DebtRepaymentDialog.vue';
 import ModalConfirm from 'src/components/modals/ModalConfirm.vue';
-import BtnFab from 'src/components/buttons/BtnFab.vue';
 
 const { t, locale } = useI18n();
-usePage({ title: t('debts.title'), showHeader: true, showBack: true });
+usePage({
+    title: t('debts.title'),
+    showHeader: true,
+    showBack: true,
+    actions: [{ icon: 'add', label: t('common.add'), onClick: () => openCreate() }],
+});
 
+const route = useRoute();
+const router = useRouter();
 const debtStore = useDebtStore();
 const walletStore = useWalletStore();
 const settingsStore = useSettingsStore();
@@ -142,6 +167,17 @@ const debts = computed(() =>
     }),
 );
 
+// Status filter chips (open debts first, as on the validated mockup)
+const statusFilter = ref<'open' | 'settled'>('open');
+const statusOptions = computed((): { value: 'open' | 'settled'; label: string }[] => [
+    { value: 'open', label: t('debts.filterOpen') },
+    { value: 'settled', label: t('debts.filterSettled') },
+]);
+
+const visibleDebts = computed(() =>
+    debts.value.filter((debt) => debt.isSettled === (statusFilter.value === 'settled')),
+);
+
 /**
  * Sums outstanding amounts, converted into the default currency.
  * @param rows - The debts to total
@@ -161,6 +197,11 @@ onMounted(async () => {
         walletStore.loadAll(),
         transactionStore.loadAll(),
     ]);
+    // Opened from the dashboard quick action: start a new debt right away
+    if (route.query.add) {
+        openCreate();
+        void router.replace({ query: {} });
+    }
 });
 
 /**
@@ -254,10 +295,19 @@ const deleteOptions = computed(() => [
 ]);
 
 /**
+ * Starts the delete flow from the edit sheet.
+ * @param debt - The debt being edited
+ */
+function onDeleteFromDialog(debt: Debt): void {
+    showDialog.value = false;
+    openDelete(debt);
+}
+
+/**
  * Opens the delete confirmation, with the transaction question unanswered.
  * @param debt - The debt to delete
  */
-function openDelete(debt: DebtWithStats): void {
+function openDelete(debt: Debt): void {
     toDelete.value = debtStore.getById(debt.id) ?? null;
     deleteTransactions.value = null;
     showDeleteConfirm.value = true;
@@ -293,23 +343,56 @@ async function onDelete(): Promise<void> {
 </script>
 
 <style lang="scss" scoped>
-.tile {
-    height: 100%;
-    padding: 12px;
-    border-radius: 12px;
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
 }
 
-.empty-state {
+.summary-tile {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 24px;
-    text-align: center;
+    gap: 4px;
+    padding: 16px;
+    border-radius: 20px;
+    background: $bg-card;
+    min-width: 0;
+
+    &__amount {
+        font-size: 20px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        overflow-wrap: anywhere;
+    }
+}
+
+.chips {
+    display: flex;
+    gap: 8px;
+}
+
+.chip {
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid $border-color;
+    background: $bg-card;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: $text-primary;
+    cursor: pointer;
+
+    &--active {
+        background: $text-primary;
+        border-color: $text-primary;
+        color: #ffffff;
+    }
 }
 
 .debt-list {
     display: flex;
     flex-direction: column;
+    gap: 10px;
 }
 </style>

@@ -23,7 +23,7 @@ export default defineConfig((ctx) => {
         css: ['app.scss'],
 
         // Quasar extras (icons, fonts)
-        extras: ['material-icons'],
+        extras: ['material-icons', 'material-icons-outlined'],
 
         // Build configuration
         build: {

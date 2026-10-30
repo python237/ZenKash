@@ -1,57 +1,46 @@
 <template>
-    <q-card
-        class="budget-card"
-        :class="{
-            'budget-card--exceeded': budget.isExceeded,
-            'budget-card--warning': !budget.isExceeded && budget.percentUsed >= 80,
-        }"
-        flat
-        bordered
-        @click="$emit('click')"
-    >
-        <q-card-section class="q-pa-md">
-            <!-- Header: Icon & Name -->
-            <div class="row items-center q-mb-sm">
-                <q-avatar :color="avatarColor" text-color="white" size="40px" class="q-mr-md">
-                    <q-icon :name="budgetIcon" size="20px" />
-                </q-avatar>
-                <div class="col">
-                    <div class="text-subtitle1 text-weight-medium">{{ budgetName }}</div>
-                    <div v-if="budget.category" class="text-caption text-grey-6">
-                        {{ budget.masterCategory?.name }}
-                    </div>
-                </div>
-                <div class="text-right">
-                    <div class="text-subtitle2 text-weight-bold">{{ formattedAmount }}</div>
-                    <div class="text-caption" :class="statusClass">{{ statusText }}</div>
-                </div>
-            </div>
-
-            <!-- Progress bar -->
-            <q-linear-progress
-                :value="progressValue"
-                :color="progressColor"
-                track-color="grey-3"
-                rounded
-                size="8px"
-                class="q-mt-sm"
-            />
-
-            <!-- Stats row -->
-            <div class="row justify-between q-mt-sm text-caption">
-                <span class="text-grey-6"> {{ t('budgets.spent') }}: {{ formattedSpent }} </span>
-                <span :class="statusClass">
-                    {{ budget.isExceeded ? t('budgets.exceeded') : t('budgets.remaining') }}:
-                    {{ formattedRemaining }}
+    <button type="button" class="budget-card" @click="$emit('click')">
+        <!-- Header: Icon & Name -->
+        <span class="budget-card__head">
+            <span class="zk-tile zk-tile--sm" :style="tileStyle">
+                <q-icon :name="budgetIcon" size="18px" />
+            </span>
+            <span class="budget-card__body">
+                <span class="budget-card__name">{{ budgetName }}</span>
+                <span v-if="budget.category" class="budget-card__meta">
+                    {{ budget.masterCategory?.name }}
                 </span>
-            </div>
-        </q-card-section>
-    </q-card>
+            </span>
+            <span class="budget-card__status" :class="`budget-card__status--${level}`">
+                {{ statusText }}
+            </span>
+        </span>
+
+        <!-- Progress bar -->
+        <span class="zk-progress">
+            <span
+                class="budget-card__fill"
+                :class="`budget-card__fill--${level}`"
+                :style="{ width: `${progressValue * 100}%` }"
+            />
+        </span>
+
+        <!-- Stats row -->
+        <span class="budget-card__row">
+            <span>{{ formattedSpent }} / {{ formattedAmount }}</span>
+            <span :class="{ 'budget-card__over': budget.isExceeded }">
+                {{ budget.isExceeded ? t('budgets.exceeded') : t('budgets.remaining') }}
+                {{ formattedRemaining }}
+            </span>
+        </span>
+    </button>
 </template>
 
 <script setup lang="ts">
+import { maskAmount } from 'src/composables/usePrivacy';
 import type { BudgetWithStats } from 'src/types/budget';
 import { CURRENCIES, CurrencyCode } from 'src/types/currency';
+import { toneStyle } from 'src/services/tone';
 
 const props = defineProps<{
     budget: BudgetWithStats;
@@ -85,29 +74,24 @@ const budgetIcon = computed(() => {
     return 'account_balance_wallet';
 });
 
-// Avatar color
-const avatarColor = computed(() => {
-    if (props.budget.isExceeded) return 'negative';
-    if (props.budget.percentUsed >= 80) return 'warning';
-    if (props.budget.masterCategory?.color) return props.budget.masterCategory.color;
-    return 'primary';
+/** Consumption level: over the limit, close to it (80%+), or fine. */
+const level = computed(() => {
+    if (props.budget.isExceeded) return 'over';
+    if (props.budget.percentUsed >= 80) return 'near';
+    return 'ok';
+});
+
+// Tile tone: orange when exceeded, amber near the limit, category color otherwise
+const tileStyle = computed(() => {
+    if (level.value === 'over') return toneStyle('orange');
+    if (level.value === 'near') return toneStyle('amber');
+    return toneStyle(props.budget.masterCategory?.color ?? 'primary');
 });
 
 // Progress
 const progressValue = computed(() => Math.min(props.budget.percentUsed / 100, 1));
 
-const progressColor = computed(() => {
-    if (props.budget.isExceeded) return 'negative';
-    if (props.budget.percentUsed >= 80) return 'warning';
-    return 'positive';
-});
-
 // Status
-const statusClass = computed(() => {
-    if (props.budget.isExceeded) return 'text-negative';
-    if (props.budget.percentUsed >= 80) return 'text-warning';
-    return 'text-positive';
-});
 
 const statusText = computed(() => {
     const percent = props.budget.percentUsed.toFixed(0);
@@ -116,51 +100,127 @@ const statusText = computed(() => {
 
 // Formatting
 const formattedAmount = computed(() => {
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: currencyCode.value,
-        minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
-    }).format(props.budget.amount);
+    return maskAmount(
+        new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: currencyCode.value,
+            minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
+            maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
+        }).format(props.budget.amount),
+    );
 });
 
 const formattedSpent = computed(() => {
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: currencyCode.value,
-        minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
-    }).format(props.budget.spent);
+    return maskAmount(
+        new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: currencyCode.value,
+            minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
+            maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
+        }).format(props.budget.spent),
+    );
 });
 
 const formattedRemaining = computed(() => {
     const value = Math.abs(props.budget.remaining);
-    return new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: currencyCode.value,
-        minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
-    }).format(value);
+    return maskAmount(
+        new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: currencyCode.value,
+            minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
+            maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
+        }).format(value),
+    );
 });
 </script>
 
 <style lang="scss" scoped>
 .budget-card {
-    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    padding: 14px 16px;
+    border: 0;
+    border-radius: 20px;
+    background: $bg-card;
+    color: $text-primary;
+    font-family: inherit;
+    text-align: left;
     cursor: pointer;
-    transition: all 0.2s ease;
 
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    &__head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
-    &--exceeded {
-        border-left: 3px solid $negative;
+    &__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
     }
 
-    &--warning {
-        border-left: 3px solid $warning;
+    &__name {
+        font-size: 14px;
+        font-weight: 700;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__meta {
+        font-size: 12px;
+        color: $text-secondary;
+    }
+
+    &__status {
+        flex-shrink: 0;
+        font-size: 13px;
+        font-weight: 700;
+        color: $primary;
+
+        &--near {
+            color: $amber;
+        }
+
+        &--over {
+            color: $negative;
+        }
+    }
+
+    .zk-progress {
+        display: block;
+    }
+
+    &__fill {
+        display: block;
+        height: 100%;
+        border-radius: 999px;
+        background: $primary;
+
+        &--near {
+            background: $warning;
+        }
+
+        &--over {
+            background: $negative;
+        }
+    }
+
+    &__row {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        font-size: 12px;
+        color: $text-secondary;
+    }
+
+    &__over {
+        color: $negative;
+        font-weight: 600;
     }
 }
 </style>

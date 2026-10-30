@@ -1,15 +1,33 @@
 <template>
-    <q-page class="q-pa-md">
+    <q-page class="zk-page">
         <!-- Month Navigation -->
-        <div class="month-nav q-mb-lg">
-            <BtnIcon icon="chevron_left" @click="prevMonth" />
-            <q-btn flat no-caps class="month-label" @click="showMonthPicker = true">
-                <span class="text-subtitle1 text-weight-medium text-capitalize">{{
-                    formattedMonth
-                }}</span>
-                <q-icon name="arrow_drop_down" size="sm" />
-            </q-btn>
-            <BtnIcon icon="chevron_right" :disable="isCurrentMonth" @click="nextMonth" />
+        <div class="month-nav">
+            <button
+                type="button"
+                class="month-nav__btn"
+                :aria-label="t('report.previousMonth')"
+                @click="prevMonth"
+            >
+                <q-icon name="chevron_left" size="22px" />
+            </button>
+            <button
+                type="button"
+                class="month-nav__label"
+                :aria-label="t('report.selectMonth')"
+                @click="showMonthPicker = true"
+            >
+                {{ formattedMonth }}
+                <q-icon name="arrow_drop_down" size="20px" />
+            </button>
+            <button
+                type="button"
+                class="month-nav__btn"
+                :disabled="isCurrentMonth"
+                :aria-label="t('report.nextMonth')"
+                @click="nextMonth"
+            >
+                <q-icon name="chevron_right" size="22px" />
+            </button>
         </div>
 
         <!-- Month Picker Dialog -->
@@ -25,58 +43,50 @@
             />
         </q-dialog>
 
-        <!-- Summary Card -->
-        <q-card class="summary-card bg-dark text-white q-mb-lg" flat>
-            <q-card-section class="q-pa-md">
-                <div class="row items-center justify-between">
-                    <div>
-                        <div class="text-caption text-grey-5">{{ t('budgets.totalBudgeted') }}</div>
-                        <div class="text-h5 text-weight-bold">{{ formattedTotalBudgeted }}</div>
-                    </div>
-                    <div class="text-right">
-                        <div class="text-caption text-grey-5">{{ t('budgets.spent') }}</div>
-                        <div class="text-h6 text-weight-medium" :class="spentClassDark">
-                            {{ formattedTotalSpent }}
-                        </div>
-                    </div>
+        <!-- Summary -->
+        <section class="zk-hero summary-hero">
+            <div class="summary-hero__top">
+                <div class="summary-hero__spent">
+                    <span class="zk-hero__label">{{ t('budgets.spent') }}</span>
+                    <span class="zk-amount summary-hero__amount">{{ formattedTotalSpent }}</span>
                 </div>
+                <span class="zk-hero__label">
+                    {{ t('budgets.ofTotal', { amount: formattedTotalBudgeted }) }}
+                </span>
+            </div>
 
-                <!-- Progress -->
-                <q-linear-progress
-                    :value="progressValue"
-                    :color="progressColor"
-                    track-color="grey-8"
-                    rounded
-                    size="10px"
-                    class="q-mt-md"
+            <!-- Progress -->
+            <div class="summary-hero__track">
+                <div
+                    class="summary-hero__fill"
+                    :class="`summary-hero__fill--${progressLevel}`"
+                    :style="{ width: `${progressValue * 100}%` }"
                 />
+            </div>
 
-                <!-- Exceeded warning -->
-                <div v-if="summary.exceededCount > 0" class="exceeded-warning q-mt-sm">
-                    <q-icon name="warning" color="amber" size="16px" />
-                    <span class="text-amber text-caption q-ml-xs">
-                        {{ t('budgets.exceededWarning', { count: summary.exceededCount }) }}
-                    </span>
-                </div>
-            </q-card-section>
-        </q-card>
+            <!-- Exceeded warning -->
+            <span v-if="summary.exceededCount > 0" class="summary-hero__warning">
+                {{ t('budgets.exceededWarning', { count: summary.exceededCount }) }}
+            </span>
+        </section>
 
         <!-- Copy from previous month -->
-        <div v-if="budgetsWithStats.length === 0 && hasPreviousMonthBudgets" class="q-mb-md">
-            <q-btn
-                flat
-                no-caps
-                color="primary"
-                icon="content_copy"
-                :label="t('budgets.copyPrevious')"
-                @click="copyFromPrevious"
-            />
-        </div>
+        <q-btn
+            v-if="budgetsWithStats.length === 0 && hasPreviousMonthBudgets"
+            unelevated
+            no-caps
+            class="copy-btn"
+            icon="content_copy"
+            :label="t('budgets.copyPrevious')"
+            @click="copyFromPrevious"
+        />
 
         <!-- Budgets List -->
-        <div v-if="budgetsWithStats.length === 0" class="empty-state">
-            <q-icon name="account_balance_wallet" size="64px" color="grey-4" />
-            <div class="text-grey-6 q-mt-md">{{ t('budgets.noBudgets') }}</div>
+        <div v-if="budgetsWithStats.length === 0" class="zk-empty">
+            <span class="zk-empty__icon">
+                <q-icon name="o_savings" size="30px" />
+            </span>
+            <span class="zk-empty__title">{{ t('budgets.noBudgets') }}</span>
         </div>
 
         <div v-else class="budget-list">
@@ -85,15 +95,9 @@
                 :key="budget.id"
                 :budget="budget"
                 :currency="defaultCurrency"
-                class="q-mb-sm"
                 @click="openEdit(budget)"
             />
         </div>
-
-        <!-- Add FAB -->
-        <q-page-sticky position="bottom-right" :offset="[18, 18]">
-            <BtnFab icon="add" @click="openCreate" />
-        </q-page-sticky>
 
         <!-- Create/Edit Dialog -->
         <BudgetDialog
@@ -116,17 +120,21 @@
 </template>
 
 <script setup lang="ts">
+import { maskAmount } from 'src/composables/usePrivacy';
 import type { Budget, BudgetWithStats } from 'src/types/budget';
 import { CURRENCIES, CurrencyCode } from 'src/types/currency';
 import { useBudgetStore } from 'src/stores/budget';
 import BudgetCard from 'src/components/budgets/BudgetCard.vue';
 import BudgetDialog from 'src/components/budgets/BudgetDialog.vue';
 import ModalConfirm from 'src/components/modals/ModalConfirm.vue';
-import BtnIcon from 'src/components/buttons/BtnIcon.vue';
-import BtnFab from 'src/components/buttons/BtnFab.vue';
 
 const { t, locale } = useI18n();
-usePage({ title: t('budgets.title'), showHeader: true, showBack: true });
+usePage({
+    title: t('budgets.title'),
+    showHeader: true,
+    showBack: true,
+    actions: [{ icon: 'add', label: t('common.add'), onClick: () => openCreate() }],
+});
 
 const budgetStore = useBudgetStore();
 const transactionStore = useTransactionStore();
@@ -227,38 +235,35 @@ const progressValue = computed(() => {
     return Math.min(summary.value.totalSpent / summary.value.totalBudgeted, 1);
 });
 
-const progressColor = computed(() => {
+/** Overall consumption level: over budget, close to it (80%+), or fine. */
+const progressLevel = computed(() => {
     const percent = progressValue.value * 100;
-    if (percent >= 100) return 'negative';
-    if (percent >= 80) return 'warning';
-    return 'positive';
-});
-
-// Spent class for dark background
-const spentClassDark = computed(() => {
-    const percent = progressValue.value * 100;
-    if (percent >= 100) return 'text-red-4';
-    if (percent >= 80) return 'text-amber';
-    return 'text-green-4';
+    if (percent >= 100) return 'over';
+    if (percent >= 80) return 'near';
+    return 'ok';
 });
 
 // Formatting
 const formattedTotalBudgeted = computed(() => {
-    return new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency: defaultCurrency.value,
-        minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
-    }).format(summary.value.totalBudgeted);
+    return maskAmount(
+        new Intl.NumberFormat(locale.value, {
+            style: 'currency',
+            currency: defaultCurrency.value,
+            minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
+            maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
+        }).format(summary.value.totalBudgeted),
+    );
 });
 
 const formattedTotalSpent = computed(() => {
-    return new Intl.NumberFormat(locale.value, {
-        style: 'currency',
-        currency: defaultCurrency.value,
-        minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
-        maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
-    }).format(summary.value.totalSpent);
+    return maskAmount(
+        new Intl.NumberFormat(locale.value, {
+            style: 'currency',
+            currency: defaultCurrency.value,
+            minimumFractionDigits: currencyInfo.value?.decimals ?? 0,
+            maximumFractionDigits: currencyInfo.value?.decimals ?? 0,
+        }).format(summary.value.totalSpent),
+    );
 });
 
 // Load data
@@ -326,34 +331,106 @@ async function onDelete() {
 .month-nav {
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.month-label {
-    min-width: 180px;
-}
-
-.summary-card {
+    justify-content: space-between;
+    padding: 4px;
     border-radius: 16px;
+    background: $bg-card;
+
+    &__btn {
+        width: 44px;
+        height: 44px;
+        border: 0;
+        border-radius: 12px;
+        background: transparent;
+        color: $text-primary;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+
+        &:disabled {
+            color: $border-color;
+            cursor: default;
+        }
+    }
+
+    &__label {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        min-height: 44px;
+        padding: 0 8px;
+        border: 0;
+        background: none;
+        color: $text-primary;
+        font-family: inherit;
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: capitalize;
+        cursor: pointer;
+    }
 }
 
-.exceeded-warning {
-    display: flex;
-    align-items: center;
+.summary-hero {
+    gap: 12px;
+
+    &__top {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 12px;
+    }
+
+    &__spent {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+    }
+
+    &__amount {
+        font-size: 28px;
+        overflow-wrap: anywhere;
+    }
+
+    &__track {
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.12);
+        overflow: hidden;
+    }
+
+    &__fill {
+        height: 100%;
+        border-radius: 999px;
+        background: $hero-accent;
+
+        &--near {
+            background: #f2c27b;
+        }
+
+        &--over {
+            background: #ff9f6b;
+        }
+    }
+
+    &__warning {
+        font-size: 12px;
+        font-weight: 600;
+        color: #ffd6b8;
+    }
 }
 
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 48px 24px;
-    text-align: center;
+.copy-btn {
+    align-self: flex-start;
+    min-height: 44px;
+    background: $primary-soft;
+    color: $primary;
 }
 
 .budget-list {
     display: flex;
     flex-direction: column;
+    gap: 10px;
 }
 </style>

@@ -28,8 +28,13 @@ defineEmits<{
 
 <style lang="scss" scoped>
 .btn-secondary {
-    border-radius: 8px;
-    font-weight: 600;
+    border-radius: $radius-control;
+    font-weight: 700;
+    min-height: 44px;
     padding: 8px 20px;
+
+    &:before {
+        border-color: $border-color;
+    }
 }
 </style>

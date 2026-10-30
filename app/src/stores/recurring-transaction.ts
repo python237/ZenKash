@@ -7,6 +7,8 @@ import type {
     RecurringOccurrence,
 } from 'src/types/recurring-transaction';
 import { execute, query } from 'src/services/database';
+import type { NotificationPayload } from 'src/types/notification';
+import { useNotificationStore } from 'src/stores/notification';
 
 /**
  * Generates a unique identifier for a recurring transaction
@@ -387,6 +389,21 @@ export const useRecurringTransactionStore = defineStore('recurringTransaction', 
     }
 
     /**
+     * Data used to render a notification about a recurring rule.
+     * @param item - The recurring rule
+     * @returns The notification payload
+     */
+    function notificationPayload(item: RecurringTransaction): NotificationPayload {
+        const category = useCategoryStore().getCategoryById(item.categoryId);
+        return {
+            label: item.description || category?.name || '',
+            amount: item.amount,
+            currency: useWalletStore().getWalletById(item.walletId)?.currency,
+            flow: item.type,
+        };
+    }
+
+    /**
      * Processes all due occurrences: generates the corresponding transactions
      * (when auto_post is enabled) and advances each rule's schedule, catching up
      * on any missed occurrences.
@@ -394,6 +411,7 @@ export const useRecurringTransactionStore = defineStore('recurringTransaction', 
      */
     async function processDue(): Promise<number> {
         const transactionStore = useTransactionStore();
+        const notificationStore = useNotificationStore();
         const today = startOfDay(new Date());
         today.setHours(23, 59, 59, 999);
 
@@ -406,6 +424,8 @@ export const useRecurringTransactionStore = defineStore('recurringTransaction', 
             let last = item.lastRun ? new Date(item.lastRun) : undefined;
             let advanced = false;
             let guard = 0;
+            let postedForItem = 0;
+            const payload = notificationPayload(item);
 
             while (next.getTime() <= today.getTime() && guard < 1000) {
                 if (item.endDate && next.getTime() > new Date(item.endDate).getTime()) break;
@@ -432,6 +452,10 @@ export const useRecurringTransactionStore = defineStore('recurringTransaction', 
                         });
                     }
                     createdCount++;
+                    postedForItem++;
+                } else {
+                    // Reminder-only rule: tell the user an occurrence is due
+                    await notificationStore.add('recurring_due', payload, new Date(next));
                 }
 
                 last = new Date(next);
@@ -442,6 +466,12 @@ export const useRecurringTransactionStore = defineStore('recurringTransaction', 
 
             if (advanced) {
                 await persistSchedule(item, next, last);
+            }
+            if (postedForItem > 0) {
+                await notificationStore.add('recurring_posted', {
+                    ...payload,
+                    count: postedForItem,
+                });
             }
         }
 
