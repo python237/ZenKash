@@ -7,6 +7,8 @@ import type {
 import { CurrencyCode } from 'src/types/currency';
 import type { Wallet } from 'src/types/wallet';
 import type { InvestmentItem } from 'src/types/investment';
+import type { AssetWithStats } from 'src/types/asset';
+import { useAssetStore } from 'src/stores/asset';
 import type { DebtWithStats } from 'src/types/debt';
 import { execute, query } from 'src/services/database';
 
@@ -40,6 +42,7 @@ interface NetWorthRow {
     games: number;
     receivables: number;
     payables: number;
+    assets: number | null;
     total: number;
     currency: string;
     created_at: string;
@@ -61,6 +64,7 @@ function rowToSnapshot(row: NetWorthRow): NetWorthSnapshot {
         games: row.games,
         receivables: row.receivables ?? 0,
         payables: row.payables ?? 0,
+        assets: row.assets ?? 0,
         total: row.total,
         currency: row.currency as CurrencyCode,
         createdAt: new Date(row.created_at),
@@ -111,6 +115,7 @@ export const useNetWorthStore = defineStore('netWorth', () => {
         const exchangeRateStore = useExchangeRateStore();
         const settingsStore = useSettingsStore();
         const debtStore = useDebtStore();
+        const assetStore = useAssetStore();
 
         const defaultCurrency = settingsStore.defaultCurrency ?? CurrencyCode.XOF;
 
@@ -155,13 +160,22 @@ export const useNetWorthStore = defineStore('netWorth', () => {
         const receivables = sumOutstanding(debtStore.receivables);
         const payables = sumOutstanding(debtStore.payables);
 
+        // Durable goods at their estimated resale value (owned ones only)
+        const assets = assetStore.owned.reduce(
+            (sum: number, a: AssetWithStats) =>
+                sum +
+                exchangeRateStore.convertWithDefault(a.resaleValue, a.currency, defaultCurrency),
+            0,
+        );
+
         return {
             liquid,
             investments,
             games,
             receivables,
             payables,
-            total: liquid + investments + games + receivables - payables,
+            assets,
+            total: liquid + investments + games + receivables - payables + assets,
         };
     }
 
@@ -211,6 +225,7 @@ export const useNetWorthStore = defineStore('netWorth', () => {
                 games: components.games,
                 receivables: components.receivables,
                 payables: components.payables,
+                assets: components.assets,
                 total: components.total,
                 currency: settingsStore.defaultCurrency ?? CurrencyCode.XOF,
                 createdAt,
@@ -219,8 +234,8 @@ export const useNetWorthStore = defineStore('netWorth', () => {
 
             await execute(
                 `INSERT INTO net_worth_snapshots
-                    (id, period, date, liquid, investments, games, receivables, payables, total, currency, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    (id, period, date, liquid, investments, games, receivables, payables, assets, total, currency, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                  ON CONFLICT(period) DO UPDATE SET
                     date = excluded.date,
                     liquid = excluded.liquid,
@@ -228,6 +243,7 @@ export const useNetWorthStore = defineStore('netWorth', () => {
                     games = excluded.games,
                     receivables = excluded.receivables,
                     payables = excluded.payables,
+                    assets = excluded.assets,
                     total = excluded.total,
                     currency = excluded.currency,
                     updated_at = excluded.updated_at`,
@@ -240,6 +256,7 @@ export const useNetWorthStore = defineStore('netWorth', () => {
                     snapshot.games,
                     snapshot.receivables,
                     snapshot.payables,
+                    snapshot.assets,
                     snapshot.total,
                     snapshot.currency,
                     snapshot.createdAt.toISOString(),

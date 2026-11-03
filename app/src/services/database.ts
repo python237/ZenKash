@@ -265,6 +265,7 @@ async function createTables(): Promise<void> {
       games REAL NOT NULL,
       receivables REAL NOT NULL DEFAULT 0,
       payables REAL NOT NULL DEFAULT 0,
+      assets REAL NOT NULL DEFAULT 0,
       total REAL NOT NULL,
       currency TEXT NOT NULL,
       created_at TEXT NOT NULL,
@@ -305,6 +306,21 @@ async function createTables(): Promise<void> {
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (wallet_id) REFERENCES wallets(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS assets (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      pace TEXT NOT NULL DEFAULT 'standard',
+      condition TEXT NOT NULL DEFAULT 'good',
+      purchase_price REAL NOT NULL,
+      purchase_date TEXT NOT NULL,
+      currency TEXT NOT NULL,
+      sold_at TEXT,
+      sold_price REAL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS notifications (
@@ -671,6 +687,22 @@ async function runMigrations(): Promise<void> {
         }
     } catch (error) {
         console.error('Net worth snapshots debt migration error:', error);
+    }
+
+    // Migration: add the estimated resale value of durable goods to snapshots.
+    // Past snapshots keep 0: assets did not exist when they were captured.
+    try {
+        const snapshotsInfo = await db.query('PRAGMA table_info(net_worth_snapshots)');
+        const snapshotsColumns = snapshotsInfo.values || [];
+
+        if (!snapshotsColumns.some((col: { name: string }) => col.name === 'assets')) {
+            await db.execute(
+                'ALTER TABLE net_worth_snapshots ADD COLUMN assets REAL NOT NULL DEFAULT 0',
+            );
+            console.log('Migration: Added assets column to net_worth_snapshots table');
+        }
+    } catch (error) {
+        console.error('Net worth snapshots assets migration error:', error);
     }
 
     // Migration: one savings goal per wallet.

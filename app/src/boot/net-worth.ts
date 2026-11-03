@@ -14,6 +14,7 @@ import { useInvestmentStore } from 'src/stores/investment';
 import { useExchangeRateStore } from 'src/stores/exchange-rate';
 import { useSettingsStore } from 'src/stores/settings';
 import { useDebtStore } from 'src/stores/debt';
+import { useAssetStore } from 'src/stores/asset';
 
 export default boot(async () => {
     try {
@@ -25,6 +26,7 @@ export default boot(async () => {
         const exchangeRateStore = useExchangeRateStore();
         const settingsStore = useSettingsStore();
         const debtStore = useDebtStore();
+        const assetStore = useAssetStore();
 
         await Promise.all([
             netWorthStore.loadAll(),
@@ -33,6 +35,7 @@ export default boot(async () => {
             exchangeRateStore.loadAll(),
             settingsStore.loadSettings(),
             debtStore.loadAll(),
+            assetStore.loadAll(),
         ]);
 
         await netWorthStore.captureCurrent();

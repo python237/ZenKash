@@ -15,7 +15,9 @@ export interface NetWorthComponents {
     receivables: number;
     /** Outstanding amounts you still owe (money borrowed, not yet repaid) */
     payables: number;
-    /** Total net worth (liquid + investments + games + receivables − payables) */
+    /** Estimated resale value of owned durable goods (not "available" money) */
+    assets: number;
+    /** Total net worth (liquid + investments + games + receivables − payables + assets) */
     total: number;
 }
 

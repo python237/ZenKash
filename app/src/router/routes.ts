@@ -59,6 +59,16 @@ const routes: RouteRecordRaw[] = [
                 component: () => import('pages/games/GameDetailPage.vue'),
             },
             {
+                path: 'assets',
+                name: 'assets',
+                component: () => import('pages/assets/AssetsPage.vue'),
+            },
+            {
+                path: 'assets/:id',
+                name: 'asset-detail',
+                component: () => import('pages/assets/AssetDetailPage.vue'),
+            },
+            {
                 path: 'net-worth',
                 name: 'net-worth',
                 component: () => import('pages/dashboard/NetWorthPage.vue'),

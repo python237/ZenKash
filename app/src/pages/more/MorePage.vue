@@ -51,6 +51,7 @@ const sections = computed(() => [
             },
             { to: '/debts', icon: 'o_handshake', color: 'amber', label: t('debts.title') },
             { to: '/games', icon: 'o_casino', color: 'orange', label: t('games.title') },
+            { to: '/assets', icon: 'o_chair', color: 'purple', label: t('assets.title') },
         ],
     },
     {

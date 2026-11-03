@@ -39,6 +39,7 @@ const TABLES = [
     'net_worth_snapshots',
     'recurring_transactions',
     'savings_goals',
+    'assets',
     'notifications',
 ] as const;
 

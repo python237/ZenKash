@@ -10,6 +10,15 @@
                     {{ t('netWorth.vsPrevious') }}
                 </span>
             </div>
+            <div class="available">
+                <span class="available__text">
+                    <span class="available__label">{{ t('netWorth.available') }}</span>
+                    <span class="zk-caption">{{ t('netWorth.availableHint') }}</span>
+                </span>
+                <span class="available__value">
+                    {{ formatCurrency(current.total - current.assets) }}
+                </span>
+            </div>
             <div v-if="chartPoints.length < 2" class="zk-caption text-center q-py-md">
                 {{ t('netWorth.noData') }}
             </div>
@@ -75,6 +84,24 @@
                 <span class="shortcut__label">{{ shortcut.label }}</span>
                 <span class="shortcut__value">{{ shortcut.value }}</span>
             </router-link>
+            <router-link :to="{ name: 'assets' }" class="shortcut shortcut--wide">
+                <span class="zk-tile zk-tile--sm zk-tile--violet">
+                    <q-icon name="o_chair" size="20px" />
+                </span>
+                <span class="shortcut__body">
+                    <span class="shortcut__label">{{ t('assets.title') }}</span>
+                    <span class="shortcut__value">
+                        {{
+                            t(
+                                'assets.ownedCount',
+                                { count: assetStore.owned.length },
+                                assetStore.owned.length,
+                            )
+                        }}
+                    </span>
+                </span>
+                <span class="shortcut__amount">{{ formatCurrency(current.assets) }}</span>
+            </router-link>
         </nav>
 
         <!-- History -->
@@ -128,6 +155,7 @@ import {
 } from 'chart.js';
 import type { NetWorthComponents } from 'src/types/net-worth-snapshot';
 import { useNetWorthStore } from 'src/stores/net-worth';
+import { useAssetStore } from 'src/stores/asset';
 import { useCurrency } from 'src/composables/useCurrency';
 
 ChartJS.register(LineElement, PointElement, LinearScale, CategoryScale, Tooltip, Legend, Filler);
@@ -142,6 +170,7 @@ const exchangeRateStore = useExchangeRateStore();
 const settingsStore = useSettingsStore();
 const debtStore = useDebtStore();
 const projectStore = useProjectStore();
+const assetStore = useAssetStore();
 
 // Currency formatting and conversion (shared with every other money screen)
 const {
@@ -181,6 +210,7 @@ const current = computed<NetWorthComponents>(() => {
             games: latest.games,
             receivables: latest.receivables,
             payables: latest.payables,
+            assets: latest.assets,
             total: latest.total,
         };
     }
@@ -195,8 +225,8 @@ const deltaClass = computed(() =>
 // Composition of gross assets. Shares are relative to gross assets: debts make
 // the net total smaller than the sum of its parts, so it is not a usable denominator.
 const assetItems = computed(() => {
-    const { liquid, investments, games, receivables } = current.value;
-    const assets = liquid + investments + games + receivables || 1;
+    const { liquid, investments, games, receivables, assets: goods } = current.value;
+    const assets = liquid + investments + games + receivables + goods || 1;
     return [
         {
             key: 'liquid',
@@ -225,6 +255,13 @@ const assetItems = computed(() => {
             value: receivables,
             color: '#7FB8AC',
             route: 'debts',
+        },
+        {
+            key: 'assets',
+            label: t('netWorth.assets'),
+            value: goods,
+            color: '#5B3FA0',
+            route: 'assets',
         },
     ]
         .filter((b) => b.value > 0)
@@ -337,6 +374,7 @@ onMounted(async () => {
         netWorthStore.loadAll(),
         debtStore.loadAll(),
         projectStore.loadAll(),
+        assetStore.loadAll(),
     ]);
     // Refresh the current month snapshot when opening the page
     await netWorthStore.captureCurrent();
@@ -352,6 +390,36 @@ onMounted(async () => {
     &__delta {
         font-size: 13px;
         font-weight: 600;
+    }
+}
+
+.available {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: $radius-control;
+    background: $bg-page;
+
+    &__text {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    &__label {
+        font-size: 12px;
+        font-weight: 600;
+        color: $text-secondary;
+    }
+
+    &__value {
+        font-size: 16px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        white-space: nowrap;
     }
 }
 
@@ -438,6 +506,31 @@ onMounted(async () => {
     &__label {
         font-size: 13px;
         font-weight: 700;
+    }
+
+    &--wide {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+    }
+
+    &__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+    }
+
+    &--wide &__value {
+        margin-top: 0;
+    }
+
+    &__amount {
+        font-size: 14px;
+        font-weight: 700;
+        white-space: nowrap;
     }
 
     &__value {
