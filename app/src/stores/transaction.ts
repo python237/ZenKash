@@ -269,6 +269,7 @@ export const useTransactionStore = defineStore('transaction', () => {
      * @returns Promise resolving to the newly created transaction
      */
     async function create(data: CreateTransaction): Promise<Transaction> {
+        assertWalletsOpen(data);
         isLoading.value = true;
         try {
             const now = new Date();
@@ -353,6 +354,9 @@ export const useTransactionStore = defineStore('transaction', () => {
         try {
             const existing = transactions.value.find((t: Transaction) => t.id === id);
             if (!existing) return null;
+            // Both the old and the new wallets move: none of them may be closed
+            assertWalletsOpen(existing);
+            assertWalletsOpen(mergeTransactionUpdate(existing, data, new Date()));
 
             // Revert old wallet balances
             await updateWalletBalances(existing, 'delete');
@@ -467,6 +471,7 @@ export const useTransactionStore = defineStore('transaction', () => {
         try {
             const existing = transactions.value.find((t: Transaction) => t.id === id);
             if (!existing) return false;
+            assertWalletsOpen(existing);
 
             // Revert wallet balances
             await updateWalletBalances(existing, 'delete');
@@ -501,6 +506,17 @@ export const useTransactionStore = defineStore('transaction', () => {
         } finally {
             isLoading.value = false;
         }
+    }
+
+    /**
+     * Refuses a movement touching a closed wallet, before anything is written.
+     * @param data - The transaction about to be created, changed or removed
+     * @throws Error `WALLET_CLOSED` when one of its wallets is closed
+     */
+    function assertWalletsOpen(data: CreateTransaction | Transaction): void {
+        const walletStore = useWalletStore();
+        if (data.type === 'transfer') walletStore.assertOpen(data.fromWalletId, data.toWalletId);
+        else walletStore.assertOpen(data.walletId);
     }
 
     /**

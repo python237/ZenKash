@@ -95,6 +95,15 @@
             :transactions="filteredTransactions"
             :default-currency="defaultCurrency"
         />
+
+        <!-- Refused change on a closed wallet -->
+        <ModalConfirm
+            v-model="showBlocked"
+            :title="t('wallets.closing.closed')"
+            :message="t('wallets.closing.blocked')"
+            :confirm-label="t('common.close')"
+            @confirm="showBlocked = false"
+        />
     </q-page>
 </template>
 
@@ -110,6 +119,8 @@ import { CURRENCIES, CurrencyCode } from 'src/types/currency';
 import TransactionList from 'src/components/transactions/TransactionList.vue';
 import TransactionDialog from 'src/components/transactions/TransactionDialog.vue';
 import TransactionBreakdownModal from 'src/components/transactions/TransactionBreakdownModal.vue';
+import ModalConfirm from 'src/components/modals/ModalConfirm.vue';
+import { WALLET_CLOSED } from 'src/stores/wallet';
 
 const { t, locale } = useI18n();
 usePage({ title: t('transactions.title'), showHeader: true });
@@ -447,8 +458,16 @@ function onTransactionSaved(): void {
  * @returns {Promise<void>}
  */
 async function onDelete(tx: TransactionWithRelations): Promise<void> {
-    await transactionStore.remove(tx.id);
+    try {
+        await transactionStore.remove(tx.id);
+    } catch (error) {
+        if (error instanceof Error && error.message === WALLET_CLOSED) showBlocked.value = true;
+        else console.error('Failed to delete transaction:', error);
+    }
 }
+
+/** Shown when a deletion hits a closed wallet. */
+const showBlocked = ref(false);
 </script>
 
 <style lang="scss" scoped>

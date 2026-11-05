@@ -44,9 +44,7 @@
         </div>
 
         <div v-else-if="visibleGoals.length === 0" class="zk-empty">
-            <span class="zk-empty__title">
-                {{ statusFilter === 'open' ? t('goals.noOpenGoals') : t('goals.noReachedGoals') }}
-            </span>
+            <span class="zk-empty__title">{{ emptyLabel }}</span>
         </div>
 
         <!-- List -->
@@ -57,8 +55,32 @@
                 :goal="goal"
                 @click="openEdit(goal)"
                 @delete="openDelete(goal)"
+                @close="openClose(goal)"
+                @close-wallet="openCloseWallet(goal)"
+                @reopen="openReopen(goal)"
             />
+            <p v-if="statusFilter === 'closed'" class="closed-note">
+                <q-icon name="o_info" size="18px" />
+                <span>{{ t('goals.closing.note') }}</span>
+            </p>
         </div>
+
+        <!-- Closing -->
+        <GoalCloseDialog
+            v-model="showCloseDialog"
+            :goal="toClose"
+            @closed="statusFilter = 'closed'"
+        />
+        <WalletCloseDialog v-model="showCloseWallet" :wallet="walletToClose ?? null" />
+
+        <!-- Reopen Confirmation -->
+        <ModalConfirm
+            v-model="showReopenConfirm"
+            :title="t('goals.closing.reopen')"
+            :message="t('goals.closing.reopenConfirm')"
+            :confirm-label="t('goals.closing.reopen')"
+            @confirm="onReopen"
+        />
 
         <!-- Create/Edit Dialog -->
         <GoalDialog v-model="showDialog" :goal="selected" />
@@ -77,9 +99,12 @@
 
 <script setup lang="ts">
 import type { SavingsGoal, SavingsGoalWithStats } from 'src/types/savings-goal';
+import type { Wallet } from 'src/types/wallet';
 import { useSavingsGoalStore } from 'src/stores/savings-goal';
 import GoalCard from 'src/components/goals/GoalCard.vue';
 import GoalDialog from 'src/components/goals/GoalDialog.vue';
+import GoalCloseDialog from 'src/components/goals/GoalCloseDialog.vue';
+import WalletCloseDialog from 'src/components/wallets/WalletCloseDialog.vue';
 import ModalConfirm from 'src/components/modals/ModalConfirm.vue';
 
 const { t } = useI18n();
@@ -94,6 +119,7 @@ const router = useRouter();
 const goalStore = useSavingsGoalStore();
 const walletStore = useWalletStore();
 const settingsStore = useSettingsStore();
+const recurringStore = useRecurringTransactionStore();
 
 // State
 const showDialog = ref(false);
@@ -103,19 +129,51 @@ const toDelete = ref<SavingsGoal | null>(null);
 
 const goals = computed(() => goalStore.goalsWithStats);
 
+/** Lifecycle of a goal: saving, reached (money still there), closed (done). */
+type GoalStatus = 'open' | 'reached' | 'closed';
+
 // Status filter chips, same pattern as loans & debts
-const statusFilter = ref<'open' | 'reached'>('open');
-const statusOptions = computed((): { value: 'open' | 'reached'; label: string }[] => [
+const statusFilter = ref<GoalStatus>('open');
+const statusOptions = computed((): { value: GoalStatus; label: string }[] => [
     { value: 'open', label: t('goals.filterOpen') },
     { value: 'reached', label: t('goals.filterReached') },
+    { value: 'closed', label: t('goals.filterClosed') },
 ]);
 
+/**
+ * Status of a goal, for the filter.
+ * @param goal - The goal
+ * @returns Its status
+ */
+function statusOf(goal: SavingsGoalWithStats): GoalStatus {
+    if (goal.isClosed) return 'closed';
+    return goal.isReached ? 'reached' : 'open';
+}
+
 const visibleGoals = computed(() =>
-    goals.value.filter((goal) => goal.isReached === (statusFilter.value === 'reached')),
+    goals.value.filter((goal) => statusOf(goal) === statusFilter.value),
 );
 
+const emptyLabel = computed(() => {
+    if (statusFilter.value === 'closed') return t('goals.noClosedGoals');
+    return statusFilter.value === 'open' ? t('goals.noOpenGoals') : t('goals.noReachedGoals');
+});
+
+// Closing state
+const showCloseDialog = ref(false);
+const showCloseWallet = ref(false);
+const showReopenConfirm = ref(false);
+const toClose = ref<SavingsGoalWithStats | null>(null);
+const walletToClose = ref<Wallet | undefined>(undefined);
+const toReopen = ref<SavingsGoalWithStats | null>(null);
+
 onMounted(async () => {
-    await Promise.all([settingsStore.loadSettings(), goalStore.loadAll(), walletStore.loadAll()]);
+    await Promise.all([
+        settingsStore.loadSettings(),
+        goalStore.loadAll(),
+        walletStore.loadAll(),
+        recurringStore.loadAll(),
+    ]);
 });
 
 /**
@@ -156,6 +214,44 @@ function openEdit(goal: SavingsGoalWithStats): void {
 function openDelete(goal: SavingsGoalWithStats): void {
     toDelete.value = goalStore.getById(goal.id) ?? null;
     showDeleteConfirm.value = true;
+}
+
+/**
+ * Opens the closing dialog of a reached goal.
+ * @param goal - The goal to close
+ */
+function openClose(goal: SavingsGoalWithStats): void {
+    toClose.value = goal;
+    showCloseDialog.value = true;
+}
+
+/**
+ * Opens the closing dialog of a closed goal's wallet.
+ * @param goal - The goal whose wallet is closed
+ */
+function openCloseWallet(goal: SavingsGoalWithStats): void {
+    walletToClose.value = walletStore.getWalletById(goal.walletId);
+    showCloseWallet.value = true;
+}
+
+/**
+ * Asks to reopen a closed goal.
+ * @param goal - The goal to reopen
+ */
+function openReopen(goal: SavingsGoalWithStats): void {
+    toReopen.value = goal;
+    showReopenConfirm.value = true;
+}
+
+/**
+ * Reopens the selected goal: progress follows the wallet again.
+ * @returns Promise that resolves when reopened
+ */
+async function onReopen(): Promise<void> {
+    if (!toReopen.value) return;
+    await goalStore.reopen(toReopen.value.id);
+    toReopen.value = null;
+    showReopenConfirm.value = false;
 }
 
 /**
@@ -248,5 +344,16 @@ async function onDelete(): Promise<void> {
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+
+.closed-note {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    margin: 0;
+    padding: 0 4px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: $text-secondary;
 }
 </style>

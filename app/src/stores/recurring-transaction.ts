@@ -167,6 +167,14 @@ export const useRecurringTransactionStore = defineStore('recurringTransaction', 
         items.value.find((i) => i.id === id);
 
     /**
+     * Rules posting to a given wallet
+     * @param walletId - The wallet's unique identifier
+     * @returns The rules linked to that wallet, active or not
+     */
+    const rulesForWallet = (walletId: string): RecurringTransaction[] =>
+        items.value.filter((i) => i.walletId === walletId);
+
+    /**
      * Loads all recurring rules from the database into the store
      * Only loads once; subsequent calls are no-ops if already initialized
      * @returns Promise that resolves when rules are loaded
@@ -417,8 +425,12 @@ export const useRecurringTransactionStore = defineStore('recurringTransaction', 
 
         let createdCount = 0;
 
+        const walletStore = useWalletStore();
+
         for (const item of [...items.value]) {
             if (!item.isActive) continue;
+            // A closed wallet takes no movement: leave the rule untouched until reopened
+            if (walletStore.isClosed(item.walletId)) continue;
 
             let next = new Date(item.nextRun);
             let last = item.lastRun ? new Date(item.lastRun) : undefined;
@@ -489,7 +501,10 @@ export const useRecurringTransactionStore = defineStore('recurringTransaction', 
         const limit = startOfDay(untilDate);
         limit.setHours(23, 59, 59, 999);
 
+        const walletStore = useWalletStore();
+
         for (const item of activeItems.value) {
+            if (walletStore.isClosed(item.walletId)) continue;
             let next = new Date(item.nextRun);
             let guard = 0;
             while (next.getTime() <= limit.getTime() && guard < 1000) {
@@ -519,6 +534,7 @@ export const useRecurringTransactionStore = defineStore('recurringTransaction', 
         // Getters
         activeItems,
         getById,
+        rulesForWallet,
         upcoming,
         // Actions
         loadAll,

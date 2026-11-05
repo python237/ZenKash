@@ -9,6 +9,23 @@
         <!-- Wallet List -->
         <WalletGrid :wallets="wallets" @select="goToDetail" />
 
+        <!-- Closed wallets, folded away: history only -->
+        <section v-if="closedWallets.length > 0" class="closed">
+            <button
+                type="button"
+                class="closed__toggle"
+                :aria-expanded="showClosed"
+                @click="showClosed = !showClosed"
+            >
+                <q-icon name="o_lock" size="18px" />
+                <span class="closed__title">
+                    {{ t('wallets.closing.closedList', { count: closedWallets.length }) }}
+                </span>
+                <q-icon :name="showClosed ? 'expand_less' : 'expand_more'" size="20px" />
+            </button>
+            <WalletGrid v-if="showClosed" :wallets="closedWallets" @select="goToDetail" />
+        </section>
+
         <!-- Create Dialog -->
         <WalletDialog v-model="showDialog" @saved="onSaved" />
     </q-page>
@@ -35,6 +52,8 @@ const showDialog = ref(false);
 
 // Load wallets (game wallets are managed from the Games section, hidden here)
 const wallets = computed(() => store.nonGameWallets);
+const closedWallets = computed(() => store.closedWallets);
+const showClosed = ref(false);
 
 const { formatCurrency, convert } = useCurrency();
 
@@ -83,5 +102,29 @@ function onSaved(): void {
     flex-direction: column;
     gap: 4px;
     padding: 4px;
+}
+.closed {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    &__toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 4px;
+        border: 0;
+        background: none;
+        font-family: inherit;
+        color: $text-secondary;
+        cursor: pointer;
+    }
+
+    &__title {
+        flex: 1;
+        text-align: left;
+        font-size: 14px;
+        font-weight: 700;
+    }
 }
 </style>

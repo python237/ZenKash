@@ -19,6 +19,12 @@ const DAYS_PER_MONTH = 30.44;
 export const WALLET_ALREADY_LINKED = 'WALLET_ALREADY_LINKED';
 
 /**
+ * Thrown by {@link close} when the goal is not reached: only a reached goal can
+ * be closed, there is no "give up" state.
+ */
+export const GOAL_NOT_REACHED = 'GOAL_NOT_REACHED';
+
+/**
  * Generates a unique identifier for a savings goal
  * @returns A unique string identifier combining timestamp and random values
  */
@@ -37,6 +43,8 @@ interface SavingsGoalRow {
     target_amount: number;
     wallet_id: string;
     deadline: string | null;
+    closed_at: string | null;
+    closed_amount: number | null;
     created_at: string;
     updated_at: string;
 }
@@ -54,6 +62,8 @@ function rowToGoal(row: SavingsGoalRow): SavingsGoal {
         targetAmount: row.target_amount,
         walletId: row.wallet_id,
         deadline: row.deadline ? new Date(row.deadline) : undefined,
+        closedAt: row.closed_at ? new Date(row.closed_at) : undefined,
+        closedAmount: row.closed_amount ?? undefined,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
     };
@@ -83,7 +93,8 @@ export const useSavingsGoalStore = defineStore('savingsGoal', () => {
 
     /**
      * Enriches a goal with progress (from the linked wallet balance) and,
-     * when a deadline is set, a linear-pace projection.
+     * when a deadline is set, a linear-pace projection. A closed goal keeps the
+     * amount frozen at closing time and needs no more effort.
      * @param goal - The goal to enrich
      * @returns The goal with computed statistics
      */
@@ -93,6 +104,24 @@ export const useSavingsGoalStore = defineStore('savingsGoal', () => {
 
         const wallet = walletStore.getWalletById(goal.walletId);
         const currency = wallet?.currency ?? settingsStore.defaultCurrency ?? CurrencyCode.XOF;
+
+        if (goal.closedAt) {
+            return {
+                ...goal,
+                currency,
+                currentAmount: goal.closedAmount ?? goal.targetAmount,
+                remaining: 0,
+                percent: 100,
+                isReached: true,
+                isClosed: true,
+                walletExists: !!wallet,
+                sharesWallet: false,
+                monthsLeft: null,
+                requiredMonthly: null,
+                onTrack: null,
+            };
+        }
+
         const currentAmount = wallet?.balance ?? 0;
 
         const sharesWallet = isWalletTaken(goal.walletId, goal.id);
@@ -127,6 +156,7 @@ export const useSavingsGoalStore = defineStore('savingsGoal', () => {
             remaining,
             percent,
             isReached,
+            isClosed: false,
             walletExists: !!wallet,
             sharesWallet,
             monthsLeft,
@@ -139,6 +169,14 @@ export const useSavingsGoalStore = defineStore('savingsGoal', () => {
      * All goals enriched with computed statistics.
      */
     const goalsWithStats = computed<SavingsGoalWithStats[]>(() => goals.value.map(withStats));
+
+    /**
+     * Goals still followed (not closed). Closed goals are done: they leave the
+     * diagnosis and the allocation.
+     */
+    const activeGoalsWithStats = computed<SavingsGoalWithStats[]>(() =>
+        goalsWithStats.value.filter((g) => !g.isClosed),
+    );
 
     /**
      * Loads all savings goals from the database into the store
@@ -226,6 +264,8 @@ export const useSavingsGoalStore = defineStore('savingsGoal', () => {
                 targetAmount: data.targetAmount ?? existing.targetAmount,
                 walletId: data.walletId ?? existing.walletId,
                 deadline: data.deadline !== undefined ? data.deadline : existing.deadline,
+                closedAt: existing.closedAt,
+                closedAmount: existing.closedAmount,
                 createdAt: existing.createdAt,
                 updatedAt: new Date(),
             };
@@ -252,6 +292,67 @@ export const useSavingsGoalStore = defineStore('savingsGoal', () => {
     }
 
     /**
+     * Writes the closing state of a goal.
+     * @param id - The goal's unique identifier
+     * @param closedAt - Closing date, or null to reopen
+     * @param closedAmount - Amount frozen at closing, or null to reopen
+     * @returns Promise resolving when persisted
+     */
+    async function setClosing(
+        id: string,
+        closedAt: Date | null,
+        closedAmount: number | null,
+    ): Promise<void> {
+        const now = new Date();
+        await execute(
+            'UPDATE savings_goals SET closed_at = ?, closed_amount = ?, updated_at = ? WHERE id = ?',
+            [closedAt?.toISOString() ?? null, closedAmount, now.toISOString(), id],
+        );
+        const index = goals.value.findIndex((g) => g.id === id);
+        if (index !== -1) {
+            goals.value[index] = {
+                ...goals.value[index],
+                closedAt: closedAt ?? undefined,
+                closedAmount: closedAmount ?? undefined,
+                updatedAt: now,
+            } as SavingsGoal;
+        }
+    }
+
+    /**
+     * Closes a reached goal, freezing the amount saved. The money can then be
+     * spent on the goal itself without the goal turning back into "not reached".
+     * @param id - The goal's unique identifier
+     * @returns Promise resolving when closed
+     * @throws Error `GOAL_NOT_REACHED` when the target is not reached
+     */
+    async function close(id: string): Promise<void> {
+        const goal = getById(id);
+        if (!goal || goal.closedAt) return;
+        const stats = withStats(goal);
+        if (!stats.isReached) throw new Error(GOAL_NOT_REACHED);
+        await setClosing(id, new Date(), stats.currentAmount);
+    }
+
+    /**
+     * Reopens a closed goal: progress follows the wallet balance again.
+     * @param id - The goal's unique identifier
+     * @returns Promise resolving when reopened
+     */
+    async function reopen(id: string): Promise<void> {
+        if (!getById(id)?.closedAt) return;
+        await setClosing(id, null, null);
+    }
+
+    /**
+     * Goal tracking a given wallet, if any.
+     * @param walletId - The wallet's unique identifier
+     * @returns The linked goal, or undefined
+     */
+    const getByWallet = (walletId: string): SavingsGoal | undefined =>
+        goals.value.find((g) => g.walletId === walletId);
+
+    /**
      * Deletes a savings goal from the database and removes it from the store
      * @param id - The unique identifier of the goal to delete
      * @returns Promise resolving to true if deleted, false if not found
@@ -276,13 +377,17 @@ export const useSavingsGoalStore = defineStore('savingsGoal', () => {
         isInitialized,
         // Getters
         getById,
+        getByWallet,
         isWalletTaken,
         withStats,
         goalsWithStats,
+        activeGoalsWithStats,
         // Actions
         loadAll,
         create,
         update,
+        close,
+        reopen,
         remove,
     };
 });

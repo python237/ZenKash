@@ -219,6 +219,10 @@
                 <!-- Description -->
                 <InputSingle v-model="form.description" :label="t('common.description')" />
             </template>
+
+            <div v-if="saveError" class="save-error">
+                <q-icon name="o_lock" size="16px" /> {{ saveError }}
+            </div>
         </q-form>
 
         <template #actions>
@@ -243,6 +247,7 @@ import InputNumber from '../inputs/InputNumber.vue';
 import InputDate from '../inputs/InputDate.vue';
 import BtnLink from '../buttons/BtnLink.vue';
 import BtnPrimary from '../buttons/BtnPrimary.vue';
+import { WALLET_CLOSED } from 'src/stores/wallet';
 
 const props = defineProps<{
     modelValue: boolean;
@@ -425,7 +430,7 @@ const isFormValid = computed(() => {
 
 // Wallet options (all wallets, including game wallets, for transfers)
 const walletOptions = computed(() => {
-    return walletStore.wallets.map((w) => ({
+    return walletStore.openWallets.map((w) => ({
         value: w.id,
         label: w.name,
         icon: w.icon,
@@ -489,6 +494,7 @@ watch(
             // Reset touched state
             touched.value = {};
             errors.value = {};
+            saveError.value = '';
 
             if (props.transaction) {
                 // Editing existing transaction
@@ -529,8 +535,8 @@ watch(
                 form.description = '';
                 form.walletId = walletStore.nonGameWallets[0]?.id ?? '';
                 form.categoryId = '';
-                form.fromWalletId = walletStore.wallets[0]?.id ?? '';
-                form.toWalletId = walletStore.wallets[1]?.id ?? '';
+                form.fromWalletId = walletStore.openWallets[0]?.id ?? '';
+                form.toWalletId = walletStore.openWallets[1]?.id ?? '';
                 form.fee = 0;
             }
         }
@@ -554,6 +560,9 @@ function close(): void {
     isOpen.value = false;
 }
 
+/** Message shown when the transaction could not be saved. */
+const saveError = ref('');
+
 /**
  * Saves the transaction to the store.
  * Creates a new transaction or updates an existing one based on edit mode.
@@ -561,6 +570,7 @@ function close(): void {
  */
 async function save(): Promise<void> {
     if (!validate()) return;
+    saveError.value = '';
 
     try {
         let transaction: Transaction;
@@ -625,11 +635,23 @@ async function save(): Promise<void> {
         close();
     } catch (error) {
         console.error('Failed to save transaction:', error);
+        saveError.value =
+            error instanceof Error && error.message === WALLET_CLOSED
+                ? t('wallets.closing.blocked')
+                : t('messages.error');
     }
 }
 </script>
 
 <style lang="scss" scoped>
+.save-error {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: $negative;
+}
+
 .type-switch {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));

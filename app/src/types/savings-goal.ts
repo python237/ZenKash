@@ -18,6 +18,14 @@ export interface SavingsGoal {
     walletId: string;
     /** Optional target date to reach the goal */
     deadline?: Date | undefined;
+    /**
+     * When the reached goal was closed. From then on the goal no longer reads
+     * the wallet balance, so spending the money on the goal itself does not
+     * turn it back into "not reached".
+     */
+    closedAt?: Date | undefined;
+    /** Amount saved at closing time, frozen as the goal's final progress */
+    closedAmount?: number | undefined;
     /** Timestamp when the goal was created */
     createdAt: Date;
     /** Timestamp when the goal was last updated */
@@ -54,14 +62,16 @@ export type UpdateSavingsGoal = Partial<CreateSavingsGoal>;
 export interface SavingsGoalWithStats extends SavingsGoal {
     /** Currency the amounts are expressed in (from the linked wallet) */
     currency: CurrencyCode;
-    /** Current amount saved (linked wallet balance) */
+    /** Current amount saved (linked wallet balance, or the frozen amount once closed) */
     currentAmount: number;
     /** Amount still needed to reach the target (never negative) */
     remaining: number;
     /** Progress percentage, capped at 100 */
     percent: number;
-    /** Whether the target has been reached */
+    /** Whether the target has been reached (always true once closed) */
     isReached: boolean;
+    /** Whether the goal has been closed */
+    isClosed: boolean;
     /** Whether the linked wallet still exists */
     walletExists: boolean;
     /**

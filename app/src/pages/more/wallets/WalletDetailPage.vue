@@ -2,18 +2,58 @@
     <q-page class="zk-page">
         <template v-if="wallet">
             <!-- Header card -->
-            <section class="zk-hero wallet-hero">
+            <section v-if="wallet.closedAt" class="closed-hero">
+                <span class="closed-hero__icon">
+                    <q-icon name="o_lock" size="22px" />
+                </span>
+                <div class="wallet-hero__body">
+                    <span class="closed-hero__label">
+                        {{ wallet.name }} · {{ wallet.currency }}
+                        <span class="zk-pill">{{ t('wallets.closing.closed') }}</span>
+                    </span>
+                    <span class="zk-amount zk-amount--lg closed-hero__amount">
+                        {{ formattedBalance }}
+                    </span>
+                    <span class="closed-hero__meta">
+                        {{ t('wallets.closing.closedOn', { date: formattedClosedAt }) }}
+                    </span>
+                </div>
+            </section>
+            <section v-else class="zk-hero wallet-hero">
                 <span class="wallet-hero__icon">
                     <q-icon :name="wallet.icon" size="24px" />
                 </span>
                 <div class="wallet-hero__body">
                     <span class="zk-hero__label">{{ wallet.name }} · {{ wallet.currency }}</span>
                     <span class="zk-amount zk-amount--lg">{{ formattedBalance }}</span>
+                    <span v-if="linkedGoal?.closedAt" class="wallet-hero__goal">
+                        {{ t('wallets.closing.goalClosed', { name: linkedGoal.name }) }}
+                    </span>
                 </div>
             </section>
 
+            <!-- Actions of a closed wallet: read its history or reopen it -->
+            <div v-if="wallet.closedAt" class="actions actions--two">
+                <button type="button" class="action" @click="openHistory">
+                    <span class="zk-tile zk-tile--sm zk-tile--blue">
+                        <q-icon name="history" size="20px" />
+                    </span>
+                    {{ t('wallets.history.title') }}
+                </button>
+                <button
+                    type="button"
+                    class="action action--primary"
+                    @click="showReopenConfirm = true"
+                >
+                    <span class="zk-tile zk-tile--sm zk-tile--green">
+                        <q-icon name="o_lock_open" size="20px" />
+                    </span>
+                    {{ t('wallets.closing.reopen') }}
+                </button>
+            </div>
+
             <!-- Actions -->
-            <div class="actions">
+            <div v-else class="actions" :class="{ 'actions--four': canClose }">
                 <button type="button" class="action" @click="openHistory">
                     <span class="zk-tile zk-tile--sm zk-tile--blue">
                         <q-icon name="history" size="20px" />
@@ -26,6 +66,17 @@
                     </span>
                     {{ t('common.edit') }}
                 </button>
+                <button
+                    v-if="canClose"
+                    type="button"
+                    class="action"
+                    @click="showCloseDialog = true"
+                >
+                    <span class="zk-tile zk-tile--sm">
+                        <q-icon name="o_lock" size="20px" />
+                    </span>
+                    {{ t('wallets.closing.action') }}
+                </button>
                 <button type="button" class="action action--danger" @click="confirmDelete">
                     <span class="zk-tile zk-tile--sm zk-tile--orange">
                         <q-icon name="o_delete" size="20px" />
@@ -33,6 +84,23 @@
                     {{ t('common.delete') }}
                 </button>
             </div>
+
+            <!-- Goal tracked on this wallet -->
+            <button v-if="linkedGoal" type="button" class="goal-link" @click="openGoals">
+                <span
+                    class="zk-tile zk-tile--sm"
+                    :class="linkedGoal.closedAt ? '' : 'zk-tile--green'"
+                >
+                    <q-icon name="o_flag" size="18px" />
+                </span>
+                <span class="goal-link__body">
+                    <span class="goal-link__name">
+                        {{ t('wallets.closing.goal', { name: linkedGoal.name }) }}
+                    </span>
+                    <span class="goal-link__meta">{{ linkedGoalMeta }}</span>
+                </span>
+                <q-icon name="chevron_right" size="20px" class="goal-link__chevron" />
+            </button>
 
             <!-- Latest operations -->
             <section class="recent">
@@ -48,6 +116,18 @@
 
         <!-- Edit Dialog -->
         <WalletDialog v-model="showDialog" :wallet="wallet ?? null" @saved="onSaved" />
+
+        <!-- Closing -->
+        <WalletCloseDialog v-model="showCloseDialog" :wallet="wallet ?? null" />
+
+        <!-- Reopen Confirmation -->
+        <ModalConfirm
+            v-model="showReopenConfirm"
+            :title="t('wallets.closing.reopen')"
+            :message="t('wallets.closing.reopenConfirm')"
+            :confirm-label="t('wallets.closing.reopen')"
+            @confirm="onReopen"
+        />
 
         <!-- Delete Confirmation -->
         <ModalConfirm
@@ -65,11 +145,13 @@
 <script setup lang="ts">
 import { displayAmount } from 'src/composables/usePrivacy';
 import WalletDialog from 'src/components/wallets/WalletDialog.vue';
+import WalletCloseDialog from 'src/components/wallets/WalletCloseDialog.vue';
+import { useSavingsGoalStore } from 'src/stores/savings-goal';
 import ModalConfirm from 'src/components/modals/ModalConfirm.vue';
 import TransactionList from 'src/components/transactions/TransactionList.vue';
 import { CURRENCIES } from 'src/types/currency';
 
-const { t } = useI18n();
+const { t, locale } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const store = useWalletStore();
@@ -88,10 +170,40 @@ const recentTransactions = computed(() =>
     transactionStore.getTransactionsWithRelations({ walletId: walletId.value }).slice(0, 5),
 );
 
+const goalStore = useSavingsGoalStore();
+const recurringStore = useRecurringTransactionStore();
+const { formatCurrency } = useCurrency();
+
+/** Goal tracked on this wallet, if any. */
+const linkedGoal = computed(() => goalStore.getByWallet(walletId.value));
+
+/** Progress line of the linked goal. */
+const linkedGoalMeta = computed(() => {
+    if (!linkedGoal.value) return '';
+    const stats = goalStore.withStats(linkedGoal.value);
+    const amount = formatCurrency(stats.currentAmount, stats.currency);
+    if (stats.isClosed) return t('wallets.closing.goalClosedMeta', { amount });
+    return `${amount} / ${formatCurrency(stats.targetAmount, stats.currency)}`;
+});
+
+/** Regular wallets can be closed; game wallets follow their game. */
+const canClose = computed(() => !!wallet.value && !wallet.value.isGame);
+
+const formattedClosedAt = computed(() => {
+    if (!wallet.value?.closedAt) return '';
+    return new Intl.DateTimeFormat(locale.value, {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    }).format(wallet.value.closedAt);
+});
+
 // Load wallets and transactions if not loaded
 onMounted(() => {
     void store.loadAll();
     void transactionStore.loadAll();
+    void goalStore.loadAll();
+    void recurringStore.loadAll();
 });
 
 // Format balance with wallet's currency
@@ -115,6 +227,26 @@ const formattedBalance = computed(() => {
 // State
 const showDialog = ref(false);
 const showDeleteConfirm = ref(false);
+const showCloseDialog = ref(false);
+const showReopenConfirm = ref(false);
+
+/**
+ * Opens the goals screen.
+ * @returns {void}
+ */
+function openGoals(): void {
+    void router.push({ name: 'goals' });
+}
+
+/**
+ * Reopens the wallet: it accepts movements again.
+ * @returns {Promise<void>}
+ */
+async function onReopen(): Promise<void> {
+    if (!wallet.value) return;
+    await store.reopen(wallet.value.id);
+    showReopenConfirm.value = false;
+}
 
 // Actions
 /**
@@ -187,10 +319,99 @@ async function onDelete(): Promise<void> {
     }
 }
 
+.wallet-hero__goal {
+    font-size: 12px;
+    color: $hero-accent;
+}
+
+.closed-hero {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 22px;
+    border-radius: $radius-card;
+    background: $grey-soft;
+
+    &__icon {
+        width: 48px;
+        height: 48px;
+        flex-shrink: 0;
+        border-radius: 14px;
+        background: $bg-card;
+        color: $text-secondary;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    &__label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+        font-size: 13px;
+        color: $text-secondary;
+    }
+
+    &__amount {
+        color: $text-secondary;
+    }
+
+    &__meta {
+        font-size: 12px;
+        color: $text-secondary;
+    }
+}
+
 .actions {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
+
+    &--two {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    &--four {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+    }
+}
+
+.goal-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    border: 0;
+    border-radius: $radius-tile;
+    background: $bg-card;
+    font-family: inherit;
+    color: $text-primary;
+    text-align: left;
+    cursor: pointer;
+
+    &__body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    &__name {
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    &__meta {
+        font-size: 12px;
+        color: $text-secondary;
+    }
+
+    &__chevron {
+        color: $text-secondary;
+    }
 }
 
 .action {
@@ -210,6 +431,10 @@ async function onDelete(): Promise<void> {
 
     &--danger {
         color: $negative;
+    }
+
+    &--primary {
+        color: $primary;
     }
 }
 

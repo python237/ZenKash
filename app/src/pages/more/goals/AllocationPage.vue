@@ -117,12 +117,12 @@ onMounted(async () => {
     await Promise.all([settingsStore.loadSettings(), goalStore.loadAll(), walletStore.loadAll()]);
     // Start on the currency that carries the most open goals, so the screen is
     // useful without touching the selector.
-    const [mostUsed] = allocatableCurrencies(goalStore.goalsWithStats);
+    const [mostUsed] = allocatableCurrencies(goalStore.activeGoalsWithStats);
     currency.value = mostUsed ?? defaultCurrency.value;
 });
 
 const currencyOptions = computed(() => {
-    const codes = allocatableCurrencies(goalStore.goalsWithStats);
+    const codes = allocatableCurrencies(goalStore.activeGoalsWithStats);
     if (!codes.includes(currency.value)) codes.push(currency.value);
     return codes.map((code: CurrencyCode) => ({ value: code, label: code }));
 });
@@ -130,7 +130,7 @@ const currencyOptions = computed(() => {
 const currencySymbol = computed(() => CURRENCIES[currency.value]?.symbol ?? currency.value);
 
 const result = computed(() =>
-    buildAllocation(goalStore.goalsWithStats, {
+    buildAllocation(goalStore.activeGoalsWithStats, {
         currency: currency.value,
         available: amount.value,
         decimals: CURRENCIES[currency.value]?.decimals ?? 0,

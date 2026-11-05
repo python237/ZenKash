@@ -132,7 +132,7 @@ const currencySymbol = computed(() => CURRENCIES[currencyCode.value]?.symbol ?? 
 
 // Wallet options
 const walletOptions = computed(() =>
-    walletStore.wallets.map((w: { id: string; name: string }) => ({
+    walletStore.openWallets.map((w: { id: string; name: string }) => ({
         value: w.id,
         label: w.name,
     })),

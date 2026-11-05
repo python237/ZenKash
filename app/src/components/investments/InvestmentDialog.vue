@@ -144,7 +144,7 @@ const currencyOptions = computed(() => getCurrencyOptions(t));
 
 // Wallet options
 const walletOptions = computed(() =>
-    walletStore.wallets.map((w: { id: string; name: string }) => ({
+    walletStore.openWallets.map((w: { id: string; name: string }) => ({
         value: w.id,
         label: w.name,
     })),
@@ -186,7 +186,7 @@ watch(
                 quantity: 0,
                 currentRate: 0,
                 currency: settingsStore.defaultCurrency ?? 'XOF',
-                walletId: walletStore.wallets[0]?.id ?? '',
+                walletId: walletStore.openWallets[0]?.id ?? '',
             });
         }
     },

@@ -4,6 +4,21 @@ import type { CurrencyCode } from 'src/types/currency';
 import { execute, query } from 'src/services/database';
 
 /**
+ * Thrown when a movement targets a closed wallet. Closing freezes the wallet at
+ * zero: no transaction, transfer or recurring rule may touch it until reopened.
+ */
+export const WALLET_CLOSED = 'WALLET_CLOSED';
+
+/**
+ * Thrown by {@link close} when the balance is not zero. The remainder must be
+ * moved out first, otherwise it would silently drop out of every total.
+ */
+export const WALLET_NOT_EMPTY = 'WALLET_NOT_EMPTY';
+
+/** Balances below this are treated as zero (rounding leftovers). */
+const ZERO_TOLERANCE = 0.005;
+
+/**
  * Generates a unique identifier for a wallet
  * @returns A unique string identifier combining timestamp and random values
  */
@@ -22,6 +37,7 @@ interface WalletRow {
     currency: string;
     balance: number;
     is_game: number;
+    closed_at: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -39,6 +55,7 @@ function rowToWallet(row: WalletRow): Wallet {
         currency: row.currency as CurrencyCode,
         balance: row.balance,
         isGame: row.is_game === 1,
+        closedAt: row.closed_at ? new Date(row.closed_at) : undefined,
         createdAt: new Date(row.created_at),
         updatedAt: new Date(row.updated_at),
     };
@@ -59,11 +76,41 @@ export const useWalletStore = defineStore('wallet', () => {
         wallets.value.find((w: Wallet) => w.id === id);
 
     /**
-     * Regular (non-game) wallets only.
-     * Game-platform wallets are excluded because their balance may be locked
-     * and must not count towards reported liquidity.
+     * Wallets still open, game wallets included. Closed wallets sit at zero and
+     * accept no movement, so they are never offered in a picker.
      */
-    const nonGameWallets = computed((): Wallet[] => wallets.value.filter((w: Wallet) => !w.isGame));
+    const openWallets = computed((): Wallet[] => wallets.value.filter((w: Wallet) => !w.closedAt));
+
+    /**
+     * Regular (non-game) open wallets.
+     * Game-platform wallets are excluded because their balance may be locked
+     * and must not count towards reported liquidity. Closed wallets are left
+     * out too: their balance is zero and they take no new movement.
+     */
+    const nonGameWallets = computed((): Wallet[] =>
+        openWallets.value.filter((w: Wallet) => !w.isGame),
+    );
+
+    /** Regular (non-game) wallets that have been closed. */
+    const closedWallets = computed((): Wallet[] =>
+        wallets.value.filter((w: Wallet) => !w.isGame && !!w.closedAt),
+    );
+
+    /**
+     * Tells whether a wallet is closed.
+     * @param id - The wallet's unique identifier
+     * @returns True when the wallet exists and is closed
+     */
+    const isClosed = (id: string): boolean => !!getWalletById(id)?.closedAt;
+
+    /**
+     * Guards a movement: every wallet it touches must still be open.
+     * @param ids - Wallets the movement touches (empty values are ignored)
+     * @throws Error `WALLET_CLOSED` when one of them is closed
+     */
+    function assertOpen(...ids: (string | null | undefined)[]): void {
+        if (ids.some((id) => !!id && isClosed(id))) throw new Error(WALLET_CLOSED);
+    }
 
     /**
      * Loads all wallets from the database into the store
@@ -143,6 +190,7 @@ export const useWalletStore = defineStore('wallet', () => {
                 currency: existing.currency,
                 balance: data.balance ?? existing.balance,
                 isGame: existing.isGame,
+                closedAt: existing.closedAt,
                 createdAt: existing.createdAt,
                 updatedAt: new Date(),
             };
@@ -171,6 +219,8 @@ export const useWalletStore = defineStore('wallet', () => {
      * @returns Promise resolving to true if successful, false on error
      */
     async function updateBalance(id: string, newBalance: number): Promise<boolean> {
+        // Last line of defence: callers check first, so the data stays consistent
+        assertOpen(id);
         try {
             const now = new Date();
             await execute(`UPDATE wallets SET balance = ?, updated_at = ? WHERE id = ?`, [
@@ -209,6 +259,60 @@ export const useWalletStore = defineStore('wallet', () => {
     }
 
     /**
+     * Writes the closing state of a wallet.
+     * @param id - The wallet's unique identifier
+     * @param closedAt - Closing date, or null to reopen
+     * @returns Promise resolving when persisted
+     */
+    async function setClosedAt(id: string, closedAt: Date | null): Promise<void> {
+        const now = new Date();
+        await execute('UPDATE wallets SET closed_at = ?, updated_at = ? WHERE id = ?', [
+            closedAt?.toISOString() ?? null,
+            now.toISOString(),
+            id,
+        ]);
+        const index = wallets.value.findIndex((w: Wallet) => w.id === id);
+        if (index !== -1) {
+            wallets.value[index] = {
+                ...wallets.value[index],
+                closedAt: closedAt ?? undefined,
+                updatedAt: now,
+            } as Wallet;
+        }
+    }
+
+    /**
+     * Closes a wallet and switches off the recurring rules that feed it.
+     * @param id - The wallet's unique identifier
+     * @returns Promise resolving when closed
+     * @throws Error `WALLET_NOT_EMPTY` when the balance is not zero
+     */
+    async function close(id: string): Promise<void> {
+        const wallet = getWalletById(id);
+        if (!wallet || wallet.closedAt) return;
+        if (Math.abs(wallet.balance) >= ZERO_TOLERANCE) throw new Error(WALLET_NOT_EMPTY);
+
+        await setClosedAt(id, new Date());
+
+        const recurringStore = useRecurringTransactionStore();
+        await recurringStore.loadAll();
+        for (const rule of recurringStore.rulesForWallet(id)) {
+            if (rule.isActive) await recurringStore.toggleActive(rule.id, false);
+        }
+    }
+
+    /**
+     * Reopens a closed wallet. Recurring rules stay off: the user turns back on
+     * the ones still relevant.
+     * @param id - The wallet's unique identifier
+     * @returns Promise resolving when reopened
+     */
+    async function reopen(id: string): Promise<void> {
+        if (!isClosed(id)) return;
+        await setClosedAt(id, null);
+    }
+
+    /**
      * Deletes a wallet from the database and removes it from the store
      * @param id - The unique identifier of the wallet to delete
      * @returns Promise resolving to true when deleted
@@ -231,13 +335,19 @@ export const useWalletStore = defineStore('wallet', () => {
         isInitialized,
         // Getters
         getWalletById,
+        openWallets,
         nonGameWallets,
+        closedWallets,
+        isClosed,
+        assertOpen,
         // Actions
         loadAll,
         create,
         update,
         updateBalance,
         adjustBalance,
+        close,
+        reopen,
         remove,
     };
 });

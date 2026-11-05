@@ -18,6 +18,11 @@ export interface Wallet {
     balance: number;
     /** Whether this wallet belongs to a game platform (excluded from balance reports) */
     isGame: boolean;
+    /**
+     * When the wallet was closed. A closed wallet sits at zero and accepts no
+     * new movement; its history stays readable and it can be reopened.
+     */
+    closedAt?: Date | undefined;
     /** Timestamp when the wallet was created */
     createdAt: Date;
     /** Timestamp when the wallet was last updated */

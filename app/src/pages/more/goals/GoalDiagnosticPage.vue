@@ -170,7 +170,7 @@ onMounted(async () => {
 
 const namesById = computed(
     () =>
-        new Map(goalStore.goalsWithStats.map((goal: SavingsGoalWithStats) => [goal.id, goal.name])),
+        new Map(goalStore.activeGoalsWithStats.map((goal: SavingsGoalWithStats) => [goal.id, goal.name])),
 );
 
 /**

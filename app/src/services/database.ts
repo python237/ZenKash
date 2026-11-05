@@ -140,6 +140,7 @@ async function createTables(): Promise<void> {
       currency TEXT NOT NULL,
       balance REAL NOT NULL DEFAULT 0,
       is_game INTEGER NOT NULL DEFAULT 0,
+      closed_at TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
@@ -338,6 +339,8 @@ async function createTables(): Promise<void> {
       target_amount REAL NOT NULL,
       wallet_id TEXT NOT NULL,
       deadline TEXT,
+      closed_at TEXT,
+      closed_amount REAL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY (wallet_id) REFERENCES wallets(id)
@@ -364,6 +367,7 @@ async function createTables(): Promise<void> {
  * - Enforcing one savings goal per wallet (unique index)
  * - Rebuilding transactions so its type CHECK accepts debt movements
  * - Adding is_active to categories and master categories
+ * - Adding closing columns to wallets and savings goals
  */
 async function runMigrations(): Promise<void> {
     if (!db) return;
@@ -397,6 +401,12 @@ async function runMigrations(): Promise<void> {
         if (!walletHasIsGame) {
             await db.execute(`ALTER TABLE wallets ADD COLUMN is_game INTEGER NOT NULL DEFAULT 0`);
             console.log('Migration: Added is_game column to wallets table');
+        }
+
+        // Add closed_at column if not exists (closed wallets accept no new movement)
+        if (!walletsColumns.some((col: { name: string }) => col.name === 'closed_at')) {
+            await db.execute('ALTER TABLE wallets ADD COLUMN closed_at TEXT');
+            console.log('Migration: Added closed_at column to wallets table');
         }
     } catch (error) {
         console.error('Wallets migration error:', error);
@@ -726,6 +736,23 @@ async function runMigrations(): Promise<void> {
         }
     } catch (error) {
         console.error('Savings goals wallet uniqueness migration error:', error);
+    }
+
+    // Migration: closing a reached goal freezes its progress
+    try {
+        const goalsInfo = await db.query('PRAGMA table_info(savings_goals)');
+        const goalsColumns = goalsInfo.values || [];
+
+        if (!goalsColumns.some((col: { name: string }) => col.name === 'closed_at')) {
+            await db.execute('ALTER TABLE savings_goals ADD COLUMN closed_at TEXT');
+            console.log('Migration: Added closed_at column to savings_goals table');
+        }
+        if (!goalsColumns.some((col: { name: string }) => col.name === 'closed_amount')) {
+            await db.execute('ALTER TABLE savings_goals ADD COLUMN closed_amount REAL');
+            console.log('Migration: Added closed_amount column to savings_goals table');
+        }
+    } catch (error) {
+        console.error('Savings goals closing migration error:', error);
     }
 }
 

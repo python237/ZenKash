@@ -206,10 +206,15 @@ export function useCashFlow() {
             0,
         );
 
-        const consumed = Object.values(byWallet).reduce((sum, value) => sum + value, 0);
+        // Shared out between the forecast wallets only: what a closed wallet
+        // used to spend still counts in the median and lands on the open ones
+        const consumed = wallets.value.reduce(
+            (sum: number, wallet: ForecastWallet) => sum + (byWallet[wallet.id] ?? 0),
+            0,
+        );
         const shares: Record<string, number> = {};
-        for (const [walletId, value] of Object.entries(byWallet)) {
-            shares[walletId] = consumed > 0 ? value / consumed : 0;
+        for (const wallet of wallets.value) {
+            shares[wallet.id] = consumed > 0 ? (byWallet[wallet.id] ?? 0) / consumed : 0;
         }
 
         // Each sampled month with its total, so the screen can show its work

@@ -374,6 +374,7 @@ export const useInvestmentStore = defineStore('investment', () => {
         try {
             const item = items.value.find((i: InvestmentItem) => i.id === data.investmentItemId);
             if (!item) throw new Error('Investment item not found');
+            useWalletStore().assertOpen(item.walletId);
 
             const newTransaction: InvestmentTransaction = {
                 id: uuidv4(),
