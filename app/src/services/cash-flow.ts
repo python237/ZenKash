@@ -95,7 +95,7 @@ function eventsByDay(
  * @param currency - Currency of its balance
  * @param startBalance - Balance the projection starts from
  * @param events - Events hitting this wallet
- * @param drift - Habitual daily spending, positive, in the wallet currency
+ * @param drift - Habitual daily net outflow in the wallet currency, negative for a net inflow
  * @param input - Horizon and reference day
  * @returns The wallet projection
  */
@@ -163,7 +163,7 @@ export function forecast(input: CashFlowInput, ctx: CashFlowContext): CashFlowFo
             wallet.currency,
             wallet.balance,
             eventsByWallet.get(wallet.id) ?? [],
-            Math.max(0, input.dailyDrift[wallet.id] ?? 0),
+            input.dailyDrift[wallet.id] ?? 0,
             input,
         ),
     );

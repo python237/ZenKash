@@ -4,6 +4,8 @@ import type { CurrencyCode } from './currency';
 export type ForecastEventKind =
     /** A scheduled occurrence of a recurring rule */
     | 'recurring'
+    /** Income measured from history, placed on its usual day of the month */
+    | 'habitualIncome'
     /** A savings goal falling due */
     | 'goalDeadline';
 
@@ -90,9 +92,10 @@ export interface CashFlowInput {
     /** Dated movements expected over the horizon */
     events: ForecastEvent[];
     /**
-     * Habitual daily spending per wallet, in that wallet's currency and always
-     * positive. Zero disables the drift, which makes the forecast show scheduled
-     * movements only.
+     * Habitual daily net outflow per wallet, in that wallet's currency:
+     * spending plus transfers out minus transfers in. Negative for a wallet
+     * that is habitually topped up. Zero disables the drift, which makes the
+     * forecast show scheduled movements only.
      */
     dailyDrift: Record<string, number>;
 }

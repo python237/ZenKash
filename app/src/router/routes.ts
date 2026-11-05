@@ -96,9 +96,14 @@ const routes: RouteRecordRaw[] = [
                 component: () => import('pages/more/debts/DebtsPage.vue'),
             },
             {
+                path: 'forecast',
+                name: 'forecast',
+                component: () => import('pages/forecast/ForecastPage.vue'),
+            },
+            {
                 path: 'cash-flow',
                 name: 'cash-flow',
-                component: () => import('pages/more/cash-flow/CashFlowPage.vue'),
+                redirect: { name: 'forecast', query: { tab: 'cash' } },
             },
             {
                 path: 'goals',

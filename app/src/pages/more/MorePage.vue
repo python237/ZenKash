@@ -71,10 +71,10 @@ const sections = computed(() => [
         items: [
             { to: '/goals', icon: 'o_flag', color: 'pink', label: t('more.goals') },
             {
-                to: '/cash-flow',
-                icon: 'o_waterfall_chart',
+                to: '/forecast',
+                icon: 'o_insights',
                 color: 'cyan',
-                label: t('more.cashFlow'),
+                label: t('more.forecast'),
             },
             { to: '/recurring', icon: 'autorenew', color: 'indigo', label: t('more.recurring') },
         ],
