@@ -431,8 +431,12 @@ $zk-palette: (
 }
 
 .zk-section-title {
+    // Often an <h2>: reset Quasar's heading line-height and margins
+    margin: 0;
     font-size: 15px;
     font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: normal;
     color: $text-primary;
 }
 
